@@ -20,6 +20,7 @@ com\interview\simulator\challenge\entity\ChallengeOption.class
 com\interview\simulator\simulation\dto\SimulationChallengeResponse$OptionResponse.class
 com\interview\simulator\challenge\entity\DifficultyLevel.class
 com\interview\simulator\simulation\dto\SimulationChallengeResponse.class
+com\interview\simulator\simulation\service\SimulationService.class
 com\interview\simulator\skill\dto\SkillResponse.class
 com\interview\simulator\category\dto\CategoryResponse.class
 com\interview\simulator\simulation\dto\StartSimulationRequest.class
