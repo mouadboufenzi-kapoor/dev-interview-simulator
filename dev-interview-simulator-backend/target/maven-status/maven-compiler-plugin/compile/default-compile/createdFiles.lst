@@ -13,6 +13,7 @@ com\interview\simulator\simulation\dto\SimulationResponse.class
 com\interview\simulator\category\service\CategoryService.class
 com\interview\simulator\config\WebConfig.class
 com\interview\simulator\skill\service\SkillService.class
+com\interview\simulator\simulation\controller\SimulationController.class
 com\interview\simulator\simulation\entity\SimulationStatus.class
 com\interview\simulator\category\repository\CategoryRepository.class
 com\interview\simulator\simulation\repository\SimulationRepository.class
