@@ -1,8 +1,13 @@
+com\interview\simulator\simulation\entity\SimulationChallenge.class
 com\interview\simulator\challenge\entity\Challenge.class
+com\interview\simulator\simulation\entity\SimulationStatus.class
 com\interview\simulator\skill\entity\Skill.class
-com\interview\simulator\BackendApplication.class
 com\interview\simulator\challenge\entity\ChallengeOption.class
+com\interview\simulator\simulation\entity\Simulation.class
 com\interview\simulator\category\entity\Category.class
 com\interview\simulator\challenge\entity\ChallengeType.class
+com\interview\simulator\user\entity\User.class
 com\interview\simulator\challenge\entity\DifficultyLevel.class
+com\interview\simulator\simulation\entity\SimulationAnswer.class
+com\interview\simulator\BackendApplication.class
 com\interview\simulator\HealthController.class

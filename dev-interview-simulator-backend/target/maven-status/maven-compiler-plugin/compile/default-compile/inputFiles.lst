@@ -5,4 +5,9 @@ C:\Users\MON PC\Desktop\dev-interview-simulator\dev-interview-simulator-backend\
 C:\Users\MON PC\Desktop\dev-interview-simulator\dev-interview-simulator-backend\src\main\java\com\interview\simulator\challenge\entity\ChallengeType.java
 C:\Users\MON PC\Desktop\dev-interview-simulator\dev-interview-simulator-backend\src\main\java\com\interview\simulator\challenge\entity\DifficultyLevel.java
 C:\Users\MON PC\Desktop\dev-interview-simulator\dev-interview-simulator-backend\src\main\java\com\interview\simulator\HealthController.java
+C:\Users\MON PC\Desktop\dev-interview-simulator\dev-interview-simulator-backend\src\main\java\com\interview\simulator\simulation\entity\Simulation.java
+C:\Users\MON PC\Desktop\dev-interview-simulator\dev-interview-simulator-backend\src\main\java\com\interview\simulator\simulation\entity\SimulationAnswer.java
+C:\Users\MON PC\Desktop\dev-interview-simulator\dev-interview-simulator-backend\src\main\java\com\interview\simulator\simulation\entity\SimulationChallenge.java
+C:\Users\MON PC\Desktop\dev-interview-simulator\dev-interview-simulator-backend\src\main\java\com\interview\simulator\simulation\entity\SimulationStatus.java
 C:\Users\MON PC\Desktop\dev-interview-simulator\dev-interview-simulator-backend\src\main\java\com\interview\simulator\skill\entity\Skill.java
+C:\Users\MON PC\Desktop\dev-interview-simulator\dev-interview-simulator-backend\src\main\java\com\interview\simulator\user\entity\User.java
