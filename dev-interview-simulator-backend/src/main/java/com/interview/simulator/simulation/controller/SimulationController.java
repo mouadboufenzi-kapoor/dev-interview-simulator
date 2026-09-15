@@ -1,6 +1,7 @@
 package com.interview.simulator.simulation.controller;
 
 import com.interview.simulator.simulation.dto.SimulationResponse;
+import com.interview.simulator.simulation.dto.SimulationSummaryResponse;
 import com.interview.simulator.simulation.dto.StartSimulationRequest;
 import com.interview.simulator.simulation.service.SimulationService;
 import jakarta.validation.Valid;
@@ -22,5 +23,11 @@ public class SimulationController {
     public ResponseEntity<SimulationResponse> startSimulation(@Valid @RequestBody StartSimulationRequest request) {
         SimulationResponse response = simulationService.startSimulation(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping("/{id}/complete")
+    public ResponseEntity<SimulationSummaryResponse> completeSimulation(@PathVariable Long id) {
+        SimulationSummaryResponse response = simulationService.completeSimulation(id);
+        return ResponseEntity.ok(response);
     }
 }
