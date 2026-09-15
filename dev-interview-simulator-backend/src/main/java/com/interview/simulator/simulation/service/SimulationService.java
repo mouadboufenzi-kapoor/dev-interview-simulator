@@ -1,12 +1,14 @@
 package com.interview.simulator.simulation.service;
 
 import com.interview.simulator.challenge.entity.Challenge;
+import com.interview.simulator.challenge.repository.ChallengeOptionRepository;
 import com.interview.simulator.challenge.repository.ChallengeRepository;
 import com.interview.simulator.simulation.dto.SimulationChallengeResponse;
 import com.interview.simulator.simulation.dto.SimulationResponse;
 import com.interview.simulator.simulation.dto.StartSimulationRequest;
 import com.interview.simulator.simulation.entity.Simulation;
 import com.interview.simulator.simulation.entity.SimulationChallenge;
+import com.interview.simulator.simulation.repository.SimulationChallengeRepository;
 import com.interview.simulator.simulation.repository.SimulationRepository;
 import com.interview.simulator.user.entity.User;
 import com.interview.simulator.user.repository.UserRepository;
@@ -23,14 +25,20 @@ public class SimulationService {
     private final SimulationRepository simulationRepository;
     private final ChallengeRepository challengeRepository;
     private final UserRepository userRepository;
+    private final SimulationChallengeRepository simulationChallengeRepository;
+    private final ChallengeOptionRepository challengeOptionRepository;
 
     public SimulationService(
             SimulationRepository simulationRepository,
             ChallengeRepository challengeRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            SimulationChallengeRepository simulationChallengeRepository,
+            ChallengeOptionRepository challengeOptionRepository) {
         this.simulationRepository = simulationRepository;
         this.challengeRepository = challengeRepository;
         this.userRepository = userRepository;
+        this.simulationChallengeRepository = simulationChallengeRepository;
+        this.challengeOptionRepository = challengeOptionRepository;
     }
 
     @Transactional

@@ -50,6 +50,9 @@ public class Challenge {
     @Column(nullable = false)
     private boolean active = true;
 
+    @Column(nullable = false)
+    private Integer points = 10;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -111,4 +114,10 @@ public class Challenge {
     public List<ChallengeOption> getOptions() { return options; }
     public Set<Category> getCategories() { return categories; }
     public Set<Skill> getSkills() { return skills; }
+    public Integer getPoints() { 
+        return points; 
+    }
+    public void setPoints(Integer points) { 
+        this.points = points; 
+    }
 }

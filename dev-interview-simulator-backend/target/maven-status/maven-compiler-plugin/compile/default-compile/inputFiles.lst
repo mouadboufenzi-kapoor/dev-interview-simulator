@@ -8,6 +8,7 @@ C:\Users\MON PC\Desktop\dev-interview-simulator\dev-interview-simulator-backend\
 C:\Users\MON PC\Desktop\dev-interview-simulator\dev-interview-simulator-backend\src\main\java\com\interview\simulator\challenge\entity\ChallengeOption.java
 C:\Users\MON PC\Desktop\dev-interview-simulator\dev-interview-simulator-backend\src\main\java\com\interview\simulator\challenge\entity\ChallengeType.java
 C:\Users\MON PC\Desktop\dev-interview-simulator\dev-interview-simulator-backend\src\main\java\com\interview\simulator\challenge\entity\DifficultyLevel.java
+C:\Users\MON PC\Desktop\dev-interview-simulator\dev-interview-simulator-backend\src\main\java\com\interview\simulator\challenge\repository\ChallengeOptionRepository.java
 C:\Users\MON PC\Desktop\dev-interview-simulator\dev-interview-simulator-backend\src\main\java\com\interview\simulator\challenge\repository\ChallengeRepository.java
 C:\Users\MON PC\Desktop\dev-interview-simulator\dev-interview-simulator-backend\src\main\java\com\interview\simulator\config\WebConfig.java
 C:\Users\MON PC\Desktop\dev-interview-simulator\dev-interview-simulator-backend\src\main\java\com\interview\simulator\HealthController.java
@@ -15,10 +16,13 @@ C:\Users\MON PC\Desktop\dev-interview-simulator\dev-interview-simulator-backend\
 C:\Users\MON PC\Desktop\dev-interview-simulator\dev-interview-simulator-backend\src\main\java\com\interview\simulator\simulation\dto\SimulationChallengeResponse.java
 C:\Users\MON PC\Desktop\dev-interview-simulator\dev-interview-simulator-backend\src\main\java\com\interview\simulator\simulation\dto\SimulationResponse.java
 C:\Users\MON PC\Desktop\dev-interview-simulator\dev-interview-simulator-backend\src\main\java\com\interview\simulator\simulation\dto\StartSimulationRequest.java
+C:\Users\MON PC\Desktop\dev-interview-simulator\dev-interview-simulator-backend\src\main\java\com\interview\simulator\simulation\dto\SubmitAnswerRequest.java
+C:\Users\MON PC\Desktop\dev-interview-simulator\dev-interview-simulator-backend\src\main\java\com\interview\simulator\simulation\dto\SubmitAnswerResponse.java
 C:\Users\MON PC\Desktop\dev-interview-simulator\dev-interview-simulator-backend\src\main\java\com\interview\simulator\simulation\entity\Simulation.java
 C:\Users\MON PC\Desktop\dev-interview-simulator\dev-interview-simulator-backend\src\main\java\com\interview\simulator\simulation\entity\SimulationAnswer.java
 C:\Users\MON PC\Desktop\dev-interview-simulator\dev-interview-simulator-backend\src\main\java\com\interview\simulator\simulation\entity\SimulationChallenge.java
 C:\Users\MON PC\Desktop\dev-interview-simulator\dev-interview-simulator-backend\src\main\java\com\interview\simulator\simulation\entity\SimulationStatus.java
+C:\Users\MON PC\Desktop\dev-interview-simulator\dev-interview-simulator-backend\src\main\java\com\interview\simulator\simulation\repository\SimulationChallengeRepository.java
 C:\Users\MON PC\Desktop\dev-interview-simulator\dev-interview-simulator-backend\src\main\java\com\interview\simulator\simulation\repository\SimulationRepository.java
 C:\Users\MON PC\Desktop\dev-interview-simulator\dev-interview-simulator-backend\src\main\java\com\interview\simulator\simulation\service\SimulationService.java
 C:\Users\MON PC\Desktop\dev-interview-simulator\dev-interview-simulator-backend\src\main\java\com\interview\simulator\skill\controller\SkillController.java
