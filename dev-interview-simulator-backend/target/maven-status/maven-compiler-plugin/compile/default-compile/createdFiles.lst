@@ -1,2 +1,8 @@
+com\interview\simulator\challenge\entity\Challenge.class
+com\interview\simulator\skill\entity\Skill.class
 com\interview\simulator\BackendApplication.class
+com\interview\simulator\challenge\entity\ChallengeOption.class
+com\interview\simulator\category\entity\Category.class
+com\interview\simulator\challenge\entity\ChallengeType.class
+com\interview\simulator\challenge\entity\DifficultyLevel.class
 com\interview\simulator\HealthController.class
