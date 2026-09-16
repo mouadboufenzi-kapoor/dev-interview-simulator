@@ -18,6 +18,9 @@ import com.interview.simulator.simulation.repository.SimulationChallengeReposito
 import com.interview.simulator.simulation.repository.SimulationRepository;
 import com.interview.simulator.user.entity.User;
 import com.interview.simulator.user.repository.UserRepository;
+import com.interview.simulator.exception.ApiException;
+import com.interview.simulator.exception.ResourceNotFoundException;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -62,7 +65,10 @@ public class SimulationService {
         );
 
         if (matchingChallenges.isEmpty()) {
-            throw new IllegalArgumentException("Aucune question trouvée pour les critères sélectionnés.");
+            throw new ApiException(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Aucune question trouvée pour les critères sélectionnés."
+            );
         }
 
         // 3. Tirage aléatoire de 10 questions maximum
@@ -126,13 +132,41 @@ public class SimulationService {
     @Transactional
     public SubmitAnswerResponse submitAnswer(Long simulationId, SubmitAnswerRequest request) {
         Simulation simulation = simulationRepository.findById(simulationId)
-                .orElseThrow(() -> new IllegalArgumentException("Simulation non trouvée"));
+                .orElseThrow(() -> new ResourceNotFoundException("Simulation non trouvée."));
+
+        if (simulation.getStatus() != SimulationStatus.IN_PROGRESS) {
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    "Cette simulation n'est plus en cours."
+            );
+        }
 
         SimulationChallenge simChallenge = simulationChallengeRepository.findById(request.simulationChallengeId())
-                .orElseThrow(() -> new IllegalArgumentException("Question de simulation non trouvée"));
+                .orElseThrow(() -> new ResourceNotFoundException("Question de simulation non trouvée."));
+
+        if (!simulationId.equals(simChallenge.getSimulation().getId())) {
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "La question n'appartient pas à cette simulation."
+            );
+        }
+
+        if (simChallenge.getAnswer() != null) {
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    "Une réponse a déjà été enregistrée pour cette question."
+            );
+        }
 
         ChallengeOption selectedOption = challengeOptionRepository.findById(request.selectedOptionId())
-                .orElseThrow(() -> new IllegalArgumentException("Option sélectionnée non trouvée"));
+                .orElseThrow(() -> new ResourceNotFoundException("Option sélectionnée non trouvée."));
+
+        if (!simChallenge.getChallenge().getId().equals(selectedOption.getChallenge().getId())) {
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "L'option sélectionnée n'appartient pas à cette question."
+            );
+        }
 
         boolean isCorrect = selectedOption.isCorrect();
         int scoreAwarded = isCorrect ? simChallenge.getChallenge().getPoints() : 0;
@@ -170,7 +204,14 @@ public class SimulationService {
     @Transactional
     public SimulationSummaryResponse completeSimulation(Long simulationId) {
         Simulation simulation = simulationRepository.findById(simulationId)
-                .orElseThrow(() -> new IllegalArgumentException("Simulation non trouvée"));
+                .orElseThrow(() -> new ResourceNotFoundException("Simulation non trouvée."));
+
+        if (simulation.getStatus() != SimulationStatus.IN_PROGRESS) {
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    "Cette simulation est déjà terminée."
+            );
+        }
 
         simulation.setStatus(SimulationStatus.COMPLETED);
         simulation.setCompletedAt(LocalDateTime.now());

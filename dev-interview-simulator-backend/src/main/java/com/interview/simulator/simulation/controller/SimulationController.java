@@ -1,15 +1,16 @@
 package com.interview.simulator.simulation.controller;
 
-import com.interview.simulator.simulation.dto.SimulationResponse;
-import com.interview.simulator.simulation.dto.SimulationSummaryResponse;
-import com.interview.simulator.simulation.dto.StartSimulationRequest;
+import com.interview.simulator.simulation.dto.*;
 import com.interview.simulator.simulation.service.SimulationService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
+@Validated
 @RequestMapping("/api/simulations")
 public class SimulationController {
 
@@ -26,8 +27,15 @@ public class SimulationController {
     }
 
     @PostMapping("/{id}/complete")
-    public ResponseEntity<SimulationSummaryResponse> completeSimulation(@PathVariable Long id) {
+    public ResponseEntity<SimulationSummaryResponse> completeSimulation(@PathVariable @Positive Long id) {
         SimulationSummaryResponse response = simulationService.completeSimulation(id);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{id}/answers")
+    public ResponseEntity<SubmitAnswerResponse> submitAnswer(
+            @PathVariable @Positive Long id,
+            @Valid @RequestBody SubmitAnswerRequest request) {
+        return ResponseEntity.ok(simulationService.submitAnswer(id, request));
     }
 }
