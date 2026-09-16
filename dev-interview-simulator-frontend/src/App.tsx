@@ -1,27 +1,86 @@
 import { useState } from 'react';
+import type {
+  StartSimulationRequest,
+  SimulationResponse,
+  SimulationSummaryResponse,
+} from './types';
+import { simulationApi } from './api/simulationApi';
+import { SetupScreen } from './components/SetupScreen';
+import { QuizScreen } from './components/QuizScreen';
+import { ResultScreen } from './components/ResultScreen';
+
+type ScreenState = 'SETUP' | 'QUIZ' | 'RESULT';
 
 export default function App() {
-  const [count, setCount] = useState(0);
+  const [screen, setScreen] = useState<ScreenState>('SETUP');
+  const [simulation, setSimulation] = useState<SimulationResponse | null>(null);
+  const [summary, setSummary] = useState<SimulationSummaryResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleStartSimulation = async (request: StartSimulationRequest) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await simulationApi.startSimulation(request);
+      setSimulation(data);
+      setScreen('QUIZ');
+    } catch (err) {
+      console.error(err);
+      setError('Impossible de démarrer la simulation. Vérifie que le backend est lancé.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFinishQuiz = async () => {
+    if (!simulation) return;
+    setLoading(true);
+    try {
+      const data = await simulationApi.completeSimulation(simulation.id);
+      setSummary(data);
+      setScreen('RESULT');
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRestart = () => {
+    setSimulation(null);
+    setSummary(null);
+    setScreen('SETUP');
+  };
 
   return (
-    <main className="min-h-screen bg-slate-900 text-slate-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-md md:max-w-xl lg:max-w-2xl bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 shadow-xl text-center space-y-6">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-emerald-400">
+    <div className="min-h-screen bg-gray-100 py-10 px-4">
+      <header className="max-w-3xl mx-auto mb-8 text-center">
+        <h1 className="text-3xl font-black text-gray-900 tracking-tight">
           Dev Interview Simulator
         </h1>
-        <p className="text-sm sm:text-base text-slate-300">
-          Environnement Frontend (React 19 + TypeScript + Vite + Tailwind CSS 4) validé.
+        <p className="text-sm text-gray-500 mt-1">
+          Prépare tes entretiens techniques en conditions réelles
         </p>
-        
-        <div className="pt-2">
-          <button
-            onClick={() => setCount((c) => c + 1)}
-            className="w-full sm:w-auto px-6 py-3 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-slate-950 font-semibold rounded-lg transition-colors cursor-pointer"
-          >
-            Compteur de test : {count}
-          </button>
+      </header>
+
+      {error && (
+        <div className="max-w-2xl mx-auto mb-6 p-4 bg-red-100 border border-red-300 text-red-800 rounded-lg text-sm text-center">
+          {error}
         </div>
-      </div>
-    </main>
+      )}
+
+      {screen === 'SETUP' && (
+        <SetupScreen onStart={handleStartSimulation} loading={loading} />
+      )}
+
+      {screen === 'QUIZ' && simulation && (
+        <QuizScreen simulation={simulation} onFinish={handleFinishQuiz} />
+      )}
+
+      {screen === 'RESULT' && summary && (
+        <ResultScreen summary={summary} onRestart={handleRestart} />
+      )}
+    </div>
   );
 }

@@ -1,5 +1,5 @@
 export type ChallengeType = 'SITUATIONAL_QCM' | 'CODE_REVIEW' | 'ARCHITECTURE';
-export type DifficultyLevel = 'JUNIOR' | 'INTERMEDIATE' | 'SENIOR';
+export type DifficultyLevel = 'JUNIOR' | 'INTERMEDIATE' | 'ADVANCED';
 export type SimulationStatus = 'IN_PROGRESS' | 'COMPLETED' | 'ABANDONED';
 
 export interface Category {

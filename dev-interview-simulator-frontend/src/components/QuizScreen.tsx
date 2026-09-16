@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { SimulationResponse, SubmitAnswerResponse } from '../types';
 import { simulationApi } from '../api/simulationApi';
 
@@ -12,22 +12,40 @@ export const QuizScreen = ({ simulation, onFinish }: Props) => {
   const [selectedOptionId, setSelectedOptionId] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<SubmitAnswerResponse | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [secondsElapsed, setSecondsElapsed] = useState(0);
 
+  const startTimeRef = useRef<number>(Date.now());
   const currentChallenge = simulation.challenges[currentIndex];
 
+  // Réinitialiser le timer à chaque nouvelle question
+  useEffect(() => {
+    startTimeRef.current = Date.now();
+    setSecondsElapsed(0);
+
+    const timer = setInterval(() => {
+      setSecondsElapsed((prev) => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [currentIndex]);
+
   const handleSelectOption = (optionId: number) => {
-    if (feedback) return; // Empêche le changement après validation
+    if (feedback) return;
     setSelectedOptionId(optionId);
   };
 
   const handleSubmitAnswer = async () => {
     if (!selectedOptionId || !currentChallenge) return;
 
+    // Calcul du temps exact écoulé en millisecondes
+    const responseTimeMs = Date.now() - startTimeRef.current;
+
     setSubmitting(true);
     try {
       const res = await simulationApi.submitAnswer(simulation.id, {
         simulationChallengeId: currentChallenge.simulationChallengeId,
         selectedOptionId,
+        responseTimeMs,
       });
       setFeedback(res);
     } catch (err) {
@@ -47,15 +65,26 @@ export const QuizScreen = ({ simulation, onFinish }: Props) => {
     }
   };
 
+  const formatTime = (totalSeconds: number) => {
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
   return (
     <div className="max-w-3xl mx-auto p-6 bg-white rounded-xl shadow-md my-10">
       <div className="flex justify-between items-center mb-6 pb-4 border-b">
         <span className="text-sm font-semibold text-gray-500">
           Question {currentIndex + 1} / {simulation.challenges.length}
         </span>
-        <span className="text-sm font-bold text-blue-600">
-          Score : {feedback ? feedback.totalSimulationScore : simulation.totalScore} pts
-        </span>
+        <div className="flex items-center gap-4">
+          <span className="text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
+            ⏱️ {formatTime(secondsElapsed)}
+          </span>
+          <span className="text-sm font-bold text-blue-600">
+            Score : {feedback ? feedback.totalSimulationScore : simulation.totalScore} pts
+          </span>
+        </div>
       </div>
 
       <h2 className="text-xl font-bold mb-3 text-gray-800">{currentChallenge.title}</h2>

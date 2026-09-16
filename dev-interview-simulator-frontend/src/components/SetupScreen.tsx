@@ -52,7 +52,7 @@ export const SetupScreen = ({ onStart, loading }: Props) => {
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Niveau de difficulté</label>
           <div className="flex gap-4">
-            {(['JUNIOR', 'INTERMEDIATE', 'SENIOR'] as DifficultyLevel[]).map((level) => (
+            {(['JUNIOR', 'INTERMEDIATE', 'ADVANCED'] as DifficultyLevel[]).map((level) => (
               <button
                 key={level}
                 type="button"
