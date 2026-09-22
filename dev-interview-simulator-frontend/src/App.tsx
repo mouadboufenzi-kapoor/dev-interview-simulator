@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type {
   StartSimulationRequest,
   SimulationResponse,
-  SimulationSummaryResponse,
+  SimulationResultDTO,
 } from './types';
 import { simulationApi } from './api/simulationApi';
 import { SetupScreen } from './components/SetupScreen';
@@ -14,7 +14,7 @@ type ScreenState = 'SETUP' | 'QUIZ' | 'RESULT';
 export default function App() {
   const [screen, setScreen] = useState<ScreenState>('SETUP');
   const [simulation, setSimulation] = useState<SimulationResponse | null>(null);
-  const [summary, setSummary] = useState<SimulationSummaryResponse | null>(null);
+  const [summary, setSummary] = useState<SimulationResultDTO | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,7 +37,7 @@ export default function App() {
     if (!simulation) return;
     setLoading(true);
     try {
-      const data = await simulationApi.completeSimulation(simulation.id);
+      const data = await simulationApi.getSimulationResult(simulation.id);
       setSummary(data);
       setScreen('RESULT');
     } catch (err) {

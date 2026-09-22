@@ -6,7 +6,7 @@ import type {
   StartSimulationRequest,
   SubmitAnswerRequest,
   SubmitAnswerResponse,
-  SimulationSummaryResponse,
+  SimulationResultDTO,
 } from '../types';
 
 export const simulationApi = {
@@ -40,11 +40,8 @@ export const simulationApi = {
     return response.data;
   },
 
-  // Terminer la simulation
-  completeSimulation: async (simulationId: number): Promise<SimulationSummaryResponse> => {
-    const response = await apiClient.post<SimulationSummaryResponse>(
-      `/simulations/${simulationId}/complete`
-    );
-    return response.data;
+    getSimulationResult: async (simulationId: number): Promise<SimulationResultDTO> => {
+        const response = await apiClient.get<SimulationResultDTO>(`/simulations/${simulationId}/result`);
+        return response.data;
   },
 };

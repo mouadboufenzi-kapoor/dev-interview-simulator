@@ -71,3 +71,27 @@ export interface SimulationSummaryResponse {
   startedAt: string;
   completedAt: string;
 }
+
+export interface QuestionSummary {
+  challengeId: number;
+  title: string;
+  context: string;
+  question: string;
+  userSelectedOptionContent: string;
+  correctOptionContent: string;
+  isCorrect: boolean;
+  explanation: string;
+  pointsEarned: number;
+  timeSpentMs: number;
+}
+
+export interface SimulationResultDTO {
+  simulationId: number;
+  totalScore: number;
+  maxPossibleScore: number;
+  successPercentage: number;
+  totalTimeSpentSeconds: number;
+  totalQuestions: number;
+  correctAnswersCount: number;
+  questions: QuestionSummary[];
+}
