@@ -38,4 +38,9 @@ public class SimulationController {
             @Valid @RequestBody SubmitAnswerRequest request) {
         return ResponseEntity.ok(simulationService.submitAnswer(id, request));
     }
+
+    @GetMapping("/{id}/result")
+    public ResponseEntity<SimulationResultDTO> getSimulationResult(@PathVariable @Positive Long id) {
+        return ResponseEntity.ok(simulationService.getSimulationResult(id));
+    }
 }

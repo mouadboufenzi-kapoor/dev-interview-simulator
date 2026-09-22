@@ -6,6 +6,7 @@ import com.interview.simulator.challenge.repository.ChallengeOptionRepository;
 import com.interview.simulator.challenge.repository.ChallengeRepository;
 import com.interview.simulator.simulation.dto.SimulationChallengeResponse;
 import com.interview.simulator.simulation.dto.SimulationResponse;
+import com.interview.simulator.simulation.dto.SimulationResultDTO;
 import com.interview.simulator.simulation.dto.SimulationSummaryResponse;
 import com.interview.simulator.simulation.dto.StartSimulationRequest;
 import com.interview.simulator.simulation.dto.SubmitAnswerRequest;
@@ -229,6 +230,77 @@ public class SimulationService {
                 correctAnswers,
                 simulation.getStartedAt(),
                 simulation.getCompletedAt()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public SimulationResultDTO getSimulationResult(Long simulationId) {
+        Simulation simulation = simulationRepository.findById(simulationId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Simulation introuvable avec l'ID: " + simulationId));
+
+        List<SimulationAnswer> answers = simulation.getSimulationChallenges().stream()
+                .map(SimulationChallenge::getAnswer)
+                .filter(answer -> answer != null)
+                .toList();
+
+        List<SimulationResultDTO.QuestionSummaryDTO> questionSummaries = answers.stream()
+                .map(answer -> {
+                    Challenge challenge = answer.getSimulationChallenge().getChallenge();
+
+                    ChallengeOption correctOption = challenge.getOptions().stream()
+                            .filter(ChallengeOption::isCorrect)
+                            .findFirst()
+                            .orElse(null);
+
+                    return new SimulationResultDTO.QuestionSummaryDTO(
+                            challenge.getId(),
+                            challenge.getTitle(),
+                            challenge.getContext(),
+                            challenge.getQuestion(),
+                            answer.getSelectedOption() != null
+                                    ? answer.getSelectedOption().getContent()
+                                    : "Pas de réponse",
+                            correctOption != null ? correctOption.getContent() : "Inconnue",
+                            answer.isCorrect(),
+                            challenge.getExplanation(),
+                            answer.getScore(),
+                            answer.getResponseTimeMs()
+                    );
+                })
+                .toList();
+
+        int totalScore = answers.stream()
+                .mapToInt(answer -> answer.getScore() != null ? answer.getScore() : 0)
+                .sum();
+
+        int maxScore = answers.stream()
+                .mapToInt(answer -> answer.getSimulationChallenge().getChallenge().getPoints())
+                .sum();
+
+        int correctAnswersCount = (int) answers.stream()
+                .filter(SimulationAnswer::isCorrect)
+                .count();
+
+        long totalTimeSpentSeconds = answers.stream()
+                .mapToLong(answer -> answer.getResponseTimeMs() != null
+                        ? answer.getResponseTimeMs()
+                        : 0L)
+                .sum() / 1000;
+
+        double successPercentage = maxScore > 0
+                ? ((double) totalScore / maxScore) * 100
+                : 0.0;
+
+        return new SimulationResultDTO(
+                simulation.getId(),
+                totalScore,
+                maxScore,
+                Math.round(successPercentage * 100.0) / 100.0,
+                totalTimeSpentSeconds,
+                answers.size(),
+                correctAnswersCount,
+                questionSummaries
         );
     }
 }
