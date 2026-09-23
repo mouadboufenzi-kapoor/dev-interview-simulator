@@ -21,6 +21,10 @@ spring:
   sql:
     init:
       mode: always
+      data-locations:
+        - classpath:db/migration/V2__add_code_review_support.sql
+        - classpath:data.sql
+        - classpath:db/seed/V2_1__code_review_seeds.sql
 
 server:
   port: 8080

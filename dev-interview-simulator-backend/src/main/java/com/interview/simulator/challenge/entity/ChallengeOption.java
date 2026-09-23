@@ -23,6 +23,13 @@ public class ChallengeOption {
     @Column(name = "is_correct", nullable = false)
     private boolean isCorrect;
 
+    @Enumerated(EnumType.STRING)
+    @Column(length = 30)
+    private OptionSeverity severity;
+
+    @Column(columnDefinition = "TEXT")
+    private String explanation;
+
     @Column(name = "display_order", nullable = false)
     private int displayOrder;
 
@@ -56,6 +63,10 @@ public class ChallengeOption {
     public void setCorrect(boolean correct) {
         isCorrect = correct;
     }
+    public OptionSeverity getSeverity() { return severity; }
+    public void setSeverity(OptionSeverity severity) { this.severity = severity; }
+    public String getExplanation() { return explanation; }
+    public void setExplanation(String explanation) { this.explanation = explanation; }
 
     public int getDisplayOrder() {
         return displayOrder;

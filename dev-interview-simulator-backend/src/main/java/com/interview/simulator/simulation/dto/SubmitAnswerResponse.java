@@ -6,5 +6,6 @@ public record SubmitAnswerResponse(
     Integer scoreAwarded,
     Integer totalSimulationScore,
     String explanation,
-    Long correctOptionId
+    Long correctOptionId,
+    java.util.List<ChallengeCorrectionDTO> corrections
 ) {}

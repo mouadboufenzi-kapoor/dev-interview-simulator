@@ -2,9 +2,11 @@ package com.interview.simulator.simulation.service;
 
 import com.interview.simulator.challenge.entity.Challenge;
 import com.interview.simulator.challenge.entity.ChallengeOption;
+import com.interview.simulator.challenge.entity.SelectionType;
 import com.interview.simulator.challenge.repository.ChallengeOptionRepository;
 import com.interview.simulator.challenge.repository.ChallengeRepository;
 import com.interview.simulator.simulation.dto.SimulationChallengeResponse;
+import com.interview.simulator.simulation.dto.ChallengeCorrectionDTO;
 import com.interview.simulator.simulation.dto.SimulationResponse;
 import com.interview.simulator.simulation.dto.SimulationResultDTO;
 import com.interview.simulator.simulation.dto.SimulationSummaryResponse;
@@ -29,6 +31,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Service
 public class SimulationService {
@@ -38,18 +42,21 @@ public class SimulationService {
     private final UserRepository userRepository;
     private final SimulationChallengeRepository simulationChallengeRepository;
     private final ChallengeOptionRepository challengeOptionRepository;
+    private final ScoringService scoringService;
 
     public SimulationService(
             SimulationRepository simulationRepository,
             ChallengeRepository challengeRepository,
             UserRepository userRepository,
             SimulationChallengeRepository simulationChallengeRepository,
-            ChallengeOptionRepository challengeOptionRepository) {
+            ChallengeOptionRepository challengeOptionRepository,
+            ScoringService scoringService) {
         this.simulationRepository = simulationRepository;
         this.challengeRepository = challengeRepository;
         this.userRepository = userRepository;
         this.simulationChallengeRepository = simulationChallengeRepository;
         this.challengeOptionRepository = challengeOptionRepository;
+        this.scoringService = scoringService;
     }
 
     @Transactional
@@ -109,6 +116,10 @@ public class SimulationService {
                         sc.getChallenge().getTitle(),
                         sc.getChallenge().getContext(),
                         sc.getChallenge().getQuestion(),
+                        sc.getChallenge().getType(),
+                        sc.getChallenge().getSelectionType(),
+                        sc.getChallenge().getCodeSnippet(),
+                        sc.getChallenge().getCodeLanguage(),
                         sc.getChallenge().getOptions().stream()
                                 .map(o -> new SimulationChallengeResponse.OptionResponse(
                                         o.getId(),
@@ -159,22 +170,35 @@ public class SimulationService {
             );
         }
 
-        ChallengeOption selectedOption = challengeOptionRepository.findById(request.selectedOptionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Option sélectionnée non trouvée."));
-
-        if (!simChallenge.getChallenge().getId().equals(selectedOption.getChallenge().getId())) {
-            throw new ApiException(
-                    HttpStatus.BAD_REQUEST,
-                    "L'option sélectionnée n'appartient pas à cette question."
-            );
+        if (simChallenge.getChallenge().getSelectionType() == SelectionType.SINGLE_CHOICE
+                && request.selectedOptionIds().size() != 1) {
+            throw new ApiException(HttpStatus.BAD_REQUEST,
+                    "Une seule option doit être sélectionnée pour cette question.");
         }
 
-        boolean isCorrect = selectedOption.isCorrect();
-        int scoreAwarded = isCorrect ? simChallenge.getChallenge().getPoints() : 0;
+        Set<Long> selectedOptionIds = new LinkedHashSet<>(request.selectedOptionIds());
+        List<ChallengeOption> selectedOptions = selectedOptionIds.stream()
+                .map(optionId -> challengeOptionRepository.findById(optionId)
+                        .orElseThrow(() -> new ResourceNotFoundException(
+                                "Option sélectionnée non trouvée: " + optionId)))
+                .toList();
+
+        if (selectedOptions.stream().anyMatch(option ->
+                !simChallenge.getChallenge().getId().equals(option.getChallenge().getId()))) {
+            throw new ApiException(HttpStatus.BAD_REQUEST,
+                    "Une option sélectionnée n'appartient pas à cette question.");
+        }
+
+        Set<ChallengeOption> selectedOptionSet = new LinkedHashSet<>(selectedOptions);
+        boolean isCorrect = selectedOptionSet.stream().allMatch(ChallengeOption::isCorrect)
+                && selectedOptionSet.size() == simChallenge.getChallenge().getOptions().stream()
+                .filter(ChallengeOption::isCorrect)
+                .count();
+        int scoreAwarded = scoringService.calculateScore(simChallenge.getChallenge(), selectedOptionSet);
 
         SimulationAnswer answer = new SimulationAnswer();
         answer.setSimulationChallenge(simChallenge);
-        answer.setSelectedOption(selectedOption);
+        answer.setSelectedOptions(selectedOptionSet);
         answer.setCorrect(isCorrect);
         answer.setScore(scoreAwarded);
         answer.setResponseTimeMs(request.responseTimeMs());
@@ -198,7 +222,10 @@ public class SimulationService {
                 scoreAwarded,
                 simulation.getTotalScore(),
                 simChallenge.getChallenge().getExplanation(),
-                correctOptionId
+                correctOptionId,
+                ChallengeCorrectionDTO.forOptions(
+                        simChallenge.getChallenge().getOptions(),
+                        selectedOptionIds)
         );
     }
 
@@ -258,9 +285,9 @@ public class SimulationService {
                             challenge.getTitle(),
                             challenge.getContext(),
                             challenge.getQuestion(),
-                            answer.getSelectedOption() != null
-                                    ? answer.getSelectedOption().getContent()
-                                    : "Pas de réponse",
+                            answer.getSelectedOptions().stream()
+                                    .map(ChallengeOption::getContent)
+                                    .collect(java.util.stream.Collectors.joining(", ")),
                             correctOption != null ? correctOption.getContent() : "Inconnue",
                             answer.isCorrect(),
                             challenge.getExplanation(),

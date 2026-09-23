@@ -1,5 +1,7 @@
 package com.interview.simulator.simulation.dto;
 
+import com.interview.simulator.challenge.entity.ChallengeType;
+import com.interview.simulator.challenge.entity.SelectionType;
 import java.util.List;
 
 public record SimulationChallengeResponse(
@@ -9,6 +11,10 @@ public record SimulationChallengeResponse(
     String title,
     String context,
     String question,
+    ChallengeType type,
+    SelectionType selectionType,
+    String codeSnippet,
+    String codeLanguage,
     List<OptionResponse> options
 ) {
     public record OptionResponse(
