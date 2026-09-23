@@ -1,4 +1,5 @@
 export type ChallengeType = 'SITUATIONAL_QCM' | 'CODE_REVIEW' | 'ARCHITECTURE';
+export type SelectionType = 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE';
 export type DifficultyLevel = 'JUNIOR' | 'INTERMEDIATE' | 'ADVANCED';
 export type SimulationStatus = 'IN_PROGRESS' | 'COMPLETED' | 'ABANDONED';
 
@@ -27,6 +28,10 @@ export interface SimulationChallengeResponse {
   title: string;
   context: string;
   question: string;
+  type: ChallengeType;
+  selectionType: SelectionType;
+  codeSnippet: string | null;
+  codeLanguage: string | null;
   options: OptionResponse[];
 }
 
@@ -49,8 +54,17 @@ export interface StartSimulationRequest {
 
 export interface SubmitAnswerRequest {
   simulationChallengeId: number;
-  selectedOptionId: number;
+  selectedOptionIds: number[];
   responseTimeMs?: number;
+}
+
+export interface ChallengeCorrection {
+  optionId: number;
+  content: string;
+  isCorrect: boolean;
+  wasSelected: boolean;
+  severity: string | null;
+  explanation: string | null;
 }
 
 export interface SubmitAnswerResponse {
@@ -59,7 +73,8 @@ export interface SubmitAnswerResponse {
   scoreAwarded: number;
   totalSimulationScore: number;
   explanation: string;
-  correctOptionId: number;
+  correctOptionId: number | null;
+  corrections: ChallengeCorrection[];
 }
 
 export interface SimulationSummaryResponse {

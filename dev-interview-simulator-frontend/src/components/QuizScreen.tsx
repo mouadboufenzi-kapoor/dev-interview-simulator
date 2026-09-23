@@ -9,7 +9,7 @@ interface Props {
 
 export const QuizScreen = ({ simulation, onFinish }: Props) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedOptionId, setSelectedOptionId] = useState<number | null>(null);
+  const [selectedOptionIds, setSelectedOptionIds] = useState<number[]>([]);
   const [feedback, setFeedback] = useState<SubmitAnswerResponse | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [secondsElapsed, setSecondsElapsed] = useState(0);
@@ -31,11 +31,19 @@ export const QuizScreen = ({ simulation, onFinish }: Props) => {
 
   const handleSelectOption = (optionId: number) => {
     if (feedback) return;
-    setSelectedOptionId(optionId);
+    if (currentChallenge.selectionType === 'MULTIPLE_CHOICE') {
+      setSelectedOptionIds((currentIds) =>
+        currentIds.includes(optionId)
+          ? currentIds.filter((id) => id !== optionId)
+          : [...currentIds, optionId]
+      );
+    } else {
+      setSelectedOptionIds([optionId]);
+    }
   };
 
   const handleSubmitAnswer = async () => {
-    if (!selectedOptionId || !currentChallenge) return;
+    if (selectedOptionIds.length === 0 || !currentChallenge) return;
 
     // Calcul du temps exact écoulé en millisecondes
     const responseTimeMs = Date.now() - startTimeRef.current;
@@ -44,7 +52,7 @@ export const QuizScreen = ({ simulation, onFinish }: Props) => {
     try {
       const res = await simulationApi.submitAnswer(simulation.id, {
         simulationChallengeId: currentChallenge.simulationChallengeId,
-        selectedOptionId,
+        selectedOptionIds,
         responseTimeMs,
       });
       setFeedback(res);
@@ -57,7 +65,7 @@ export const QuizScreen = ({ simulation, onFinish }: Props) => {
 
   const handleNext = () => {
     setFeedback(null);
-    setSelectedOptionId(null);
+    setSelectedOptionIds([]);
     if (currentIndex + 1 < simulation.challenges.length) {
       setCurrentIndex((prev) => prev + 1);
     } else {
@@ -95,17 +103,28 @@ export const QuizScreen = ({ simulation, onFinish }: Props) => {
       )}
       <p className="text-base text-gray-700 mb-6 font-medium">{currentChallenge.question}</p>
 
+      {currentChallenge.codeSnippet && (
+        <pre className="mb-6 overflow-x-auto rounded-lg bg-gray-900 p-4 text-sm text-gray-100">
+          <code>{currentChallenge.codeSnippet}</code>
+        </pre>
+      )}
+
       <div className="space-y-3 mb-6">
         {currentChallenge.options.map((option) => {
           let style = 'bg-gray-50 border-gray-200 text-gray-800 hover:bg-gray-100';
+          const correction = feedback?.corrections.find(
+            (item) => item.optionId === option.id
+          );
 
           if (feedback) {
-            if (option.id === feedback.correctOptionId) {
+            if (correction?.isCorrect && correction.wasSelected) {
               style = 'bg-green-100 border-green-500 text-green-900 font-semibold';
-            } else if (option.id === selectedOptionId && !feedback.isCorrect) {
+            } else if (correction?.isCorrect) {
+              style = 'bg-green-50 border-green-300 text-green-800';
+            } else if (correction?.wasSelected) {
               style = 'bg-red-100 border-red-500 text-red-900';
             }
-          } else if (selectedOptionId === option.id) {
+          } else if (selectedOptionIds.includes(option.id)) {
             style = 'bg-blue-50 border-blue-500 text-blue-900 font-semibold';
           }
 
@@ -127,6 +146,17 @@ export const QuizScreen = ({ simulation, onFinish }: Props) => {
             {feedback.isCorrect ? '✅ Bonne réponse !' : '❌ Mauvaise réponse'}
           </p>
           <p className="text-sm text-blue-800">{feedback.explanation}</p>
+          {feedback.corrections.some((correction) => correction.explanation) && (
+            <div className="mt-3 space-y-2 border-t border-blue-200 pt-3">
+              {feedback.corrections
+                .filter((correction) => correction.explanation)
+                .map((correction) => (
+                  <p key={correction.optionId} className="text-xs text-blue-900">
+                    <strong>{correction.content} :</strong> {correction.explanation}
+                  </p>
+                ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -134,7 +164,7 @@ export const QuizScreen = ({ simulation, onFinish }: Props) => {
         {!feedback ? (
           <button
             onClick={handleSubmitAnswer}
-            disabled={!selectedOptionId || submitting}
+            disabled={selectedOptionIds.length === 0 || submitting}
             className="bg-blue-600 text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50"
           >
             {submitting ? 'Validation...' : 'Valider'}
