@@ -1,4 +1,8 @@
-export type ChallengeType = 'SITUATIONAL_QCM' | 'CODE_REVIEW' | 'ARCHITECTURE';
+export type ChallengeType =
+  | 'SITUATIONAL_QCM'
+  | 'PROBLEM_SOLVING'
+  | 'CODE_REVIEW'
+  | 'ARCHITECTURE';
 export type SelectionType = 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE';
 export type DifficultyLevel = 'JUNIOR' | 'INTERMEDIATE' | 'ADVANCED';
 export type SimulationStatus = 'IN_PROGRESS' | 'COMPLETED' | 'ABANDONED';
@@ -32,6 +36,12 @@ export interface SimulationChallengeResponse {
   selectionType: SelectionType;
   codeSnippet: string | null;
   codeLanguage: string | null;
+  scenarioTitle: string | null;
+  scenarioDescription: string | null;
+  stepOrder: number | null;
+  totalSteps: number | null;
+  revealedInformation: string | null;
+  tradeoff: string | null;
   options: OptionResponse[];
 }
 
@@ -50,6 +60,7 @@ export interface StartSimulationRequest {
   difficulty?: DifficultyLevel;
   categoryIds?: number[];
   skillIds?: number[];
+  questionCount?: number;
 }
 
 export interface SubmitAnswerRequest {
@@ -72,8 +83,10 @@ export interface SubmitAnswerResponse {
   isCorrect: boolean;
   scoreAwarded: number;
   totalSimulationScore: number;
-  explanation: string;
+  explanation: string | null;
   correctOptionId: number | null;
+  revealedInformation: string | null;
+  tradeoff: string | null;
   corrections: ChallengeCorrection[];
 }
 
@@ -92,12 +105,12 @@ export interface QuestionSummary {
   title: string;
   context: string;
   question: string;
-  userSelectedOptionContent: string;
-  correctOptionContent: string;
+  userSelectedOptionContent: string | null;
+  correctOptionContent: string | null;
   isCorrect: boolean;
-  explanation: string;
+  explanation: string | null;
   pointsEarned: number;
-  timeSpentMs: number;
+  timeSpentMs: number | null;
 }
 
 export interface SimulationResultDTO {

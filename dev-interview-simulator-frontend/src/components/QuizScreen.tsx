@@ -5,9 +5,10 @@ import { simulationApi } from '../api/simulationApi';
 interface Props {
   simulation: SimulationResponse;
   onFinish: () => void;
+  onError: (message: string) => void;
 }
 
-export const QuizScreen = ({ simulation, onFinish }: Props) => {
+export const QuizScreen = ({ simulation, onFinish, onError }: Props) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOptionIds, setSelectedOptionIds] = useState<number[]>([]);
   const [feedback, setFeedback] = useState<SubmitAnswerResponse | null>(null);
@@ -15,7 +16,7 @@ export const QuizScreen = ({ simulation, onFinish }: Props) => {
   const [secondsElapsed, setSecondsElapsed] = useState(0);
 
   const startTimeRef = useRef<number>(Date.now());
-  const currentChallenge = simulation.challenges[currentIndex];
+  const currentChallenge = simulation.challenges?.[currentIndex];
 
   // Réinitialiser le timer à chaque nouvelle question
   useEffect(() => {
@@ -28,6 +29,16 @@ export const QuizScreen = ({ simulation, onFinish }: Props) => {
 
     return () => clearInterval(timer);
   }, [currentIndex]);
+
+  if (!currentChallenge) {
+    return (
+      <div className="max-w-3xl mx-auto p-6 bg-white rounded-xl shadow-md my-10">
+        <p className="text-red-700">
+          Impossible de charger la question courante.
+        </p>
+      </div>
+    );
+  }
 
   const handleSelectOption = (optionId: number) => {
     if (feedback) return;
@@ -58,6 +69,7 @@ export const QuizScreen = ({ simulation, onFinish }: Props) => {
       setFeedback(res);
     } catch (err) {
       console.error(err);
+      onError('Impossible de valider la réponse. Vérifie la connexion avec le backend.');
     } finally {
       setSubmitting(false);
     }
@@ -83,7 +95,9 @@ export const QuizScreen = ({ simulation, onFinish }: Props) => {
     <div className="max-w-3xl mx-auto p-6 bg-white rounded-xl shadow-md my-10">
       <div className="flex justify-between items-center mb-6 pb-4 border-b">
         <span className="text-sm font-semibold text-gray-500">
-          Question {currentIndex + 1} / {simulation.challenges.length}
+          {currentChallenge.type === 'ARCHITECTURE'
+            ? `Étape ${currentChallenge.stepOrder ?? currentIndex + 1} / ${currentChallenge.totalSteps ?? simulation.challenges.length}`
+            : `Question ${currentIndex + 1} / ${simulation.challenges.length}`}
         </span>
         <div className="flex items-center gap-4">
           <span className="text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
@@ -95,6 +109,15 @@ export const QuizScreen = ({ simulation, onFinish }: Props) => {
         </div>
       </div>
 
+      {currentChallenge.type === 'ARCHITECTURE' && (
+        <div className="mb-5 rounded-lg border border-indigo-200 bg-indigo-50 p-4">
+          <p className="font-bold text-indigo-900">{currentChallenge.scenarioTitle}</p>
+          {currentChallenge.scenarioDescription && (
+            <p className="mt-1 text-sm text-indigo-800">{currentChallenge.scenarioDescription}</p>
+          )}
+        </div>
+      )}
+
       <h2 className="text-xl font-bold mb-3 text-gray-800">{currentChallenge.title}</h2>
       {currentChallenge.context && (
         <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg mb-4 italic">
@@ -105,8 +128,19 @@ export const QuizScreen = ({ simulation, onFinish }: Props) => {
 
       {currentChallenge.codeSnippet && (
         <pre className="mb-6 overflow-x-auto rounded-lg bg-gray-900 p-4 text-sm text-gray-100">
+          {currentChallenge.codeLanguage && (
+            <div className="mb-2 text-xs uppercase tracking-wide text-gray-400">
+              {currentChallenge.codeLanguage}
+            </div>
+          )}
           <code>{currentChallenge.codeSnippet}</code>
         </pre>
+      )}
+
+      {currentChallenge.selectionType === 'MULTIPLE_CHOICE' && !feedback && (
+        <p className="mb-4 text-sm text-gray-600">
+          Sélectionne toutes les issues que tu identifies dans le code.
+        </p>
       )}
 
       <div className="space-y-3 mb-6">
@@ -146,13 +180,33 @@ export const QuizScreen = ({ simulation, onFinish }: Props) => {
             {feedback.isCorrect ? '✅ Bonne réponse !' : '❌ Mauvaise réponse'}
           </p>
           <p className="text-sm text-blue-800">{feedback.explanation}</p>
+          {feedback.revealedInformation && (
+            <div className="mt-3 border-t border-blue-200 pt-3">
+              <p className="text-xs font-bold uppercase tracking-wide text-blue-900">
+                Information révélée
+              </p>
+              <p className="mt-1 text-sm text-blue-800">{feedback.revealedInformation}</p>
+            </div>
+          )}
+          {feedback.tradeoff && (
+            <div className="mt-3 border-t border-blue-200 pt-3">
+              <p className="text-xs font-bold uppercase tracking-wide text-blue-900">
+                Trade-off
+              </p>
+              <p className="mt-1 text-sm text-blue-800">{feedback.tradeoff}</p>
+            </div>
+          )}
           {feedback.corrections.some((correction) => correction.explanation) && (
             <div className="mt-3 space-y-2 border-t border-blue-200 pt-3">
               {feedback.corrections
                 .filter((correction) => correction.explanation)
                 .map((correction) => (
                   <p key={correction.optionId} className="text-xs text-blue-900">
-                    <strong>{correction.content} :</strong> {correction.explanation}
+                    <strong>
+                      {correction.severity ? `[${correction.severity}] ` : ''}
+                      {correction.content} :
+                    </strong>{' '}
+                    {correction.explanation}
                   </p>
                 ))}
             </div>

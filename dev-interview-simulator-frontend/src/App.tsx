@@ -23,6 +23,11 @@ export default function App() {
     setError(null);
     try {
       const data = await simulationApi.startSimulation(request);
+
+      if (!Array.isArray(data.challenges) || data.challenges.length === 0) {
+        throw new Error('La simulation reçue ne contient aucune question.');
+      }
+
       setSimulation(data);
       setScreen('QUIZ');
     } catch (err) {
@@ -42,6 +47,7 @@ export default function App() {
       setScreen('RESULT');
     } catch (err) {
       console.error(err);
+      setError('Impossible de charger le bilan de la simulation.');
     } finally {
       setLoading(false);
     }
@@ -75,7 +81,11 @@ export default function App() {
       )}
 
       {screen === 'QUIZ' && simulation && (
-        <QuizScreen simulation={simulation} onFinish={handleFinishQuiz} />
+        <QuizScreen
+          simulation={simulation}
+          onFinish={handleFinishQuiz}
+          onError={setError}
+        />
       )}
 
       {screen === 'RESULT' && summary && (

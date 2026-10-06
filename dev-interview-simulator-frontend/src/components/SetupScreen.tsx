@@ -12,6 +12,7 @@ export const SetupScreen = ({ onStart, loading }: Props) => {
   const [selectedMode, setSelectedMode] = useState<ChallengeType>('SITUATIONAL_QCM');
   const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyLevel>('JUNIOR');
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
+  const [questionCount, setQuestionCount] = useState(5);
 
   useEffect(() => {
     simulationApi.getCategories().then(setCategories).catch(console.error);
@@ -29,6 +30,7 @@ export const SetupScreen = ({ onStart, loading }: Props) => {
       mode: selectedMode,
       difficulty: selectedDifficulty,
       categoryIds: selectedCategoryIds.length > 0 ? selectedCategoryIds : undefined,
+      questionCount: selectedMode === 'ARCHITECTURE' ? questionCount : undefined,
     });
   };
 
@@ -68,6 +70,25 @@ export const SetupScreen = ({ onStart, loading }: Props) => {
             ))}
           </div>
         </div>
+
+        {selectedMode === 'ARCHITECTURE' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Nombre d'étapes
+            </label>
+            <input
+              type="number"
+              min={1}
+              max={5}
+              value={questionCount}
+              onChange={(e) => setQuestionCount(Number(e.target.value))}
+              className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Le scénario Food Delivery contient actuellement 5 étapes.
+            </p>
+          </div>
+        )}
 
         {categories.length > 0 && (
           <div>

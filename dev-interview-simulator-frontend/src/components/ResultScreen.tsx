@@ -122,7 +122,14 @@ export const ResultScreen = ({ summary, onRestart }: Props) => {
 
                     <div className="bg-blue-50 border border-blue-200 p-3 rounded text-blue-900 text-xs">
                       <span className="font-bold block mb-1">💡 Explication :</span>
-                      {q.explanation}
+                      {q.explanation || 'Aucune explication disponible.'}
+                    </div>
+
+                    <div className="flex gap-4 text-xs text-gray-500">
+                      <span>Points : {q.pointsEarned}</span>
+                      <span>
+                        Temps : {q.timeSpentMs != null ? `${q.timeSpentMs} ms` : 'Non renseigné'}
+                      </span>
                     </div>
                   </div>
                 )}
