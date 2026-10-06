@@ -23,8 +23,10 @@ spring:
       mode: always
       data-locations:
         - classpath:db/migration/V2__add_code_review_support.sql
+        - classpath:db/migration/V3__add_architecture_support.sql
         - classpath:data.sql
         - classpath:db/seed/V2_1__code_review_seeds.sql
+        - classpath:db/seed/V3_1__architecture_food_delivery_seed.sql
 
 server:
   port: 8080

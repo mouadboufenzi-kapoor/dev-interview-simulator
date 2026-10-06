@@ -11,5 +11,6 @@ public record StartSimulationRequest(
     @NotNull ChallengeType mode,
     DifficultyLevel difficulty,
     Set<@Positive Long> categoryIds,
-    Set<@Positive Long> skillIds
+    Set<@Positive Long> skillIds,
+    @Positive Integer questionCount
 ) {}

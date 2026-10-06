@@ -15,6 +15,12 @@ public record SimulationChallengeResponse(
     SelectionType selectionType,
     String codeSnippet,
     String codeLanguage,
+    String scenarioTitle,
+    String scenarioDescription,
+    Integer stepOrder,
+    Integer totalSteps,
+    String revealedInformation,
+    String tradeoff,
     List<OptionResponse> options
 ) {
     public record OptionResponse(

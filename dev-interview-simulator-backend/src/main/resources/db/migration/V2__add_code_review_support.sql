@@ -12,7 +12,14 @@ ALTER TABLE challenges
 
 ALTER TABLE challenges
     ADD CONSTRAINT challenges_type_check
-    CHECK (type IN ('SITUATIONAL_QCM', 'PROBLEM_SOLVING', 'CODE_REVIEW'));
+    CHECK (type IN ('SITUATIONAL_QCM', 'PROBLEM_SOLVING', 'CODE_REVIEW', 'ARCHITECTURE'));
+
+ALTER TABLE simulations
+    DROP CONSTRAINT IF EXISTS simulations_mode_check;
+
+ALTER TABLE simulations
+    ADD CONSTRAINT simulations_mode_check
+    CHECK (mode IN ('SITUATIONAL_QCM', 'PROBLEM_SOLVING', 'CODE_REVIEW', 'ARCHITECTURE'));
 
 UPDATE challenges
 SET selection_type = 'SINGLE_CHOICE'

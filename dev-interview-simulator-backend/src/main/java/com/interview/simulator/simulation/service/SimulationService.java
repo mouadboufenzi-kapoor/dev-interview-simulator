@@ -2,9 +2,12 @@ package com.interview.simulator.simulation.service;
 
 import com.interview.simulator.challenge.entity.Challenge;
 import com.interview.simulator.challenge.entity.ChallengeOption;
+import com.interview.simulator.challenge.entity.ChallengeType;
+import com.interview.simulator.challenge.entity.InterviewScenario;
 import com.interview.simulator.challenge.entity.SelectionType;
 import com.interview.simulator.challenge.repository.ChallengeOptionRepository;
 import com.interview.simulator.challenge.repository.ChallengeRepository;
+import com.interview.simulator.challenge.repository.InterviewScenarioRepository;
 import com.interview.simulator.simulation.dto.SimulationChallengeResponse;
 import com.interview.simulator.simulation.dto.ChallengeCorrectionDTO;
 import com.interview.simulator.simulation.dto.SimulationResponse;
@@ -42,6 +45,7 @@ public class SimulationService {
     private final UserRepository userRepository;
     private final SimulationChallengeRepository simulationChallengeRepository;
     private final ChallengeOptionRepository challengeOptionRepository;
+    private final InterviewScenarioRepository interviewScenarioRepository;
     private final ScoringService scoringService;
 
     public SimulationService(
@@ -50,12 +54,14 @@ public class SimulationService {
             UserRepository userRepository,
             SimulationChallengeRepository simulationChallengeRepository,
             ChallengeOptionRepository challengeOptionRepository,
+            InterviewScenarioRepository interviewScenarioRepository,
             ScoringService scoringService) {
         this.simulationRepository = simulationRepository;
         this.challengeRepository = challengeRepository;
         this.userRepository = userRepository;
         this.simulationChallengeRepository = simulationChallengeRepository;
         this.challengeOptionRepository = challengeOptionRepository;
+        this.interviewScenarioRepository = interviewScenarioRepository;
         this.scoringService = scoringService;
     }
 
@@ -65,12 +71,24 @@ public class SimulationService {
         User user = userRepository.findByUsername("default_user")
                 .orElseGet(() -> userRepository.save(new User("default_user", "dev@example.com")));
 
-        // 2. Trouver les challenges correspondants aux filtres
-        List<Challenge> matchingChallenges = challengeRepository.findMatchingChallenges(
-                request.mode(),
-                request.categoryIds(),
-                request.skillIds()
-        );
+        // 2. Trouver les challenges correspondants au mode
+        List<Challenge> matchingChallenges;
+        InterviewScenario scenario = null;
+
+        if (request.mode() == ChallengeType.ARCHITECTURE) {
+            scenario = interviewScenarioRepository.findFirstByModeAndActiveTrue(request.mode())
+                    .orElseThrow(() -> new ApiException(
+                            HttpStatus.UNPROCESSABLE_ENTITY,
+                            "Aucun scénario Architecture disponible."
+                    ));
+            matchingChallenges = challengeRepository.findScenarioChallenges(request.mode(), scenario);
+        } else {
+            matchingChallenges = challengeRepository.findMatchingChallenges(
+                    request.mode(),
+                    request.categoryIds(),
+                    request.skillIds()
+            );
+        }
 
         if (matchingChallenges.isEmpty()) {
             throw new ApiException(
@@ -79,11 +97,16 @@ public class SimulationService {
             );
         }
 
-        // 3. Tirage aléatoire de 10 questions maximum
+        // 3. Architecture conserve l'ordre des étapes ; les autres modes restent aléatoires
         List<Challenge> selectedChallenges = new ArrayList<>(matchingChallenges);
-        Collections.shuffle(selectedChallenges);
-        if (selectedChallenges.size() > 10) {
-            selectedChallenges = selectedChallenges.subList(0, 10);
+        if (request.mode() != ChallengeType.ARCHITECTURE) {
+            Collections.shuffle(selectedChallenges);
+            if (selectedChallenges.size() > 10) {
+                selectedChallenges = selectedChallenges.subList(0, 10);
+            }
+        } else if (request.questionCount() != null
+                && request.questionCount() < selectedChallenges.size()) {
+            selectedChallenges = selectedChallenges.subList(0, request.questionCount());
         }
 
         // 4. Créer la simulation
@@ -120,6 +143,18 @@ public class SimulationService {
                         sc.getChallenge().getSelectionType(),
                         sc.getChallenge().getCodeSnippet(),
                         sc.getChallenge().getCodeLanguage(),
+                        sc.getChallenge().getScenario() != null
+                                ? sc.getChallenge().getScenario().getTitle()
+                                : null,
+                        sc.getChallenge().getScenario() != null
+                                ? sc.getChallenge().getScenario().getDescription()
+                                : null,
+                        sc.getChallenge().getStepOrder(),
+                        sc.getChallenge().getScenario() != null
+                                ? sc.getChallenge().getScenario().getChallenges().size()
+                                : null,
+                        null,
+                        null,
                         sc.getChallenge().getOptions().stream()
                                 .map(o -> new SimulationChallengeResponse.OptionResponse(
                                         o.getId(),
@@ -168,6 +203,20 @@ public class SimulationService {
                     HttpStatus.CONFLICT,
                     "Une réponse a déjà été enregistrée pour cette question."
             );
+        }
+
+        if (simulation.getMode() == ChallengeType.ARCHITECTURE) {
+            SimulationChallenge expectedChallenge = simulation.getSimulationChallenges().stream()
+                    .filter(challenge -> challenge.getAnswer() == null)
+                    .min(java.util.Comparator.comparingInt(SimulationChallenge::getDisplayOrder))
+                    .orElse(null);
+
+            if (expectedChallenge == null || !expectedChallenge.getId().equals(simChallenge.getId())) {
+                throw new ApiException(
+                        HttpStatus.CONFLICT,
+                        "Les étapes Architecture doivent être répondues dans l'ordre."
+                );
+            }
         }
 
         if (simChallenge.getChallenge().getSelectionType() == SelectionType.SINGLE_CHOICE
@@ -223,6 +272,8 @@ public class SimulationService {
                 simulation.getTotalScore(),
                 simChallenge.getChallenge().getExplanation(),
                 correctOptionId,
+                simChallenge.getChallenge().getRevealedInformation(),
+                simChallenge.getChallenge().getTradeoff(),
                 ChallengeCorrectionDTO.forOptions(
                         simChallenge.getChallenge().getOptions(),
                         selectedOptionIds)

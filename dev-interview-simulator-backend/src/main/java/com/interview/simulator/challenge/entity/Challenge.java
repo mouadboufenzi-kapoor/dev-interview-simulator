@@ -45,12 +45,24 @@ public class Challenge {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String question;
 
-    @Lob
     @Column(name = "code_snippet", columnDefinition = "TEXT")
     private String codeSnippet;
 
     @Column(name = "code_language", length = 30)
     private String codeLanguage;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "scenario_id")
+    private InterviewScenario scenario;
+
+    @Column(name = "step_order")
+    private Integer stepOrder;
+
+    @Column(name = "revealed_information", columnDefinition = "TEXT")
+    private String revealedInformation;
+
+    @Column(columnDefinition = "TEXT")
+    private String tradeoff;
 
     @Column(columnDefinition = "TEXT")
     private String explanation;
@@ -120,6 +132,14 @@ public class Challenge {
     public void setCodeSnippet(String codeSnippet) { this.codeSnippet = codeSnippet; }
     public String getCodeLanguage() { return codeLanguage; }
     public void setCodeLanguage(String codeLanguage) { this.codeLanguage = codeLanguage; }
+    public InterviewScenario getScenario() { return scenario; }
+    public void setScenario(InterviewScenario scenario) { this.scenario = scenario; }
+    public Integer getStepOrder() { return stepOrder; }
+    public void setStepOrder(Integer stepOrder) { this.stepOrder = stepOrder; }
+    public String getRevealedInformation() { return revealedInformation; }
+    public void setRevealedInformation(String revealedInformation) { this.revealedInformation = revealedInformation; }
+    public String getTradeoff() { return tradeoff; }
+    public void setTradeoff(String tradeoff) { this.tradeoff = tradeoff; }
     public String getExplanation() { return explanation; }
     public void setExplanation(String explanation) { this.explanation = explanation; }
     public Integer getEstimatedTimeSeconds() { return estimatedTimeSeconds; }
