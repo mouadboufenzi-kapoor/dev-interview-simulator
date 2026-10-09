@@ -1,1 +1,83 @@
 @import "tailwindcss";
+
+@theme {
+  --color-canvas: #FFFFFF;
+  --color-canvas-subtle: #FAF9F7;
+  --color-surface: #FFFFFF;
+  --color-surface-elevated: #FCFBF9;
+  --color-border: #E8E2D8;
+  --color-border-subtle: #F2EDE6;
+  --color-border-strong: #BAB2B5;
+
+  --color-ink: #102136;
+  --color-ink-secondary: #484F59;
+  --color-ink-muted: #797E88;
+
+  --color-navy-950: #0B1E34;
+  --color-navy-900: #123C69;
+  --color-navy-800: #194C84;
+  --color-navy-700: #2260A3;
+  --color-navy-100: #E6EFF8;
+  --color-navy-50: #F1F6FB;
+
+  --color-crimson-900: #6D1B37;
+  --color-crimson-800: #8C294A;
+  --color-crimson-700: #AC3B61;
+  --color-crimson-600: #C44872;
+  --color-crimson-100: #FCEBF1;
+  --color-crimson-50: #FCF4F7;
+
+  --color-peach-500: #EDC7B7;
+  --color-peach-300: #F4D9CE;
+  --color-peach-100: #FBF0EB;
+  --color-peach-50: #FDF7F5;
+
+  --color-slate-400: #BAB2B5;
+  --color-slate-500: #9C9497;
+  --color-slate-600: #746C70;
+
+  --font-serif: 'Newsreader', Georgia, Cambria, serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer base {
+  * {
+    border-color: #E8E2D8;
+  }
+
+  body {
+    background-color: #FFFFFF;
+    color: #102136;
+    font-family: var(--font-sans);
+    min-height: 100vh;
+  }
+
+  code, pre, kbd {
+    font-family: var(--font-mono);
+  }
+}
+
+/* Subtle brand watermark pattern on white background */
+.watermark-pattern {
+  background-image: url("data:image/svg+xml,%3Csvg width='120' height='120' viewBox='0 0 120 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cpath d='M52 68V52L62 60L52 68Z' fill='%23123C69' fill-opacity='0.02'/%3E%3Cpath d='M62 52V68L68 60L62 52Z' fill='%23AC3B61' fill-opacity='0.02'/%3E%3Cpath d='M-8 8V-8L2 0L-8 8Z' fill='%23123C69' fill-opacity='0.02'/%3E%3Cpath d='M112 8V-8L122 0L112 8Z' fill='%23123C69' fill-opacity='0.02'/%3E%3Cpath d='M-8 128V112L2 120L-8 128Z' fill='%23123C69' fill-opacity='0.02'/%3E%3Cpath d='M112 128V112L122 120L112 128Z' fill='%23123C69' fill-opacity='0.02'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Custom subtle scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #FFFFFF;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #DDD5D8;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #BAB2B5;
+}
