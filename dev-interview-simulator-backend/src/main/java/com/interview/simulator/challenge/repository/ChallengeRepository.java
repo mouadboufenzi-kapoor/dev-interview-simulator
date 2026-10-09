@@ -10,12 +10,32 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Set;
 
 @Repository
 public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
+
+    @Query("""
+        SELECT c FROM Challenge c
+        WHERE (:search IS NULL
+            OR LOWER(c.title) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR LOWER(c.question) LIKE LOWER(CONCAT('%', :search, '%')))
+        AND (:status IS NULL OR c.status = :status)
+        AND (:type IS NULL OR c.type = :type)
+        AND (:difficulty IS NULL OR c.difficulty = :difficulty)
+        ORDER BY c.updatedAt DESC
+    """)
+    Page<Challenge> searchForAdmin(
+        @Param("search") String search,
+        @Param("status") ContentStatus status,
+        @Param("type") ChallengeType type,
+        @Param("difficulty") DifficultyLevel difficulty,
+        Pageable pageable
+    );
 
     @Query("""
         SELECT DISTINCT c FROM Challenge c

@@ -2,6 +2,7 @@ com\interview\simulator\auth\dto\AuthResponse.class
 com\interview\simulator\skill\entity\Skill.class
 com\interview\simulator\category\controller\CategoryController.class
 com\interview\simulator\exception\ApiErrorResponse.class
+com\interview\simulator\admin\challenge\dto\AdminChallengeOptionResponse.class
 com\interview\simulator\profile\controller\ProfileController.class
 com\interview\simulator\skill\repository\SkillRepository.class
 com\interview\simulator\simulation\entity\Simulation.class
@@ -18,6 +19,7 @@ com\interview\simulator\simulation\dto\SubmitAnswerResponse.class
 com\interview\simulator\auth\dto\RegisterRequest.class
 com\interview\simulator\config\WebConfig.class
 com\interview\simulator\skill\service\SkillService.class
+com\interview\simulator\admin\challenge\controller\AdminChallengeController.class
 com\interview\simulator\exception\ResourceNotFoundException.class
 com\interview\simulator\simulation\controller\SimulationController.class
 com\interview\simulator\simulation\entity\SimulationStatus.class
@@ -35,17 +37,20 @@ com\interview\simulator\skill\dto\SkillResponse.class
 com\interview\simulator\simulation\dto\StartSimulationRequest.class
 com\interview\simulator\simulation\entity\SimulationAnswer.class
 com\interview\simulator\auth\service\AuthService.class
+com\interview\simulator\admin\challenge\dto\AdminChallengeOptionRequest.class
 com\interview\simulator\simulation\entity\SimulationChallenge.class
 com\interview\simulator\challenge\entity\Challenge.class
 com\interview\simulator\user\entity\UserRole.class
 com\interview\simulator\skill\controller\SkillController.class
 com\interview\simulator\category\entity\Category.class
 com\interview\simulator\challenge\entity\ChallengeType.class
+com\interview\simulator\admin\challenge\dto\AdminChallengeRequest.class
 com\interview\simulator\simulation\service\ScoringService.class
 com\interview\simulator\challenge\entity\InterviewScenario.class
 com\interview\simulator\simulation\dto\SimulationResultDTO$QuestionSummaryDTO.class
 com\interview\simulator\config\SecurityConfig.class
 com\interview\simulator\exception\GlobalExceptionHandler.class
+com\interview\simulator\admin\challenge\service\AdminChallengeService.class
 com\interview\simulator\auth\service\JwtAuthenticationFilter.class
 com\interview\simulator\exception\ApiException.class
 com\interview\simulator\category\service\CategoryService.class
@@ -59,6 +64,7 @@ com\interview\simulator\challenge\entity\DifficultyLevel.class
 com\interview\simulator\category\dto\CategoryResponse.class
 com\interview\simulator\BackendApplication.class
 com\interview\simulator\simulation\repository\SimulationChallengeRepository.class
+com\interview\simulator\admin\challenge\dto\AdminChallengeResponse.class
 com\interview\simulator\challenge\repository\ChallengeRepository.class
 com\interview\simulator\HealthController.class
 com\interview\simulator\profile\entity\Profile.class
