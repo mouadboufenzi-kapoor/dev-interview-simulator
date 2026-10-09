@@ -29,6 +29,7 @@ C:\Users\MON PC\Desktop\MES DOSSIERS 2026\dev-interview-simulator\dev-interview-
 C:\Users\MON PC\Desktop\MES DOSSIERS 2026\dev-interview-simulator\dev-interview-simulator-backend\src\main\java\com\interview\simulator\challenge\repository\ChallengeOptionRepository.java
 C:\Users\MON PC\Desktop\MES DOSSIERS 2026\dev-interview-simulator\dev-interview-simulator-backend\src\main\java\com\interview\simulator\challenge\repository\ChallengeRepository.java
 C:\Users\MON PC\Desktop\MES DOSSIERS 2026\dev-interview-simulator\dev-interview-simulator-backend\src\main\java\com\interview\simulator\challenge\repository\InterviewScenarioRepository.java
+C:\Users\MON PC\Desktop\MES DOSSIERS 2026\dev-interview-simulator\dev-interview-simulator-backend\src\main\java\com\interview\simulator\config\AdminInitializer.java
 C:\Users\MON PC\Desktop\MES DOSSIERS 2026\dev-interview-simulator\dev-interview-simulator-backend\src\main\java\com\interview\simulator\config\SecurityConfig.java
 C:\Users\MON PC\Desktop\MES DOSSIERS 2026\dev-interview-simulator\dev-interview-simulator-backend\src\main\java\com\interview\simulator\config\WebConfig.java
 C:\Users\MON PC\Desktop\MES DOSSIERS 2026\dev-interview-simulator\dev-interview-simulator-backend\src\main\java\com\interview\simulator\exception\ApiErrorResponse.java

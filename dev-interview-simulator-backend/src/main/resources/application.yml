@@ -10,25 +10,18 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: true
     properties:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
-    defer-datasource-initialization: true
 
-  sql:
-    init:
-      mode: always
-      data-locations:
-        - classpath:db/migration/V2__add_code_review_support.sql
-        - classpath:db/migration/V3__add_architecture_support.sql
-        - classpath:db/migration/V4__add_profiles_and_content_status.sql
-        - classpath:db/migration/V5__add_authentication_fields.sql
-        - classpath:data.sql
-        - classpath:db/seed/V2_1__code_review_seeds.sql
-        - classpath:db/seed/V3_1__architecture_food_delivery_seed.sql
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 1
+    locations: classpath:db/migration,classpath:db/seed
 
 server:
   port: 8080
@@ -38,3 +31,8 @@ app:
     jwt:
       secret: ${JWT_SECRET:change-this-development-secret-with-at-least-32-characters}
       expiration: ${JWT_EXPIRATION:PT8H}
+
+  admin:
+    username: ${ADMIN_USERNAME:admin}
+    email: ${ADMIN_EMAIL:admin@example.com}
+    password: ${ADMIN_PASSWORD:admin}

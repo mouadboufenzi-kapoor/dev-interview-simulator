@@ -37,6 +37,7 @@ com\interview\simulator\skill\dto\SkillResponse.class
 com\interview\simulator\simulation\dto\StartSimulationRequest.class
 com\interview\simulator\simulation\entity\SimulationAnswer.class
 com\interview\simulator\auth\service\AuthService.class
+com\interview\simulator\config\AdminInitializer.class
 com\interview\simulator\admin\challenge\dto\AdminChallengeOptionRequest.class
 com\interview\simulator\simulation\entity\SimulationChallenge.class
 com\interview\simulator\challenge\entity\Challenge.class
