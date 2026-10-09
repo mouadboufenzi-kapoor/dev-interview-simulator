@@ -491,3 +491,15 @@ INSERT INTO challenge_options (challenge_id, content, is_correct, display_order)
 SELECT c.id, 'La base de données relationnelle via un trigger', false, 3
 FROM challenges c WHERE c.title = 'Stratégie de cache Cache-Aside'
                     AND NOT EXISTS (SELECT 1 FROM challenge_options WHERE challenge_id = c.id AND display_order = 3);
+
+-- Profil initial du MVP : les contenus existants restent compatibles avec le profil Développeur.
+INSERT INTO challenge_profiles (challenge_id, profile_id)
+SELECT c.id, p.id
+FROM challenges c
+JOIN profiles p ON p.code = 'DEVELOPER'
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM challenge_profiles cp
+    WHERE cp.challenge_id = c.id
+      AND cp.profile_id = p.id
+);

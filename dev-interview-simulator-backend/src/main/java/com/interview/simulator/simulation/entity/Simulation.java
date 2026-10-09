@@ -3,6 +3,7 @@ package com.interview.simulator.simulation.entity;
 import com.interview.simulator.challenge.entity.ChallengeType;
 import com.interview.simulator.challenge.entity.DifficultyLevel;
 import com.interview.simulator.user.entity.User;
+import com.interview.simulator.profile.entity.Profile;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 
@@ -22,6 +23,10 @@ public class Simulation {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "profile_id")
+    private Profile profile;
 
     @NotNull
     @Enumerated(EnumType.STRING)
@@ -59,6 +64,8 @@ public class Simulation {
     public Long getId() { return id; }
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
+    public Profile getProfile() { return profile; }
+    public void setProfile(Profile profile) { this.profile = profile; }
     public ChallengeType getMode() { return mode; }
     public void setMode(ChallengeType mode) { this.mode = mode; }
     public DifficultyLevel getDifficulty() { return difficulty; }

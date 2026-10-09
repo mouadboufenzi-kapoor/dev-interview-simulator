@@ -2,6 +2,7 @@ package com.interview.simulator.challenge.entity;
 
 import com.interview.simulator.category.entity.Category;
 import com.interview.simulator.skill.entity.Skill;
+import com.interview.simulator.profile.entity.Profile;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -73,6 +74,10 @@ public class Challenge {
     @Column(nullable = false)
     private boolean active = true;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private ContentStatus status = ContentStatus.VALIDATED;
+
     @Column(nullable = false)
     private Integer points = 10;
 
@@ -100,6 +105,14 @@ public class Challenge {
         inverseJoinColumns = @JoinColumn(name = "skill_id")
     )
     private Set<Skill> skills = new HashSet<>();
+
+    @ManyToMany
+    @JoinTable(
+        name = "challenge_profiles",
+        joinColumns = @JoinColumn(name = "challenge_id"),
+        inverseJoinColumns = @JoinColumn(name = "profile_id")
+    )
+    private Set<Profile> profiles = new HashSet<>();
 
     public Challenge() {
     }
@@ -146,11 +159,14 @@ public class Challenge {
     public void setEstimatedTimeSeconds(Integer estimatedTimeSeconds) { this.estimatedTimeSeconds = estimatedTimeSeconds; }
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }
+    public ContentStatus getStatus() { return status; }
+    public void setStatus(ContentStatus status) { this.status = status; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public List<ChallengeOption> getOptions() { return options; }
     public Set<Category> getCategories() { return categories; }
     public Set<Skill> getSkills() { return skills; }
+    public Set<Profile> getProfiles() { return profiles; }
     public Integer getPoints() { 
         return points; 
     }

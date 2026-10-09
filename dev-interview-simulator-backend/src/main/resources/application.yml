@@ -24,9 +24,17 @@ spring:
       data-locations:
         - classpath:db/migration/V2__add_code_review_support.sql
         - classpath:db/migration/V3__add_architecture_support.sql
+        - classpath:db/migration/V4__add_profiles_and_content_status.sql
+        - classpath:db/migration/V5__add_authentication_fields.sql
         - classpath:data.sql
         - classpath:db/seed/V2_1__code_review_seeds.sql
         - classpath:db/seed/V3_1__architecture_food_delivery_seed.sql
 
 server:
   port: 8080
+
+app:
+  security:
+    jwt:
+      secret: ${JWT_SECRET:change-this-development-secret-with-at-least-32-characters}
+      expiration: ${JWT_EXPIRATION:PT8H}

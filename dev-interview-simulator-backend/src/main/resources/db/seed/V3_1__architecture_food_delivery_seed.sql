@@ -241,3 +241,15 @@ WHERE c.title LIKE 'Food Delivery - %'
       WHERE cc.challenge_id = c.id
         AND cc.category_id = cat.id
   );
+
+INSERT INTO challenge_profiles (challenge_id, profile_id)
+SELECT c.id, p.id
+FROM challenges c
+JOIN profiles p ON p.code = 'DEVELOPER'
+WHERE c.title LIKE 'Food Delivery - %'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM challenge_profiles cp
+      WHERE cp.challenge_id = c.id
+        AND cp.profile_id = p.id
+  );

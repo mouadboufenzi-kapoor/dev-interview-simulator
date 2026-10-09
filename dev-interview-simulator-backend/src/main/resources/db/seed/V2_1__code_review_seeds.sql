@@ -99,3 +99,15 @@ WHERE c.title = 'Optimisation Endpoint Orders'
       SELECT 1 FROM challenge_options
       WHERE challenge_id = c.id AND display_order = 4
   );
+
+INSERT INTO challenge_profiles (challenge_id, profile_id)
+SELECT c.id, p.id
+FROM challenges c
+JOIN profiles p ON p.code = 'DEVELOPER'
+WHERE c.type = 'CODE_REVIEW'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM challenge_profiles cp
+      WHERE cp.challenge_id = c.id
+        AND cp.profile_id = p.id
+  );

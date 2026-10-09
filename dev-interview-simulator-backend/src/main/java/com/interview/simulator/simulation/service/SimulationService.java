@@ -3,6 +3,7 @@ package com.interview.simulator.simulation.service;
 import com.interview.simulator.challenge.entity.Challenge;
 import com.interview.simulator.challenge.entity.ChallengeOption;
 import com.interview.simulator.challenge.entity.ChallengeType;
+import com.interview.simulator.challenge.entity.ContentStatus;
 import com.interview.simulator.challenge.entity.InterviewScenario;
 import com.interview.simulator.challenge.entity.SelectionType;
 import com.interview.simulator.challenge.repository.ChallengeOptionRepository;
@@ -24,6 +25,8 @@ import com.interview.simulator.simulation.repository.SimulationChallengeReposito
 import com.interview.simulator.simulation.repository.SimulationRepository;
 import com.interview.simulator.user.entity.User;
 import com.interview.simulator.user.repository.UserRepository;
+import com.interview.simulator.profile.entity.Profile;
+import com.interview.simulator.profile.repository.ProfileRepository;
 import com.interview.simulator.exception.ApiException;
 import com.interview.simulator.exception.ResourceNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -47,6 +50,7 @@ public class SimulationService {
     private final ChallengeOptionRepository challengeOptionRepository;
     private final InterviewScenarioRepository interviewScenarioRepository;
     private final ScoringService scoringService;
+    private final ProfileRepository profileRepository;
 
     public SimulationService(
             SimulationRepository simulationRepository,
@@ -55,7 +59,8 @@ public class SimulationService {
             SimulationChallengeRepository simulationChallengeRepository,
             ChallengeOptionRepository challengeOptionRepository,
             InterviewScenarioRepository interviewScenarioRepository,
-            ScoringService scoringService) {
+            ScoringService scoringService,
+            ProfileRepository profileRepository) {
         this.simulationRepository = simulationRepository;
         this.challengeRepository = challengeRepository;
         this.userRepository = userRepository;
@@ -63,6 +68,7 @@ public class SimulationService {
         this.challengeOptionRepository = challengeOptionRepository;
         this.interviewScenarioRepository = interviewScenarioRepository;
         this.scoringService = scoringService;
+        this.profileRepository = profileRepository;
     }
 
     @Transactional
@@ -74,6 +80,10 @@ public class SimulationService {
         // 2. Trouver les challenges correspondants au mode
         List<Challenge> matchingChallenges;
         InterviewScenario scenario = null;
+        Profile profile = request.profileId() != null
+                ? profileRepository.findById(request.profileId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Profil non trouvé."))
+                : null;
 
         if (request.mode() == ChallengeType.ARCHITECTURE) {
             scenario = interviewScenarioRepository.findFirstByModeAndActiveTrue(request.mode())
@@ -81,10 +91,19 @@ public class SimulationService {
                             HttpStatus.UNPROCESSABLE_ENTITY,
                             "Aucun scénario Architecture disponible."
                     ));
-            matchingChallenges = challengeRepository.findScenarioChallenges(request.mode(), scenario);
+            matchingChallenges = challengeRepository.findScenarioChallenges(
+                    request.mode(),
+                    request.difficulty(),
+                    profile,
+                    ContentStatus.VALIDATED,
+                    scenario
+            );
         } else {
             matchingChallenges = challengeRepository.findMatchingChallenges(
                     request.mode(),
+                    request.difficulty(),
+                    profile,
+                    ContentStatus.VALIDATED,
                     request.categoryIds(),
                     request.skillIds()
             );
@@ -114,6 +133,7 @@ public class SimulationService {
         simulation.setUser(user);
         simulation.setMode(request.mode());
         simulation.setDifficulty(request.difficulty());
+        simulation.setProfile(profile);
 
         // 5. Associer les questions avec leur ordre d'affichage
         int order = 1;
@@ -169,6 +189,7 @@ public class SimulationService {
                 simulation.getId(),
                 simulation.getMode(),
                 simulation.getDifficulty(),
+                simulation.getProfile() != null ? simulation.getProfile().getId() : null,
                 simulation.getStatus(),
                 simulation.getTotalScore(),
                 simulation.getStartedAt(),

@@ -11,6 +11,7 @@ public record SimulationResponse(
     Long id,
     ChallengeType mode,
     DifficultyLevel difficulty,
+    Long profileId,
     SimulationStatus status,
     Integer totalScore,
     LocalDateTime startedAt,

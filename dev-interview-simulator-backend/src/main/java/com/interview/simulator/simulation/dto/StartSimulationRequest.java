@@ -10,6 +10,7 @@ import java.util.Set;
 public record StartSimulationRequest(
     @NotNull ChallengeType mode,
     DifficultyLevel difficulty,
+    @Positive Long profileId,
     Set<@Positive Long> categoryIds,
     Set<@Positive Long> skillIds,
     @Positive Integer questionCount
