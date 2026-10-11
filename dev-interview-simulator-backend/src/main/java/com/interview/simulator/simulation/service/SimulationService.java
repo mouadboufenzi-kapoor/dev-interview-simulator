@@ -86,18 +86,32 @@ public class SimulationService {
                 : null;
 
         if (request.mode() == ChallengeType.ARCHITECTURE) {
-            scenario = interviewScenarioRepository.findFirstByModeAndActiveTrue(request.mode())
-                    .orElseThrow(() -> new ApiException(
-                            HttpStatus.UNPROCESSABLE_ENTITY,
-                            "Aucun scénario Architecture disponible."
-                    ));
-            matchingChallenges = challengeRepository.findScenarioChallenges(
-                    request.mode(),
-                    request.difficulty(),
-                    profile,
-                    ContentStatus.VALIDATED,
-                    scenario
-            );
+            // Tirage au hasard d'un scénario actif disposant d'au moins une étape VALIDATED compatible
+            List<InterviewScenario> availableScenarios = interviewScenarioRepository
+                    .findByModeAndActiveTrue(request.mode());
+            Collections.shuffle(availableScenarios);
+            List<Challenge> scenarioSteps = null;
+            for (InterviewScenario candidate : availableScenarios) {
+                List<Challenge> steps = challengeRepository.findScenarioChallenges(
+                        request.mode(),
+                        request.difficulty(),
+                        profile,
+                        ContentStatus.VALIDATED,
+                        candidate
+                );
+                if (!steps.isEmpty()) {
+                    scenario = candidate;
+                    scenarioSteps = steps;
+                    break;
+                }
+            }
+            if (scenarioSteps == null) {
+                throw new ApiException(
+                        HttpStatus.UNPROCESSABLE_ENTITY,
+                        "Aucun scénario Architecture disponible."
+                );
+            }
+            matchingChallenges = scenarioSteps;
         } else {
             matchingChallenges = challengeRepository.findMatchingChallenges(
                     request.mode(),
@@ -169,9 +183,9 @@ public class SimulationService {
                         sc.getChallenge().getScenario() != null
                                 ? sc.getChallenge().getScenario().getDescription()
                                 : null,
-                        sc.getChallenge().getStepOrder(),
+                        sc.getDisplayOrder(),
                         sc.getChallenge().getScenario() != null
-                                ? sc.getChallenge().getScenario().getChallenges().size()
+                                ? simulation.getSimulationChallenges().size()
                                 : null,
                         null,
                         null,
