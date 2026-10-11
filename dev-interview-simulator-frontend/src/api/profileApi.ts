@@ -4,6 +4,7 @@ export interface Profile {
   id: number;
   name: string;
   description: string;
+  allowedTypes?: string[];
 }
 
 export const profileApi = {

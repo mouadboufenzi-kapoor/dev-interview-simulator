@@ -28,6 +28,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [reviseCategoryIds, setReviseCategoryIds] = useState<number[] | null>(null);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -114,6 +115,26 @@ export default function App() {
     setError(null);
     setScreen('SETUP');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleRevise = (categoryIds: number[]) => {
+    setReviseCategoryIds(categoryIds);
+    setSimulation(null);
+    setSummary(null);
+    setError(null);
+    setScreen('SETUP');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleOpenResult = async (simulationId: number) => {
+    try {
+      const data = await simulationApi.getSimulationResult(simulationId);
+      setSummary(data);
+      setScreen('RESULT');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err) {
+      setError('Impossible de récupérer le détail de cette simulation.');
+    }
   };
 
   const handleLogout = () => {
@@ -227,11 +248,17 @@ export default function App() {
               onStart={handleStartSimulation}
               loading={loading}
               activeMode={selectedDashboardMode}
+              initialCategoryIds={reviseCategoryIds ?? undefined}
             />
           )}
 
           {screen === 'DASHBOARD' && user && (
-            <UserDashboard user={user} onStartSimulation={handleOpenSetup} />
+            <UserDashboard
+              user={user}
+              onStartSimulation={handleOpenSetup}
+              onRevise={handleRevise}
+              onOpenResult={handleOpenResult}
+            />
           )}
 
           {screen === 'ADMIN' && user?.role === 'ADMIN' && (

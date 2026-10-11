@@ -17,6 +17,8 @@ interface Props {
   onSaved: () => void;
 }
 
+const ALL_CHALLENGE_TYPES: ChallengeType[] = ['SITUATIONAL_QCM', 'PROBLEM_SOLVING', 'CODE_REVIEW', 'ARCHITECTURE'];
+
 export const AdminChallengeForm = ({ challengeId, defaultScenarioId, onBack, onSaved }: Props) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,6 +69,22 @@ export const AdminChallengeForm = ({ challengeId, defaultScenarioId, onBack, onS
       loadChallenge(challengeId);
     }
   }, [challengeId]);
+
+  // Types autorisés : union des types des profils sélectionnés (vide = tous autorisés)
+  const restrictedTypes = profiles
+    .filter(p => formData.profileIds.includes(p.id))
+    .map(p => p.allowedTypes ?? [])
+    .filter(types => types.length > 0);
+  const allowedTypes: ChallengeType[] = restrictedTypes.length === 0
+    ? ALL_CHALLENGE_TYPES
+    : ALL_CHALLENGE_TYPES.filter(t => restrictedTypes.some(types => types.includes(t)));
+  const effectiveAllowedTypes = allowedTypes.length > 0 ? allowedTypes : ALL_CHALLENGE_TYPES;
+
+  useEffect(() => {
+    if (!effectiveAllowedTypes.includes(formData.type)) {
+      setFormData(prev => ({ ...prev, type: effectiveAllowedTypes[0] }));
+    }
+  }, [effectiveAllowedTypes, formData.type]);
 
   // Charge les étapes déjà créées du scénario sélectionné et propose l'ordre suivant
   useEffect(() => {
@@ -270,10 +288,9 @@ export const AdminChallengeForm = ({ challengeId, defaultScenarioId, onBack, onS
           <label className="block space-y-1.5">
             <span className="text-sm font-semibold text-[#102136]">Type</span>
             <select required value={formData.type} onChange={e => setFormData({...formData, type: e.target.value as ChallengeType})} className="w-full rounded-xl border border-[#E8E2D8] p-3 text-sm focus:border-[#123C69] outline-none">
-              <option value="SITUATIONAL_QCM">SITUATIONAL_QCM</option>
-              <option value="PROBLEM_SOLVING">PROBLEM_SOLVING</option>
-              <option value="CODE_REVIEW">CODE_REVIEW</option>
-              <option value="ARCHITECTURE">ARCHITECTURE</option>
+              {effectiveAllowedTypes.map(t => (
+                <option key={t} value={t}>{t}</option>
+              ))}
             </select>
           </label>
 

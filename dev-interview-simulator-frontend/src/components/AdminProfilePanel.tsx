@@ -5,7 +5,9 @@ import { Button } from './common/Button';
 import { Badge } from './common/Badge';
 import { Plus, Edit2 } from 'lucide-react';
 
-const emptyForm = { code: '', name: '', description: '' };
+const ALL_TYPES = ['SITUATIONAL_QCM', 'PROBLEM_SOLVING', 'CODE_REVIEW', 'ARCHITECTURE'];
+
+const emptyForm = { code: '', name: '', description: '', allowedTypes: [] as string[] };
 
 export const AdminProfilePanel = () => {
   const [profiles, setProfiles] = useState<AdminProfile[]>([]);
@@ -41,7 +43,12 @@ export const AdminProfilePanel = () => {
   const openEdit = (profile: AdminProfile) => {
     setCreating(false);
     setEditingId(profile.id);
-    setForm({ code: profile.code, name: profile.name, description: profile.description || '' });
+    setForm({
+      code: profile.code,
+      name: profile.name,
+      description: profile.description || '',
+      allowedTypes: profile.allowedTypes ?? []
+    });
     setError(null);
   };
 
@@ -52,6 +59,15 @@ export const AdminProfilePanel = () => {
     setError(null);
   };
 
+  const toggleAllowedType = (type: string) => {
+    setForm(prev => ({
+      ...prev,
+      allowedTypes: prev.allowedTypes.includes(type)
+        ? prev.allowedTypes.filter(t => t !== type)
+        : [...prev.allowedTypes, type]
+    }));
+  };
+
   const handleSave = async () => {
     if (!form.code.trim() || !form.name.trim()) return;
     setSaving(true);
@@ -60,7 +76,8 @@ export const AdminProfilePanel = () => {
       const request = {
         code: form.code.trim(),
         name: form.name.trim(),
-        description: form.description.trim() || undefined
+        description: form.description.trim() || undefined,
+        allowedTypes: form.allowedTypes
       };
       if (editingId) {
         await adminProfileApi.updateProfile(editingId, request);
@@ -124,6 +141,29 @@ export const AdminProfilePanel = () => {
               className="w-full rounded-xl border border-[#E8E2D8] p-2.5 text-sm focus:border-[#123C69] outline-none bg-white"
             />
           </label>
+          <div className="space-y-1.5">
+            <span className="text-sm font-semibold text-[#102136]">Types de challenges autorisés</span>
+            <p className="text-xs text-[#797E88]">Aucun type coché = tous les types autorisés.</p>
+            <div className="flex flex-wrap gap-2">
+              {ALL_TYPES.map(type => {
+                const isSelected = form.allowedTypes.includes(type);
+                return (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => toggleAllowedType(type)}
+                    className={`px-3 py-2 rounded-xl border text-sm transition cursor-pointer ${
+                      isSelected
+                        ? 'bg-[#E6EFF8] border-[#123C69] text-[#123C69] font-semibold'
+                        : 'bg-white border-[#E8E2D8] text-[#484F59] hover:bg-[#FAF9F7]'
+                    }`}
+                  >
+                    {type}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           {error && (
             <p className="text-sm text-[#9C2727]">{error}</p>
           )}

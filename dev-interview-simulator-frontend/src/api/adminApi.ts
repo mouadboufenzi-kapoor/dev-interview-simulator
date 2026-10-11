@@ -84,6 +84,15 @@ export interface AdminProfile {
   name: string;
   description?: string;
   active: boolean;
+  allowedTypes: string[];
+}
+
+export interface AdminProfileRequest {
+  code: string;
+  name: string;
+  description?: string;
+  active?: boolean;
+  allowedTypes: string[];
 }
 
 export const adminProfileApi = {
@@ -92,12 +101,12 @@ export const adminProfileApi = {
     return data;
   },
 
-  createProfile: async (request: { code: string; name: string; description?: string; active?: boolean }): Promise<AdminProfile> => {
+  createProfile: async (request: AdminProfileRequest): Promise<AdminProfile> => {
     const { data } = await apiClient.post('/admin/profiles', request);
     return data;
   },
 
-  updateProfile: async (id: number, request: { code: string; name: string; description?: string; active?: boolean }): Promise<AdminProfile> => {
+  updateProfile: async (id: number, request: AdminProfileRequest): Promise<AdminProfile> => {
     const { data } = await apiClient.put(`/admin/profiles/${id}`, request);
     return data;
   },

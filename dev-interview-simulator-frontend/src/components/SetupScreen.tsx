@@ -28,6 +28,7 @@ interface Props {
   onStart: (request: StartSimulationRequest) => void;
   loading: boolean;
   activeMode?: ChallengeType;
+  initialCategoryIds?: number[];
 }
 
 interface ModeCardConfig {
@@ -110,7 +111,7 @@ const DIFFICULTIES: { id: DifficultyLevel; label: string }[] = [
   { id: 'ADVANCED', label: 'Senior' },
 ];
 
-export const SetupScreen = ({ onStart, loading, activeMode }: Props) => {
+export const SetupScreen = ({ onStart, loading, activeMode, initialCategoryIds }: Props) => {
   const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
   const [showConfiguration, setShowConfiguration] = useState(false);
   const [selectedMode, setSelectedMode] = useState<ChallengeType>(
@@ -120,7 +121,7 @@ export const SetupScreen = ({ onStart, loading, activeMode }: Props) => {
   const [questionCount, setQuestionCount] = useState(5);
   const [categories, setCategories] = useState<Category[]>([]);
   const [skills, setSkills] = useState<Skill[]>([]);
-  const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>(initialCategoryIds ?? []);
   const [selectedSkillIds, setSelectedSkillIds] = useState<number[]>([]);
   const [isLoadingTopics, setIsLoadingTopics] = useState(false);
   const [topicsError, setTopicsError] = useState<string | null>(null);
