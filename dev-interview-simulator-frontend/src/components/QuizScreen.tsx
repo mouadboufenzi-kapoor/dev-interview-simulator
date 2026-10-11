@@ -164,7 +164,7 @@ export const QuizScreen = ({ simulation, onFinish, onError }: Props) => {
       </div>
 
       {/* Main Challenge Surface */}
-      <div className="bg-white border border-[#DDD5D8] rounded-2xl p-6 sm:p-9 shadow-[0_2px_8px_rgba(18,60,105,0.03)] space-y-7">
+      <div className="bg-white border border-[#DDD5D8] rounded-2xl p-6 sm:p-9 shadow-[0_4px_16px_rgba(18,60,105,0.05)] space-y-7">
         {/* Architecture Scenario Context (if Architecture) */}
         {currentChallenge.type === 'ARCHITECTURE' && currentChallenge.scenarioTitle && (
           <div className="rounded-xl border border-[#B8D3EC] bg-[#F1F6FB] p-4 sm:p-5">

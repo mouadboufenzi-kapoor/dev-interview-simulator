@@ -132,7 +132,7 @@ export const ResultScreen = ({ summary, onRestart }: Props) => {
         </div>
 
         {/* Time Card */}
-        <div className="bg-white border border-[#DDD5D8] rounded-2xl p-6 shadow-[0_1px_3px_rgba(18,60,105,0.03)] space-y-2">
+        <div className="bg-white border border-[#DDD5D8] rounded-2xl p-6 shadow-[0_4px_16px_rgba(18,60,105,0.05)] space-y-2">
           <div className="flex items-center justify-between text-[#797E88] font-sans text-xs font-semibold uppercase tracking-wider">
             <span>Temps total</span>
             <Clock className="w-4 h-4 text-[#123C69]" />
@@ -165,7 +165,7 @@ export const ResultScreen = ({ summary, onRestart }: Props) => {
       </div>
 
       {/* Synthesis Box */}
-      <div className="bg-white border border-[#DDD5D8] rounded-2xl p-6 sm:p-7 flex items-start gap-4 shadow-[0_1px_3px_rgba(18,60,105,0.03)]">
+      <div className="bg-white border border-[#DDD5D8] rounded-2xl p-6 sm:p-7 flex items-start gap-4 shadow-[0_4px_16px_rgba(18,60,105,0.05)]">
         <div className="p-3 rounded-xl bg-[#FCEBF1] border border-[#F1BED0] text-[#AC3B61] flex-shrink-0">
           <Sparkles className="w-5 h-5" />
         </div>
