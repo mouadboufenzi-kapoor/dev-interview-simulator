@@ -56,6 +56,28 @@ export interface AdminChallengeResponse {
   options: AdminChallengeOptionRequest[];
 }
 
+export interface AdminStats {
+  totalChallenges: number;
+  challengesDraft: number;
+  challengesValidated: number;
+  challengesArchived: number;
+  challengesByType: Record<string, number>;
+  totalProfiles: number;
+  activeProfiles: number;
+  totalScenarios: number;
+  activeScenarios: number;
+  totalSimulations: number;
+  completedSimulations: number;
+  inProgressSimulations: number;
+}
+
+export const statsApi = {
+  getStats: async (): Promise<AdminStats> => {
+    const { data } = await apiClient.get('/admin/stats');
+    return data;
+  }
+};
+
 export interface AdminProfile {
   id: number;
   code: string;

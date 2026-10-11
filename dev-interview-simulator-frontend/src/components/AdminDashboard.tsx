@@ -9,6 +9,7 @@ import { Plus, Search, Edit2, Archive, CheckCircle} from 'lucide-react';
 import { AdminChallengeForm } from './AdminChallengeForm';
 import { AdminScenarioPanel } from './AdminScenarioPanel';
 import { AdminProfilePanel } from './AdminProfilePanel';
+import { AdminStatsPanel } from './AdminStatsPanel';
 import { Badge } from './common/Badge';
 
 export const AdminDashboard = () => {
@@ -23,7 +24,7 @@ export const AdminDashboard = () => {
   
   const [editingId, setEditingId] = useState<number | null>(null);
   const [isCreating, setIsCreating] = useState(false);
-  const [tab, setTab] = useState<'content' | 'scenarios' | 'profiles'>('content');
+  const [tab, setTab] = useState<'stats' | 'content' | 'scenarios' | 'profiles'>('stats');
   const [preselectedScenarioId, setPreselectedScenarioId] = useState<number | undefined>(undefined);
 
  const PAGE_SIZE = 6;
@@ -128,6 +129,16 @@ const loadChallenges = async () => {
 
       <div className="flex gap-2">
         <button
+          onClick={() => setTab('stats')}
+          className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${
+            tab === 'stats'
+              ? 'bg-[#123C69] text-white'
+              : 'bg-white border border-[#E8E2D8] text-[#484F59] hover:bg-[#FAF9F7]'
+          }`}
+        >
+          Statistiques
+        </button>
+        <button
           onClick={() => setTab('content')}
           className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${
             tab === 'content'
@@ -159,7 +170,9 @@ const loadChallenges = async () => {
         </button>
       </div>
 
-      {tab === 'scenarios' ? (
+      {tab === 'stats' ? (
+        <AdminStatsPanel />
+      ) : tab === 'scenarios' ? (
         <AdminScenarioPanel onAddStep={id => { setPreselectedScenarioId(id); setIsCreating(true); }} />
       ) : tab === 'profiles' ? (
         <AdminProfilePanel />
