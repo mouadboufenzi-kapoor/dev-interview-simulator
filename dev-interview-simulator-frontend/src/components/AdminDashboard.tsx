@@ -8,6 +8,7 @@ import { Button } from './common/Button';
 import { Plus, Search, Edit2, Archive, CheckCircle} from 'lucide-react';
 import { AdminChallengeForm } from './AdminChallengeForm';
 import { AdminScenarioPanel } from './AdminScenarioPanel';
+import { AdminProfilePanel } from './AdminProfilePanel';
 import { Badge } from './common/Badge';
 
 export const AdminDashboard = () => {
@@ -22,7 +23,7 @@ export const AdminDashboard = () => {
   
   const [editingId, setEditingId] = useState<number | null>(null);
   const [isCreating, setIsCreating] = useState(false);
-  const [tab, setTab] = useState<'content' | 'scenarios'>('content');
+  const [tab, setTab] = useState<'content' | 'scenarios' | 'profiles'>('content');
   const [preselectedScenarioId, setPreselectedScenarioId] = useState<number | undefined>(undefined);
 
  const PAGE_SIZE = 6;
@@ -146,10 +147,22 @@ const loadChallenges = async () => {
         >
           Scénarios
         </button>
+        <button
+          onClick={() => setTab('profiles')}
+          className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${
+            tab === 'profiles'
+              ? 'bg-[#123C69] text-white'
+              : 'bg-white border border-[#E8E2D8] text-[#484F59] hover:bg-[#FAF9F7]'
+          }`}
+        >
+          Profils
+        </button>
       </div>
 
       {tab === 'scenarios' ? (
         <AdminScenarioPanel onAddStep={id => { setPreselectedScenarioId(id); setIsCreating(true); }} />
+      ) : tab === 'profiles' ? (
+        <AdminProfilePanel />
       ) : (
       <div className="bg-white rounded-2xl border border-[#E8E2D8] shadow-[0_2px_10px_rgba(18,60,105,0.05)] overflow-hidden">
         <div className="p-4 border-b border-[#F2EDE6] flex flex-wrap gap-4">

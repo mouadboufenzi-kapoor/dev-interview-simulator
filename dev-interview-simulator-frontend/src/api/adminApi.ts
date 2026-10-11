@@ -56,6 +56,36 @@ export interface AdminChallengeResponse {
   options: AdminChallengeOptionRequest[];
 }
 
+export interface AdminProfile {
+  id: number;
+  code: string;
+  name: string;
+  description?: string;
+  active: boolean;
+}
+
+export const adminProfileApi = {
+  getProfiles: async (): Promise<AdminProfile[]> => {
+    const { data } = await apiClient.get('/admin/profiles');
+    return data;
+  },
+
+  createProfile: async (request: { code: string; name: string; description?: string; active?: boolean }): Promise<AdminProfile> => {
+    const { data } = await apiClient.post('/admin/profiles', request);
+    return data;
+  },
+
+  updateProfile: async (id: number, request: { code: string; name: string; description?: string; active?: boolean }): Promise<AdminProfile> => {
+    const { data } = await apiClient.put(`/admin/profiles/${id}`, request);
+    return data;
+  },
+
+  setActive: async (id: number, active: boolean): Promise<AdminProfile> => {
+    const { data } = await apiClient.patch(`/admin/profiles/${id}/active`, null, { params: { active } });
+    return data;
+  }
+};
+
 export interface AdminScenario {
   id: number;
   title: string;
