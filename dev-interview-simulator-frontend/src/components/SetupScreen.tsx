@@ -476,7 +476,7 @@ export const SetupScreen = ({ onStart, loading, activeMode }: Props) => {
             {/* Architecture step options (discreetly visible if ARCHITECTURE) */}
             {selectedMode === 'ARCHITECTURE' && (
               <div className="inline-flex items-center gap-3 text-xs font-sans text-[#5C554E] bg-white border border-[#E8E2D8] px-4 py-2 rounded-xl">
-                <span>Scénario Food Delivery :</span>
+                <span>Scénario :</span>
                 <div className="flex items-center gap-1">
                   {[3, 4, 5].map((count) => (
                     <button
