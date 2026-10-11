@@ -19,4 +19,6 @@ public interface ProfileRepository extends JpaRepository<Profile, Long> {
     boolean existsByName(String name);
 
     boolean existsByNameAndIdNot(String name, Long id);
+
+    long countByActiveTrue();
 }

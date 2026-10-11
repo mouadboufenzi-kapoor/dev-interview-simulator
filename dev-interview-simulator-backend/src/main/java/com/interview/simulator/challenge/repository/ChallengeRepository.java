@@ -21,6 +21,10 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
 
     boolean existsByScenarioIdAndStepOrderAndIdNot(Long scenarioId, Integer stepOrder, Long id);
 
+    long countByStatus(ContentStatus status);
+
+    long countByType(ChallengeType type);
+
     List<Challenge> findByScenarioIdOrderByStepOrderAsc(Long scenarioId);
 
     long countByScenarioId(Long scenarioId);
