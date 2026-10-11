@@ -2,6 +2,7 @@ package com.interview.simulator.admin.profile.service;
 
 import com.interview.simulator.admin.profile.dto.AdminProfileRequest;
 import com.interview.simulator.admin.profile.dto.AdminProfileResponse;
+import com.interview.simulator.challenge.entity.ChallengeType;
 import com.interview.simulator.exception.ApiException;
 import com.interview.simulator.exception.ResourceNotFoundException;
 import com.interview.simulator.profile.entity.Profile;
@@ -10,7 +11,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class AdminProfileService {
@@ -33,6 +36,7 @@ public class AdminProfileService {
         checkUniqueness(request.code(), request.name(), null);
         Profile profile = new Profile(request.code().trim(), request.name().trim(), request.description());
         profile.setActive(request.active() == null || request.active());
+        profile.setAllowedTypes(normalizeAllowedTypes(request.allowedTypes()));
         return toResponse(profileRepository.save(profile));
     }
 
@@ -46,6 +50,7 @@ public class AdminProfileService {
         if (request.active() != null) {
             profile.setActive(request.active());
         }
+        profile.setAllowedTypes(normalizeAllowedTypes(request.allowedTypes()));
         return toResponse(profileRepository.save(profile));
     }
 
@@ -54,6 +59,10 @@ public class AdminProfileService {
         Profile profile = findProfile(id);
         profile.setActive(active);
         return toResponse(profileRepository.save(profile));
+    }
+
+    private Set<ChallengeType> normalizeAllowedTypes(Set<ChallengeType> allowedTypes) {
+        return allowedTypes == null ? new HashSet<>() : new HashSet<>(allowedTypes);
     }
 
     private void checkUniqueness(String code, String name, Long id) {
@@ -82,7 +91,8 @@ public class AdminProfileService {
                 profile.getCode(),
                 profile.getName(),
                 profile.getDescription(),
-                profile.isActive()
+                profile.isActive(),
+                profile.getAllowedTypes()
         );
     }
 }

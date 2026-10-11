@@ -1,9 +1,12 @@
 package com.interview.simulator.profile.entity;
 
+import com.interview.simulator.challenge.entity.ChallengeType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
 @Entity
 @Table(name = "profiles")
@@ -27,6 +30,16 @@ public class Profile {
     @Column(nullable = false)
     private boolean active = true;
 
+    /**
+     * Types de challenges autorisés pour ce profil.
+     * Vide = aucun type restreint (tous les types sont autorisés, comportement historique).
+     */
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "profile_challenge_types", joinColumns = @JoinColumn(name = "profile_id"))
+    @Enumerated(EnumType.STRING)
+    @Column(name = "challenge_type", nullable = false, length = 30)
+    private Set<ChallengeType> allowedTypes = new HashSet<>();
+
     public Profile() {
     }
 
@@ -45,6 +58,8 @@ public class Profile {
     public void setDescription(String description) { this.description = description; }
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }
+    public Set<ChallengeType> getAllowedTypes() { return allowedTypes; }
+    public void setAllowedTypes(Set<ChallengeType> allowedTypes) { this.allowedTypes = allowedTypes; }
 
     @Override
     public boolean equals(Object o) {

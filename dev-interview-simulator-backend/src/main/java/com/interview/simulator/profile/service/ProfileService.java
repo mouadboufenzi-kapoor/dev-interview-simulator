@@ -21,7 +21,8 @@ public class ProfileService {
                         profile.getId(),
                         profile.getCode(),
                         profile.getName(),
-                        profile.getDescription()
+                        profile.getDescription(),
+                        profile.getAllowedTypes()
                 ))
                 .toList();
     }

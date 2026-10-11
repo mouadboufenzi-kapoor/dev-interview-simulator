@@ -24,7 +24,7 @@ import com.interview.simulator.simulation.entity.SimulationStatus;
 import com.interview.simulator.simulation.repository.SimulationChallengeRepository;
 import com.interview.simulator.simulation.repository.SimulationRepository;
 import com.interview.simulator.user.entity.User;
-import com.interview.simulator.user.repository.UserRepository;
+import com.interview.simulator.user.service.UserResolver;
 import com.interview.simulator.profile.entity.Profile;
 import com.interview.simulator.profile.repository.ProfileRepository;
 import com.interview.simulator.exception.ApiException;
@@ -45,7 +45,7 @@ public class SimulationService {
 
     private final SimulationRepository simulationRepository;
     private final ChallengeRepository challengeRepository;
-    private final UserRepository userRepository;
+    private final UserResolver userResolver;
     private final SimulationChallengeRepository simulationChallengeRepository;
     private final ChallengeOptionRepository challengeOptionRepository;
     private final InterviewScenarioRepository interviewScenarioRepository;
@@ -55,7 +55,7 @@ public class SimulationService {
     public SimulationService(
             SimulationRepository simulationRepository,
             ChallengeRepository challengeRepository,
-            UserRepository userRepository,
+            UserResolver userResolver,
             SimulationChallengeRepository simulationChallengeRepository,
             ChallengeOptionRepository challengeOptionRepository,
             InterviewScenarioRepository interviewScenarioRepository,
@@ -63,7 +63,7 @@ public class SimulationService {
             ProfileRepository profileRepository) {
         this.simulationRepository = simulationRepository;
         this.challengeRepository = challengeRepository;
-        this.userRepository = userRepository;
+        this.userResolver = userResolver;
         this.simulationChallengeRepository = simulationChallengeRepository;
         this.challengeOptionRepository = challengeOptionRepository;
         this.interviewScenarioRepository = interviewScenarioRepository;
@@ -73,9 +73,8 @@ public class SimulationService {
 
     @Transactional
     public SimulationResponse startSimulation(StartSimulationRequest request) {
-        // 1. Récupérer l'utilisateur par défaut (pour le MVP sans authentification)
-        User user = userRepository.findByUsername("default_user")
-                .orElseGet(() -> userRepository.save(new User("default_user", "dev@example.com")));
+        // 1. Résolution de l'utilisateur : connecté → son compte ; invité → default_user (trial sans historique)
+        User user = userResolver.resolveOrCreate();
 
         // 2. Trouver les challenges correspondants au mode
         List<Challenge> matchingChallenges;
