@@ -19,14 +19,23 @@ import java.util.Set;
 @Repository
 public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
 
+    boolean existsByScenarioIdAndStepOrderAndIdNot(Long scenarioId, Integer stepOrder, Long id);
+
+    List<Challenge> findByScenarioIdOrderByStepOrderAsc(Long scenarioId);
+
+    long countByScenarioId(Long scenarioId);
+
     @Query("""
         SELECT c FROM Challenge c
-        WHERE (:search IS NULL
-            OR LOWER(c.title) LIKE LOWER(CONCAT('%', :search, '%'))
+        WHERE (
+            LOWER(c.title) LIKE LOWER(CONCAT('%', :search, '%'))
             OR LOWER(c.question) LIKE LOWER(CONCAT('%', :search, '%')))
         AND (:status IS NULL OR c.status = :status)
         AND (:type IS NULL OR c.type = :type)
         AND (:difficulty IS NULL OR c.difficulty = :difficulty)
+        AND (:profileId IS NULL OR EXISTS (
+            SELECT 1 FROM Challenge c2 JOIN c2.profiles p2
+            WHERE c2 = c AND p2.id = :profileId))
         ORDER BY c.updatedAt DESC
     """)
     Page<Challenge> searchForAdmin(
@@ -34,6 +43,7 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
         @Param("status") ContentStatus status,
         @Param("type") ChallengeType type,
         @Param("difficulty") DifficultyLevel difficulty,
+        @Param("profileId") Long profileId,
         Pageable pageable
     );
 

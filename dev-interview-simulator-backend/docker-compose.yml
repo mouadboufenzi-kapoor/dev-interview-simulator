@@ -16,6 +16,8 @@ services:
 
   backend:
     build: .
+    env_file:
+      - .env
     container_name: dev-interview-backend
     ports:
       - "8080:8080"

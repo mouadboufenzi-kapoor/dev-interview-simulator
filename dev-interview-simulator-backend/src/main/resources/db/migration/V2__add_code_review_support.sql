@@ -25,9 +25,6 @@ UPDATE challenges
 SET selection_type = 'SINGLE_CHOICE'
 WHERE selection_type IS NULL;
 
-ALTER TABLE simulation_answers
-    ALTER COLUMN selected_option_id DROP NOT NULL;
-
 CREATE TABLE IF NOT EXISTS simulation_answer_options (
     simulation_answer_id BIGINT NOT NULL,
     option_id BIGINT NOT NULL,
@@ -37,14 +34,3 @@ CREATE TABLE IF NOT EXISTS simulation_answer_options (
     CONSTRAINT fk_simulation_answer_options_option
         FOREIGN KEY (option_id) REFERENCES challenge_options(id)
 );
-
-INSERT INTO simulation_answer_options (simulation_answer_id, option_id)
-SELECT id, selected_option_id
-FROM simulation_answers
-WHERE selected_option_id IS NOT NULL
-  AND NOT EXISTS (
-      SELECT 1
-      FROM simulation_answer_options sao
-      WHERE sao.simulation_answer_id = simulation_answers.id
-        AND sao.option_id = simulation_answers.selected_option_id
-  );

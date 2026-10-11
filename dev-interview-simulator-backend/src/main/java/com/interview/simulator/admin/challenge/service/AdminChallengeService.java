@@ -5,11 +5,14 @@ import com.interview.simulator.category.entity.Category;
 import com.interview.simulator.category.repository.CategoryRepository;
 import com.interview.simulator.challenge.entity.*;
 import com.interview.simulator.challenge.repository.ChallengeRepository;
+import com.interview.simulator.challenge.repository.InterviewScenarioRepository;
 import com.interview.simulator.profile.entity.Profile;
 import com.interview.simulator.profile.repository.ProfileRepository;
 import com.interview.simulator.skill.entity.Skill;
 import com.interview.simulator.skill.repository.SkillRepository;
+import com.interview.simulator.exception.ApiException;
 import com.interview.simulator.exception.ResourceNotFoundException;
+import org.springframework.http.HttpStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -29,16 +32,19 @@ public class AdminChallengeService {
     private final CategoryRepository categoryRepository;
     private final SkillRepository skillRepository;
     private final ProfileRepository profileRepository;
+    private final InterviewScenarioRepository interviewScenarioRepository;
 
     public AdminChallengeService(
             ChallengeRepository challengeRepository,
             CategoryRepository categoryRepository,
             SkillRepository skillRepository,
-            ProfileRepository profileRepository) {
+            ProfileRepository profileRepository,
+            InterviewScenarioRepository interviewScenarioRepository) {
         this.challengeRepository = challengeRepository;
         this.categoryRepository = categoryRepository;
         this.skillRepository = skillRepository;
         this.profileRepository = profileRepository;
+        this.interviewScenarioRepository = interviewScenarioRepository;
     }
 
     @Transactional(readOnly = true)
@@ -47,13 +53,15 @@ public class AdminChallengeService {
             ContentStatus status,
             ChallengeType type,
             DifficultyLevel difficulty,
+            Long profileId,
             Pageable pageable) {
-        String normalizedSearch = search == null || search.isBlank() ? null : search.trim();
+        String normalizedSearch = search == null ? "" : search.trim();
         return challengeRepository.searchForAdmin(
                 normalizedSearch,
                 status,
                 type,
                 difficulty,
+                profileId,
                 pageable
         ).map(this::toResponse);
     }
@@ -97,6 +105,7 @@ public class AdminChallengeService {
         challenge.setCodeLanguage(request.codeLanguage());
         challenge.setRevealedInformation(request.revealedInformation());
         challenge.setTradeoff(request.tradeoff());
+        applyScenario(challenge, request);
         challenge.setExplanation(request.explanation());
         challenge.setEstimatedTimeSeconds(request.estimatedTimeSeconds());
         challenge.setPoints(request.points() == null ? 10 : request.points());
@@ -117,13 +126,18 @@ public class AdminChallengeService {
                 "Compétence"
         ));
 
-        challenge.getProfiles().clear();
-        challenge.getProfiles().addAll(resolve(
+        Set<Profile> profiles = resolve(
                 request.profileIds(),
                 profileRepository::findAllById,
                 Profile::getId,
                 "Profil"
-        ));
+        );
+        if (profiles.stream().anyMatch(profile -> !profile.isActive())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST,
+                    "Un profil inactif ne peut pas être associé à un contenu.");
+        }
+        challenge.getProfiles().clear();
+        challenge.getProfiles().addAll(profiles);
 
         challenge.getOptions().clear();
         if (request.options() != null) {
@@ -138,6 +152,31 @@ public class AdminChallengeService {
                 challenge.getOptions().add(option);
             }
         }
+    }
+
+    private void applyScenario(Challenge challenge, AdminChallengeRequest request) {
+        if (request.type() != ChallengeType.ARCHITECTURE) {
+            challenge.setScenario(null);
+            challenge.setStepOrder(null);
+            return;
+        }
+        if (request.stepOrder() != null && request.stepOrder() < 1) {
+            throw new ApiException(HttpStatus.BAD_REQUEST,
+                    "L'ordre d'étape doit être supérieur à 0.");
+        }
+        InterviewScenario scenario = null;
+        if (request.scenarioId() != null) {
+            scenario = interviewScenarioRepository.findById(request.scenarioId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Scénario introuvable."));
+        }
+        if (scenario != null && request.stepOrder() != null
+                && challengeRepository.existsByScenarioIdAndStepOrderAndIdNot(
+                        scenario.getId(), request.stepOrder(), challenge.getId())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST,
+                    "Une étape utilise déjà cet ordre dans ce scénario.");
+        }
+        challenge.setScenario(scenario);
+        challenge.setStepOrder(request.stepOrder());
     }
 
     private <T> Set<T> resolve(
@@ -178,6 +217,8 @@ public class AdminChallengeService {
                 challenge.getCodeLanguage(),
                 challenge.getRevealedInformation(),
                 challenge.getTradeoff(),
+                challenge.getScenario() != null ? challenge.getScenario().getId() : null,
+                challenge.getStepOrder(),
                 challenge.getExplanation(),
                 challenge.getEstimatedTimeSeconds(),
                 challenge.getPoints(),

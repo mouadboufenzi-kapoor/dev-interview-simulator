@@ -32,8 +32,9 @@ public class AdminChallengeController {
             @RequestParam(required = false) ContentStatus status,
             @RequestParam(required = false) ChallengeType type,
             @RequestParam(required = false) DifficultyLevel difficulty,
+            @RequestParam(required = false) Long profileId,
             Pageable pageable) {
-        return adminChallengeService.search(search, status, type, difficulty, pageable);
+        return adminChallengeService.search(search, status, type, difficulty, profileId, pageable);
     }
 
     @GetMapping("/{id}")

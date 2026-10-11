@@ -18,6 +18,8 @@ public record AdminChallengeResponse(
         String codeLanguage,
         String revealedInformation,
         String tradeoff,
+        Long scenarioId,
+        Integer stepOrder,
         String explanation,
         Integer estimatedTimeSeconds,
         Integer points,

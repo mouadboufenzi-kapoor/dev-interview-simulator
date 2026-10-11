@@ -22,6 +22,8 @@ public record AdminChallengeRequest(
         String codeLanguage,
         String revealedInformation,
         String tradeoff,
+        Long scenarioId,
+        Integer stepOrder,
         String explanation,
         @Positive Integer estimatedTimeSeconds,
         @Positive Integer points,
