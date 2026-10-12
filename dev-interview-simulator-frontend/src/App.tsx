@@ -198,10 +198,13 @@ export default function App() {
           </div>
         )}
 
-        {/* Dynamic Screen Transitions — min-w-0 lets the column shrink to the
-            viewport so only inner scroll zones (e.g. the code block) scroll,
-            instead of the whole screen stretching horizontally. */}
-        <div className="flex-1 flex flex-col justify-center min-w-0">
+        {/* Dynamic Screen Transitions — key={screen} remounts this container on
+            every navigation so .screen-transition (index.css) replays: short
+            fade + subtle horizontal slide.
+            min-w-0 lets the column shrink to the viewport so only inner scroll
+            zones (e.g. the code block) scroll, instead of the whole screen
+            stretching horizontally. */}
+        <div key={screen} className="screen-transition flex-1 flex flex-col justify-center min-w-0">
           {screen === 'SETUP' && (
             <SetupScreen
               onStart={handleStartSimulation}

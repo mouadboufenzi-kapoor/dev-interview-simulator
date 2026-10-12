@@ -196,7 +196,7 @@ export const SetupScreen = ({ onStart, loading, activeMode, initialCategoryIds }
 
   if (!showConfiguration) {
     return (
-      <div className="relative w-full min-h-[calc(80vh-80px)] flex flex-col items-center justify-center py-10 sm:py-16 px-4">
+      <div key="profiles" className="screen-transition relative w-full min-h-[calc(80vh-80px)] flex flex-col items-center justify-center py-10 sm:py-16 px-4">
         <div className="w-full max-w-4xl mx-auto space-y-10 sm:space-y-12 text-center">
           <div className="space-y-4">
             <p className="font-sans text-xs uppercase tracking-[0.2em] text-ink-muted font-semibold">
@@ -220,7 +220,10 @@ export const SetupScreen = ({ onStart, loading, activeMode, initialCategoryIds }
                 <button
                   key={profile.id}
                   type="button"
-                  onClick={() => setSelectedProfile(profile.id)}
+                  onClick={() => {
+                    setSelectedProfile(profile.id);
+                    setShowConfiguration(true);
+                  }}
                   aria-pressed={isSelected}
                   className={`group relative min-h-36 rounded-2xl border-[0.5px] p-5 text-left transition-all duration-200 cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas ${
                     isSelected
@@ -266,27 +269,13 @@ export const SetupScreen = ({ onStart, loading, activeMode, initialCategoryIds }
             })}
           </div>
 
-          <div className="min-h-12 flex items-center justify-center">
-            {selectedProfile && (
-              <Button
-                type="button"
-                variant="primary"
-                size="lg"
-                onClick={() => setShowConfiguration(true)}
-                rightIcon={<ArrowRight className="w-4 h-4" />}
-                className="px-8 py-3 text-base font-semibold tracking-wide"
-              >
-                Continuer avec {selectedProfileLabel}
-              </Button>
-            )}
-          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full min-h-[calc(80vh-80px)] flex flex-col items-center justify-center py-10 sm:py-16 px-4">
+    <div key="config" className="screen-transition w-full min-h-[calc(80vh-80px)] flex flex-col items-center justify-center py-10 sm:py-16 px-4">
       <div className="w-full max-w-3xl mx-auto space-y-12 sm:space-y-14 text-center">
         <button
           type="button"
