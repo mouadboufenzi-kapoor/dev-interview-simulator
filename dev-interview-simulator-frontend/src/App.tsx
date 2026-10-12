@@ -15,7 +15,7 @@ import { Navbar } from './components/common/Navbar';
 import { Footer } from './components/common/Footer';
 import { AlertCircle, X } from 'lucide-react';
 import { UserDashboard } from './components/UserDashboard';
-import type { AuthUser } from './components/UserAccessModal';
+import { UserAccessModal, type AuthUser } from './components/UserAccessModal';
 import { AdminDashboard } from './components/AdminDashboard';
 
 type ScreenState = 'SETUP' | 'QUIZ' | 'RESULT' | 'DASHBOARD' | 'ADMIN';
@@ -29,6 +29,17 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [reviseCategoryIds, setReviseCategoryIds] = useState<number[] | null>(null);
+  const [showAccessModal, setShowAccessModal] = useState(false);
+  // Nombre de simulations terminées par l'invité dans SA session (sessionStorage).
+  // Côté backend, tous les invités partagent default_user : un compteur serveur
+  // serait faussé — donc zéro architecture ajoutée, compteur local uniquement.
+  const [guestSimulationCount, setGuestSimulationCount] = useState(() => {
+    try {
+      return Number(sessionStorage.getItem('guest_simulation_count')) || 0;
+    } catch {
+      return 0;
+    }
+  });
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -83,6 +94,17 @@ export default function App() {
       const data = await simulationApi.getSimulationResult(simulation.id);
       setSummary(data);
       setScreen('RESULT');
+      if (!user) {
+        setGuestSimulationCount((current) => {
+          const next = current + 1;
+          try {
+            sessionStorage.setItem('guest_simulation_count', String(next));
+          } catch {
+            /* stockage indisponible : le compteur reste valable pour la session */
+          }
+          return next;
+        });
+      }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       console.error(err);
@@ -236,10 +258,31 @@ export default function App() {
           )}
 
           {screen === 'RESULT' && summary && (
-            <ResultScreen summary={summary} onRestart={handleRestart} />
+            <ResultScreen
+              summary={summary}
+              onRestart={handleRestart}
+              onStart={handleStartSimulation}
+              loading={loading}
+              isGuest={user === null}
+              guestSimulationCount={guestSimulationCount}
+              onCreateAccount={() => setShowAccessModal(true)}
+            />
           )}
         </div>
       </main>
+
+      {/* Modal de création de compte — ouverte depuis le CTA invité du bilan.
+          Navbar possède sa propre instance : l'overlay empêche les clics tant
+          qu'une modale est ouverte, les deux ne peuvent donc pas se chevaucher. */}
+      {showAccessModal && (
+        <UserAccessModal
+          onClose={() => setShowAccessModal(false)}
+          onAuthenticated={(authenticatedUser) => {
+            setShowAccessModal(false);
+            handleAuthenticated(authenticatedUser);
+          }}
+        />
+      )}
 
       {/* Discreet Editorial Footer */}
       <Footer />

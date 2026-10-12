@@ -58,8 +58,10 @@ export interface SimulationResponse {
 export interface StartSimulationRequest {
   mode: ChallengeType;
   difficulty?: DifficultyLevel;
+  profileId?: number;
   categoryIds?: number[];
   skillIds?: number[];
+  excludeChallengeIds?: number[];
   questionCount?: number;
 }
 
@@ -113,6 +115,15 @@ export interface QuestionSummary {
   timeSpentMs: number | null;
 }
 
+export type CompetencySource = 'SKILL' | 'CATEGORY';
+
+export interface CompetencyResult {
+  id: number;
+  name: string;
+  correct: number;
+  total: number;
+}
+
 export interface SimulationResultDTO {
   simulationId: number;
   totalScore: number;
@@ -121,5 +132,10 @@ export interface SimulationResultDTO {
   totalTimeSpentSeconds: number;
   totalQuestions: number;
   correctAnswersCount: number;
+  mode: ChallengeType;
+  difficulty: DifficultyLevel | null;
+  profileId: number | null;
+  competencySource: CompetencySource;
+  competencyResults: CompetencyResult[];
   questions: QuestionSummary[];
 }
