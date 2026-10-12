@@ -9,6 +9,8 @@ import com.interview.simulator.challenge.entity.SelectionType;
 import com.interview.simulator.challenge.repository.ChallengeOptionRepository;
 import com.interview.simulator.challenge.repository.ChallengeRepository;
 import com.interview.simulator.challenge.repository.InterviewScenarioRepository;
+import com.interview.simulator.category.entity.Category;
+import com.interview.simulator.skill.entity.Skill;
 import com.interview.simulator.simulation.dto.SimulationChallengeResponse;
 import com.interview.simulator.simulation.dto.ChallengeCorrectionDTO;
 import com.interview.simulator.simulation.dto.SimulationResponse;
@@ -37,7 +39,11 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -127,6 +133,17 @@ public class SimulationService {
                     HttpStatus.UNPROCESSABLE_ENTITY,
                     "Aucune question trouvée pour les critères sélectionnés."
             );
+        }
+
+        // Exclusion optionnelle (ciblage depuis le bilan) : ne repropose pas les questions
+        // déjà répondues. Si tout serait exclu, on garde le pool complet (repli sûr).
+        if (request.excludeChallengeIds() != null && !request.excludeChallengeIds().isEmpty()) {
+            List<Challenge> freshChallenges = matchingChallenges.stream()
+                    .filter(challenge -> !request.excludeChallengeIds().contains(challenge.getId()))
+                    .toList();
+            if (!freshChallenges.isEmpty()) {
+                matchingChallenges = freshChallenges;
+            }
         }
 
         // 3. Architecture conserve l'ordre des étapes ; les autres modes restent aléatoires
@@ -404,6 +421,58 @@ public class SimulationService {
                 ? ((double) totalScore / maxScore) * 100
                 : 0.0;
 
+        // Breakdown par compétence, fondé sur les données existantes
+        // (Challenge.skills / Challenge.categories × réponse) : aucun nouveau calcul de scoring.
+        Map<Long, int[]> skillAgg = new LinkedHashMap<>();
+        Map<Long, String> skillNames = new HashMap<>();
+        Map<Long, int[]> categoryAgg = new LinkedHashMap<>();
+        Map<Long, String> categoryNames = new HashMap<>();
+        int answeredWithSkills = 0;
+
+        for (SimulationAnswer answer : answers) {
+            Challenge challenge = answer.getSimulationChallenge().getChallenge();
+            boolean correct = answer.isCorrect();
+            if (!challenge.getSkills().isEmpty()) {
+                answeredWithSkills++;
+            }
+            for (Skill skill : challenge.getSkills()) {
+                int[] agg = skillAgg.computeIfAbsent(skill.getId(), k -> new int[2]);
+                agg[1]++;
+                if (correct) {
+                    agg[0]++;
+                }
+                skillNames.put(skill.getId(), skill.getName());
+            }
+            for (Category category : challenge.getCategories()) {
+                int[] agg = categoryAgg.computeIfAbsent(category.getId(), k -> new int[2]);
+                agg[1]++;
+                if (correct) {
+                    agg[0]++;
+                }
+                categoryNames.put(category.getId(), category.getName());
+            }
+        }
+
+        // Axe principal : skills si au moins la moitié des questions en portent,
+        // sinon catégories (couverture complète en base, y compris Architecture).
+        double skillCoverage = answers.isEmpty() ? 0.0 : (double) answeredWithSkills / answers.size();
+        boolean useSkills = skillCoverage >= 0.5 && !skillAgg.isEmpty();
+
+        SimulationResultDTO.CompetencySource competencySource = useSkills
+                ? SimulationResultDTO.CompetencySource.SKILL
+                : SimulationResultDTO.CompetencySource.CATEGORY;
+        Map<Long, int[]> competencyAgg = useSkills ? skillAgg : categoryAgg;
+        Map<Long, String> competencyNames = useSkills ? skillNames : categoryNames;
+
+        List<SimulationResultDTO.CompetencyResult> competencyResults = competencyAgg.entrySet().stream()
+                .map(entry -> new SimulationResultDTO.CompetencyResult(
+                        entry.getKey(), competencyNames.get(entry.getKey()), entry.getValue()[0], entry.getValue()[1]))
+                .sorted(Comparator
+                        .comparingDouble((SimulationResultDTO.CompetencyResult r) -> (double) r.correct() / r.total())
+                        .reversed()
+                        .thenComparing(Comparator.comparingInt(SimulationResultDTO.CompetencyResult::total).reversed()))
+                .toList();
+
         return new SimulationResultDTO(
                 simulation.getId(),
                 totalScore,
@@ -412,6 +481,11 @@ public class SimulationService {
                 totalTimeSpentSeconds,
                 answers.size(),
                 correctAnswersCount,
+                simulation.getMode(),
+                simulation.getDifficulty(),
+                simulation.getProfile() != null ? simulation.getProfile().getId() : null,
+                competencySource,
+                competencyResults,
                 questionSummaries
         );
     }

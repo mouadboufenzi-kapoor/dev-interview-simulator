@@ -13,5 +13,6 @@ public record StartSimulationRequest(
     @Positive Long profileId,
     Set<@Positive Long> categoryIds,
     Set<@Positive Long> skillIds,
+    Set<@Positive Long> excludeChallengeIds,
     @Positive Integer questionCount
 ) {}
