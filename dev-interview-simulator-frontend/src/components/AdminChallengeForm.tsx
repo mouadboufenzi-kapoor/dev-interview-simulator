@@ -320,7 +320,7 @@ export const AdminChallengeForm = ({ challengeId, defaultScenarioId, onBack, onS
 
         {formData.type === 'ARCHITECTURE' ? (
           <details className="pt-1">
-            <summary className={`cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white ${fieldLabel} select-none`}>
+            <summary className={`cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas ${fieldLabel} select-none`}>
               Champs avancés (contexte, points, temps estimé)
             </summary>
             <div className="mt-6 space-y-6">
@@ -487,7 +487,7 @@ export const AdminChallengeForm = ({ challengeId, defaultScenarioId, onBack, onS
                       />
                     )}
                   </div>
-                  <label className="flex items-center gap-2 mt-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white">
+                  <label className="flex items-center gap-2 mt-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas">
                     <input
                       type="checkbox"
                       checked={opt.correct}

@@ -154,7 +154,7 @@ export const AdminProfilePanel = () => {
                     key={type}
                     type="button"
                     onClick={() => toggleAllowedType(type)}
-                    className={`px-3 py-2 rounded-xl border text-sm transition cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
+                    className={`px-3 py-2 rounded-xl border text-sm transition cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas ${
                       isSelected
                         ? 'bg-navy-100 border-navy-900 text-navy-900 font-semibold'
                         : 'bg-surface border-border text-ink-secondary hover:bg-canvas-subtle'
@@ -209,7 +209,7 @@ export const AdminProfilePanel = () => {
                 <button
                   onClick={() => handleToggleActive(profile)}
                   title={profile.active ? 'Désactiver' : 'Activer'}
-                  className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
+                  className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas ${
                     profile.active
                       ? 'border-border text-ink-secondary hover:bg-canvas-subtle'
                       : 'border-navy-200 text-navy-900 hover:bg-navy-100'

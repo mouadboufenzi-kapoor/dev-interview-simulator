@@ -196,7 +196,7 @@ export const ResultScreen = ({ summary, onRestart }: Props) => {
           <div className="flex items-center gap-1.5 bg-surface border border-border p-1 rounded-xl text-xs font-sans shadow-card">
             <button
               onClick={() => setFilter('ALL')}
-              className={`px-3 py-1 rounded-lg transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
+              className={`px-3 py-1 rounded-lg transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas ${
                 filter === 'ALL'
                   ? 'bg-navy-100 text-navy-900 font-semibold'
                   : 'text-ink-secondary hover:text-navy-900'
@@ -206,7 +206,7 @@ export const ResultScreen = ({ summary, onRestart }: Props) => {
             </button>
             <button
               onClick={() => setFilter('CORRECT')}
-              className={`px-3 py-1 rounded-lg transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
+              className={`px-3 py-1 rounded-lg transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas ${
                 filter === 'CORRECT'
                   ? 'bg-success-soft text-success font-semibold'
                   : 'text-ink-secondary hover:text-success'
@@ -216,7 +216,7 @@ export const ResultScreen = ({ summary, onRestart }: Props) => {
             </button>
             <button
               onClick={() => setFilter('INCORRECT')}
-              className={`px-3 py-1 rounded-lg transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
+              className={`px-3 py-1 rounded-lg transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas ${
                 filter === 'INCORRECT'
                   ? 'bg-danger-soft text-danger font-semibold'
                   : 'text-ink-secondary hover:text-danger'
@@ -241,7 +241,7 @@ export const ResultScreen = ({ summary, onRestart }: Props) => {
                 <button
                   type="button"
                   onClick={() => toggleAccordion(q.challengeId)}
-                  className="w-full flex items-center justify-between p-5 text-left hover:bg-canvas-subtle transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white select-none"
+                  className="w-full flex items-center justify-between p-5 text-left hover:bg-canvas-subtle transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas select-none"
                 >
                   <div className="flex items-center gap-3.5 pr-2 flex-1 min-w-0">
                     <span

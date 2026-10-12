@@ -274,7 +274,7 @@ export const UserDashboard = ({ user, onStartSimulation, onRevise, onOpenResult 
                     key={simulation.id}
                     type="button"
                     onClick={() => onOpenResult?.(simulation.id)}
-                    className="w-full text-left py-3 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-4 hover:bg-surface-elevated transition cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                    className="w-full text-left py-3 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-4 hover:bg-surface-elevated transition cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas"
                   >
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-mono text-xs text-ink-muted">{formatDate(simulation.startedAt)}</span>
@@ -317,14 +317,14 @@ export const UserDashboard = ({ user, onStartSimulation, onRevise, onOpenResult 
                   <button
                     onClick={() => setSimPage(p => Math.max(0, p - 1))}
                     disabled={stats.simulations.page === 0}
-                    className="px-4 py-2 min-h-[40px] rounded-lg border border-border bg-surface hover:bg-canvas-subtle disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                    className="px-4 py-2 min-h-[40px] rounded-lg border border-border bg-surface hover:bg-canvas-subtle disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas"
                   >
                     Précédent
                   </button>
                   <button
                     onClick={() => setSimPage(p => Math.min(stats.simulations.totalPages - 1, p + 1))}
                     disabled={stats.simulations.page >= stats.simulations.totalPages - 1}
-                    className="px-4 py-2 min-h-[40px] rounded-lg border border-border bg-surface hover:bg-canvas-subtle disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                    className="px-4 py-2 min-h-[40px] rounded-lg border border-border bg-surface hover:bg-canvas-subtle disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas"
                   >
                     Suivant
                   </button>

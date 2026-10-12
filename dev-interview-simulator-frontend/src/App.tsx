@@ -233,7 +233,7 @@ export default function App() {
             </div>
             <button
               onClick={() => setError(null)}
-              className="text-crimson-700 hover:text-crimson-900 p-1 rounded-md transition cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+              className="text-crimson-700 hover:text-crimson-900 dark:hover:text-white p-1 rounded-md transition cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas"
               title="Fermer"
             >
               <X className="w-4 h-4" />

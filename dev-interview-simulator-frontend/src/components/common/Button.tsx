@@ -38,13 +38,13 @@ export const Button: React.FC<ButtonProps> = ({
 
   const variantStyles: Record<ButtonVariant, string> = {
     primary:
-      'bg-crimson-700 hover:bg-crimson-800 text-white border border-crimson-700 shadow-[0_2px_8px_rgba(172,59,97,0.25)] hover:shadow-[0_4px_12px_rgba(172,59,97,0.35)] focus-visible:ring-crimson-700',
+      'bg-crimson-700 hover:bg-crimson-800 dark:bg-crimson-900 text-white border border-crimson-700 dark:border-crimson-900 shadow-[0_2px_8px_rgba(172,59,97,0.25)] hover:shadow-[0_4px_12px_rgba(172,59,97,0.35)] focus-visible:ring-crimson-700',
     navy:
-      'bg-navy-900 hover:bg-navy-950 text-white border border-navy-900 shadow-[0_2px_8px_rgba(18,60,105,0.25)] hover:shadow-[0_4px_12px_rgba(18,60,105,0.35)] focus-visible:ring-navy-900',
+      'bg-navy-900 hover:bg-navy-950 dark:bg-navy-800 text-white border border-navy-900 dark:border-navy-800 shadow-[0_2px_8px_rgba(18,60,105,0.25)] hover:shadow-[0_4px_12px_rgba(18,60,105,0.35)] focus-visible:ring-navy-900',
     secondary:
       'bg-surface hover:bg-canvas-subtle text-navy-900 border border-border hover:border-border-strong shadow-card focus-visible:ring-navy-900',
     outline:
-      'bg-transparent hover:bg-navy-100 text-navy-900 hover:text-navy-950 border border-border-strong hover:border-navy-900 focus-visible:ring-navy-900',
+      'bg-transparent hover:bg-navy-100 text-navy-900 hover:text-navy-950 dark:hover:text-white border border-border-strong hover:border-navy-900 focus-visible:ring-navy-900',
     champagne:
       'bg-peach-500 hover:bg-peach-400 text-navy-900 font-semibold border border-peach-500 shadow-card focus-visible:ring-crimson-700',
     ghost:

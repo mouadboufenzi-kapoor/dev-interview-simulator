@@ -222,7 +222,7 @@ export const SetupScreen = ({ onStart, loading, activeMode, initialCategoryIds }
                   type="button"
                   onClick={() => setSelectedProfile(profile.id)}
                   aria-pressed={isSelected}
-                  className={`group relative min-h-36 rounded-2xl border p-5 text-left transition-all duration-200 cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
+                  className={`group relative min-h-36 rounded-2xl border p-5 text-left transition-all duration-200 cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas ${
                     isSelected
                       ? 'bg-surface border-navy-900 shadow-elevated ring-1 ring-navy-900'
                       : 'bg-surface/90 border-border hover:border-border-strong hover:shadow-panel'
@@ -241,7 +241,7 @@ export const SetupScreen = ({ onStart, loading, activeMode, initialCategoryIds }
                     <div
                       className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
                         isSelected
-                          ? 'border-navy-900 bg-navy-900 text-white'
+                          ? 'border-navy-900 bg-navy-900 dark:bg-navy-800 text-white'
                           : 'border-border bg-surface'
                       }`}
                     >
@@ -291,7 +291,7 @@ export const SetupScreen = ({ onStart, loading, activeMode, initialCategoryIds }
         <button
           type="button"
           onClick={() => setShowConfiguration(false)}
-          className="mx-auto flex items-center gap-2 text-xs font-medium text-ink-muted hover:text-navy-900 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+          className="mx-auto flex items-center gap-2 text-xs font-medium text-ink-muted hover:text-navy-900 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           Changer de profil
@@ -324,7 +324,7 @@ export const SetupScreen = ({ onStart, loading, activeMode, initialCategoryIds }
                 <div
                   key={mode.id}
                   onClick={() => setSelectedMode(mode.id)}
-                  className={`group relative rounded-2xl border p-6 transition-all duration-200 cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white flex flex-col justify-between select-none ${
+                  className={`group relative rounded-2xl border p-6 transition-all duration-200 cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas flex flex-col justify-between select-none ${
                     isSelected
                       ? 'bg-surface border-navy-900 shadow-elevated ring-1 ring-navy-900'
                       : 'bg-surface border-border hover:border-border-strong hover:shadow-panel'
@@ -346,7 +346,7 @@ export const SetupScreen = ({ onStart, loading, activeMode, initialCategoryIds }
                       <div
                         className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
                           isSelected
-                            ? 'border-navy-900 bg-navy-900 text-white'
+                            ? 'border-navy-900 bg-navy-900 dark:bg-navy-800 text-white'
                             : 'border-border bg-surface'
                         }`}
                       >
@@ -384,9 +384,9 @@ export const SetupScreen = ({ onStart, loading, activeMode, initialCategoryIds }
                       key={diff.id}
                       type="button"
                       onClick={() => setSelectedDifficulty(diff.id)}
-                      className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
+                      className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas ${
                         isDiffSelected
-                          ? 'bg-navy-900 text-white shadow-sm'
+                          ? 'bg-navy-900 dark:bg-navy-800 text-white shadow-sm'
                           : 'text-ink-secondary hover:text-ink hover:bg-canvas-subtle'
                       }`}
                     >
@@ -485,9 +485,9 @@ export const SetupScreen = ({ onStart, loading, activeMode, initialCategoryIds }
                       key={count}
                       type="button"
                       onClick={() => setQuestionCount(count)}
-                      className={`w-6 h-6 rounded text-xs font-mono font-semibold transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
+                      className={`w-6 h-6 rounded text-xs font-mono font-semibold transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas ${
                         questionCount === count
-                          ? 'bg-navy-900 text-white'
+                          ? 'bg-navy-900 dark:bg-navy-800 text-white'
                           : 'text-ink-warm hover:bg-canvas-subtle'
                       }`}
                     >

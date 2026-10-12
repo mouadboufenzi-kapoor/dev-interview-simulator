@@ -71,7 +71,7 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
         <button
           onClick={handleCopy}
           type="button"
-          className="flex items-center gap-1.5 text-xs text-navy-900 hover:text-navy-950 px-2.5 py-1 rounded-md bg-surface hover:bg-sand-100 border border-border transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white shadow-card"
+          className="flex items-center gap-1.5 text-xs text-navy-900 hover:text-navy-950 dark:hover:text-white px-2.5 py-1 rounded-md bg-surface hover:bg-sand-100 border border-border transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas shadow-card"
           title={COPY_TITLE}
         >
           {copied ? (

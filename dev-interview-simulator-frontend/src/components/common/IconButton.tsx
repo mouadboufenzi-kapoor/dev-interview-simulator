@@ -25,7 +25,7 @@ export const IconButton: React.FC<IconButtonProps> = ({
 }) => (
   <button
     type="button"
-    className={`p-2 rounded-lg transition cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white ${variantStyles[variant]} ${className}`.trim()}
+    className={`p-2 rounded-lg transition cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas ${variantStyles[variant]} ${className}`.trim()}
     {...props}
   >
     {children}

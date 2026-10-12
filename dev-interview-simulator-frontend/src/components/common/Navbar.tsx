@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Logo } from './Logo';
 import { PageTitle } from './PageTitle';
+import { ThemeToggle } from './ThemeToggle';
 import { Badge } from './Badge';
 import { Button } from './Button';
 import {
@@ -99,7 +100,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   onQuit();
                 }
               }}
-              className="text-left focus:outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+              className="text-left focus:outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas"
               title="Accueil Dev Interview Simulator"
             >
               <Logo size="sm" showSubtitle={false} />
@@ -135,12 +136,15 @@ export const Navbar: React.FC<NavbarProps> = ({
               </Button>
             ) : (
               <div className="flex items-center gap-1.5 sm:gap-2">
+                {/* Dark mode toggle */}
+                <ThemeToggle />
+
                 {/* Secondary Menu "Plus" */}
                 <div className="relative" ref={plusMenuRef}>
                   <button
                     type="button"
                     onClick={() => setShowPlusMenu(!showPlusMenu)}
-                    className="flex items-center gap-1 text-xs font-sans text-ink-warm hover:text-navy-900 px-2 sm:px-2.5 py-1.5 rounded-lg hover:bg-canvas-subtle transition cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                    className="flex items-center gap-1 text-xs font-sans text-ink-warm hover:text-navy-900 px-2 sm:px-2.5 py-1.5 rounded-lg hover:bg-canvas-subtle transition cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas"
                   >
                     <span className="hidden sm:inline">Explorer</span>
                     <ChevronDown className="w-3.5 h-3.5" />
@@ -208,7 +212,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         setShowAccessModal(true);
                       }
                     }}
-                    className="flex items-center gap-2 text-xs font-sans text-ink-warm transition hover:text-navy-900 cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                    className="flex items-center gap-2 text-xs font-sans text-ink-warm transition hover:text-navy-900 cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas"
                     aria-label={user ? 'Ouvrir le menu utilisateur' : 'Ouvrir la connexion'}
                   >
                     <div className="flex h-7 w-7 items-center justify-center rounded-full bg-navy-100 text-navy-900">

@@ -286,7 +286,7 @@ export const QuizScreen = ({ simulation, onFinish, onError }: Props) => {
               cardStyle =
                 'border-crimson-700 bg-crimson-100 text-ink ring-1 ring-crimson-700 shadow-[0_2px_6px_rgba(172,59,97,0.06)]';
               indicatorStyle =
-                'border-crimson-700 bg-crimson-700 text-white font-bold';
+                'border-crimson-700 bg-crimson-700 dark:border-crimson-900 dark:bg-crimson-900 text-white font-bold';
             }
 
             return (
@@ -294,7 +294,7 @@ export const QuizScreen = ({ simulation, onFinish, onError }: Props) => {
                 key={option.id}
                 onClick={() => handleSelectOption(option.id)}
                 className={`relative flex items-start gap-4 p-4 sm:p-5 rounded-xl border transition-all duration-150 select-none ${
-                  feedback ? 'cursor-default' : 'cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.998]'
+                  feedback ? 'cursor-default' : 'cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas active:scale-[0.998]'
                 } ${cardStyle}`}
               >
                 {/* Index / Checkbox indicator */}

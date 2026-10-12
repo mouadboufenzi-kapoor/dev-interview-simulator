@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Dark mode par classe : <html class="dark"> (piloté par ThemeToggle + localStorage) */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   /* ===== Surfaces ===== */
   --color-canvas: #FFFFFF;
@@ -73,6 +76,78 @@
   --font-serif: 'Newsreader', Georgia, Cambria, serif;
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+}
+
+/* =====================================================================
+   DARK MODE — palette « navy night », fidèle à la charte (bleu profond).
+   Principe : redéfinir les tokens sous .dark → tous les utilitaires
+   (bg/text/border/ring/fill + ombres de marque) suivent automatiquement,
+   car ils compilent en var(--color-*).
+   Invariants de conception :
+   - surfaces/textes neutres inversés (clairs sur sombres) ;
+   - navy-900 / crimson-700 deviennent CLAIRS (ils portent surtout le texte :
+   titres, labels, bordures) ;
+   - navy-950 / crimson-800/900 restent SOMBRES (fonds des boutons + hover) :
+   les rares spots bg-accent + text-white sont corrigés par dark: dans le JSX.
+   - le watermark SVG (data-URI) garde ses couleurs — non pilotable par var().
+   ===================================================================== */
+.dark {
+  /* Surfaces */
+  --color-canvas: #0B1524;
+  --color-canvas-subtle: #101C30;
+  --color-surface: #16233C;
+  --color-surface-elevated: #1B2A47;
+
+  /* Bordures */
+  --color-border: #2B3D61;
+  --color-border-subtle: #223350;
+  --color-border-strong: #55688F;
+
+  /* Textes */
+  --color-ink: #E9EEF8;
+  --color-ink-secondary: #B3C0D8;
+  --color-ink-muted: #8494B0;
+  --color-ink-warm: #9BA8C0;
+
+  /* Navy — 950/800/700 inchangés (fonds de boutons), 900 devient clair (texte) */
+  --color-navy-900: #93B9EA;
+  --color-navy-200: #33486F;
+  --color-navy-100: #1C2C4A;
+  --color-navy-50: #14213B;
+
+  /* Crimson — 900/800 inchangés (fonds de boutons), 700/600 deviennent clairs */
+  --color-crimson-700: #E58CA6;
+  --color-crimson-600: #D97A96;
+  --color-crimson-200: #6B3050;
+  --color-crimson-100: #3A1B2F;
+  --color-crimson-50: #2B1423;
+
+  /* Peach / Sand — deviennent des neutres chauds sombres */
+  --color-peach-500: #4A3229;
+  --color-peach-400: #5A3E33;
+  --color-peach-300: #6B4C3F;
+  --color-peach-100: #3A2821;
+  --color-peach-50: #2A1D18;
+  --color-peach-ink: #E0B3A0;
+  --color-sand-100: #1A2540;
+  --color-sand-300: #2E3E63;
+
+  /* Statuts */
+  --color-success: #7BC99A;
+  --color-success-strong: #6FBE8F;
+  --color-success-surface: #173326;
+  --color-success-soft: #12281E;
+  --color-success-border: #2F5B43;
+
+  --color-danger: #E89A9A;
+  --color-danger-soft: #331A1F;
+  --color-danger-soft-hover: #40222A;
+  --color-danger-border: #6B3540;
+
+  --color-warning: #D9B26A;
+  --color-warning-soft: #2E2415;
+  --color-warning-border: #5C4A26;
+  --color-warning-accent: #D4AC6B;
 }
 
 @layer base {

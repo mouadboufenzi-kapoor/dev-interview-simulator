@@ -135,7 +135,7 @@ const loadChallenges = async () => {
           onClick={() => setTab('stats')}
           className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${
             tab === 'stats'
-              ? 'bg-navy-900 text-white'
+              ? 'bg-navy-900 dark:bg-navy-800 text-white'
               : 'bg-surface border border-border text-ink-secondary hover:bg-canvas-subtle'
           }`}
         >
@@ -145,7 +145,7 @@ const loadChallenges = async () => {
           onClick={() => setTab('content')}
           className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${
             tab === 'content'
-              ? 'bg-navy-900 text-white'
+              ? 'bg-navy-900 dark:bg-navy-800 text-white'
               : 'bg-surface border border-border text-ink-secondary hover:bg-canvas-subtle'
           }`}
         >
@@ -155,7 +155,7 @@ const loadChallenges = async () => {
           onClick={() => setTab('scenarios')}
           className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${
             tab === 'scenarios'
-              ? 'bg-navy-900 text-white'
+              ? 'bg-navy-900 dark:bg-navy-800 text-white'
               : 'bg-surface border border-border text-ink-secondary hover:bg-canvas-subtle'
           }`}
         >
@@ -165,7 +165,7 @@ const loadChallenges = async () => {
           onClick={() => setTab('profiles')}
           className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${
             tab === 'profiles'
-              ? 'bg-navy-900 text-white'
+              ? 'bg-navy-900 dark:bg-navy-800 text-white'
               : 'bg-surface border border-border text-ink-secondary hover:bg-canvas-subtle'
           }`}
         >
@@ -313,7 +313,7 @@ const loadChallenges = async () => {
                   <button
                     onClick={() => setPage((p) => Math.max(0, p - 1))}
                     disabled={page === 0 || loading}
-                    className="px-3 py-1.5 rounded-lg border border-border bg-surface hover:bg-canvas-subtle disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                    className="px-3 py-1.5 rounded-lg border border-border bg-surface hover:bg-canvas-subtle disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas"
                   >
                     Précédent
                   </button>
@@ -321,7 +321,7 @@ const loadChallenges = async () => {
                   <button
                     onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                     disabled={page >= totalPages - 1 || loading}
-                    className="px-3 py-1.5 rounded-lg border border-border bg-surface hover:bg-canvas-subtle disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                    className="px-3 py-1.5 rounded-lg border border-border bg-surface hover:bg-canvas-subtle disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas"
                   >
                     Suivant
                   </button>
