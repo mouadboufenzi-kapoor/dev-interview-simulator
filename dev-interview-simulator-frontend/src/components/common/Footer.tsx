@@ -3,20 +3,20 @@ import { Sparkles } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   return (
-    <footer className="w-full border-t border-[#DDD5D8] bg-[#EEE2DC]/75 py-8 px-4 sm:px-6 mt-auto">
-      <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#484F59]">
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-[#AC3B61]" />
-          <span className="font-serif font-semibold text-[#123C69]">
+    <footer className="w-full border-t border-border bg-sand-100/75 py-8 px-4 sm:px-6 mt-auto">
+      <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-ink-secondary">
+        <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center">
+          <Sparkles className="w-4 h-4 text-crimson-700" />
+          <span className="font-serif font-semibold text-navy-900">
             Dev Interview Simulator
           </span>
-          <span className="text-[#BAB2B5]">—</span>
-          <span>Simulation d'entretiens techniques pour développeurs</span>
+          <span className="text-border-strong hidden sm:inline">—</span>
+          <span className="text-[11px] sm:text-xs">Simulation d'entretiens techniques pour développeurs</span>
         </div>
 
-        <div className="flex items-center gap-6 text-[11px] font-sans text-[#797E88]">
+        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1 text-[11px] font-sans text-ink-muted">
           <div className="flex items-center gap-1.5">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#185E37]" />
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-success" />
             <span>Moteur d'évaluation actif</span>
           </div>
           <div>PostgreSQL • Spring Boot • React</div>

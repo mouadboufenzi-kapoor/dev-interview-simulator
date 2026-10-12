@@ -27,7 +27,7 @@ export const Logo: React.FC<LogoProps> = ({
     <div className={`flex items-center gap-2.5 select-none ${className}`}>
       {/* Brand Monogram Icon */}
       <div
-        className={`${iconSizes[size]} relative flex-shrink-0 rounded-lg bg-white border border-[#DDD5D8] flex items-center justify-center p-1.5 shadow-[0_1px_2px_rgba(18,60,105,0.04)]`}
+        className={`${iconSizes[size]} relative flex-shrink-0 rounded-lg bg-surface border border-border flex items-center justify-center p-1.5 shadow-card`}
       >
         <svg
           viewBox="0 0 32 32"
@@ -35,12 +35,12 @@ export const Logo: React.FC<LogoProps> = ({
           xmlns="http://www.w3.org/2000/svg"
           className="w-full h-full"
         >
-          {/* Deep Navy architectural facet (#123C69) */}
-          <path d="M8 24V8L18 16L8 24Z" fill="#123C69" />
-          {/* Rosewood upward facet (#AC3B61) */}
-          <path d="M18 8V24L24 16L18 8Z" fill="#AC3B61" />
-          {/* Warm Sand dot (#EDC7B7) */}
-          <circle cx="21" cy="16" r="1.5" fill="#EDC7B7" />
+          {/* Deep Navy architectural facet */}
+          <path d="M8 24V8L18 16L8 24Z" className="fill-navy-900" />
+          {/* Rosewood upward facet */}
+          <path d="M18 8V24L24 16L18 8Z" className="fill-crimson-700" />
+          {/* Warm Sand dot */}
+          <circle cx="21" cy="16" r="1.5" className="fill-peach-500" />
         </svg>
       </div>
 
@@ -48,14 +48,14 @@ export const Logo: React.FC<LogoProps> = ({
       <div className="flex flex-col leading-none">
         <div className="flex items-center gap-1.5">
           <span
-            className={`${titleSizes[size]} font-serif font-semibold tracking-tight text-[#123C69]`}
+            className={`${titleSizes[size]} font-serif font-semibold tracking-tight text-navy-900`}
           >
             Dev Interview
           </span>
-          <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#AC3B61]"></span>
+          <span className="inline-block w-1.5 h-1.5 rounded-full bg-crimson-700"></span>
         </div>
         {showSubtitle && (
-          <span className="font-sans text-[9px] tracking-[0.22em] uppercase text-[#797E88] mt-1 font-semibold">
+          <span className="font-sans text-[9px] tracking-[0.22em] uppercase text-ink-muted mt-1 font-semibold">
             SIMULATOR
           </span>
         )}

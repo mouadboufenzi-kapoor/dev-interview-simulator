@@ -1,41 +1,75 @@
 @import "tailwindcss";
 
 @theme {
+  /* ===== Surfaces ===== */
   --color-canvas: #FFFFFF;
   --color-canvas-subtle: #FAF9F7;
   --color-surface: #FFFFFF;
   --color-surface-elevated: #FCFBF9;
+
+  /* ===== Bordures ===== */
   --color-border: #E8E2D8;
   --color-border-subtle: #F2EDE6;
   --color-border-strong: #BAB2B5;
 
+  /* ===== Textes ===== */
   --color-ink: #102136;
   --color-ink-secondary: #484F59;
   --color-ink-muted: #797E88;
+  --color-ink-warm: #5C554E;
 
+  /* ===== Navy (primaire) ===== */
   --color-navy-950: #0B1E34;
   --color-navy-900: #123C69;
   --color-navy-800: #194C84;
   --color-navy-700: #2260A3;
+  --color-navy-200: #B8D3EC;
   --color-navy-100: #E6EFF8;
   --color-navy-50: #F1F6FB;
 
+  /* ===== Crimson (accent) ===== */
   --color-crimson-900: #6D1B37;
   --color-crimson-800: #8C294A;
   --color-crimson-700: #AC3B61;
   --color-crimson-600: #C44872;
+  --color-crimson-200: #F1BED0;
   --color-crimson-100: #FCEBF1;
   --color-crimson-50: #FCF4F7;
 
+  /* ===== Peach / Sand (neutres chauds) ===== */
   --color-peach-500: #EDC7B7;
+  --color-peach-400: #E2B5A2;
   --color-peach-300: #F4D9CE;
   --color-peach-100: #FBF0EB;
   --color-peach-50: #FDF7F5;
+  --color-peach-ink: #8A4A33;
+  --color-sand-100: #EEE2DC;
+  --color-sand-300: #E8DAD3;
 
-  --color-slate-400: #BAB2B5;
-  --color-slate-500: #9C9497;
-  --color-slate-600: #746C70;
+  /* ===== Statuts ===== */
+  --color-success: #185E37;
+  --color-success-strong: #2E7D32;
+  --color-success-surface: #E8F5E9;
+  --color-success-soft: #F0F7F3;
+  --color-success-border: #B6DEC5;
 
+  --color-danger: #9C2727;
+  --color-danger-soft: #FDF2F2;
+  --color-danger-soft-hover: #FBE4E4;
+  --color-danger-border: #F3BEBE;
+
+  --color-warning: #7A5214;
+  --color-warning-soft: #FBF6ED;
+  --color-warning-border: #E8D2A7;
+  --color-warning-accent: #C89D58;
+
+  /* ===== Ombres nommées (harmonisées, étape 9) ===== */
+  --shadow-card: 0 1px 3px rgba(18, 60, 105, 0.03);
+  --shadow-panel: 0 2px 10px rgba(18, 60, 105, 0.05);
+  --shadow-elevated: 0 4px 16px rgba(18, 60, 105, 0.06);
+  --shadow-modal: 0 12px 35px rgba(18, 60, 105, 0.12);
+
+  /* ===== Polices ===== */
   --font-serif: 'Newsreader', Georgia, Cambria, serif;
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
@@ -43,14 +77,20 @@
 
 @layer base {
   * {
-    border-color: #E8E2D8;
+    border-color: var(--color-border);
   }
 
   body {
-    background-color: #FFFFFF;
-    color: #102136;
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
     font-family: var(--font-sans);
     min-height: 100vh;
+  }
+
+  /* Selection de marque (migré depuis index.html, étape 11) */
+  ::selection {
+    background-color: var(--color-peach-500);
+    color: var(--color-navy-900);
   }
 
   code, pre, kbd {
@@ -58,7 +98,9 @@
   }
 }
 
-/* Subtle brand watermark pattern on white background */
+/* Subtle brand watermark pattern on white background.
+   NOTE : encode les couleurs de marque en dur (data-URI SVG, var() impossible
+   dans url()) — point de bascule documenté pour le dark mode (étape 11). */
 .watermark-pattern {
   background-image: url("data:image/svg+xml,%3Csvg width='120' height='120' viewBox='0 0 120 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cpath d='M52 68V52L62 60L52 68Z' fill='%23123C69' fill-opacity='0.02'/%3E%3Cpath d='M62 52V68L68 60L62 52Z' fill='%23AC3B61' fill-opacity='0.02'/%3E%3Cpath d='M-8 8V-8L2 0L-8 8Z' fill='%23123C69' fill-opacity='0.02'/%3E%3Cpath d='M112 8V-8L122 0L112 8Z' fill='%23123C69' fill-opacity='0.02'/%3E%3Cpath d='M-8 128V112L2 120L-8 128Z' fill='%23123C69' fill-opacity='0.02'/%3E%3Cpath d='M112 128V112L122 120L112 128Z' fill='%23123C69' fill-opacity='0.02'/%3E%3C/g%3E%3C/svg%3E");
 }
@@ -70,14 +112,14 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #FFFFFF;
+  background: var(--color-canvas);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #DDD5D8;
+  background: var(--color-border-strong);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #BAB2B5;
+  background: var(--color-ink-muted);
 }

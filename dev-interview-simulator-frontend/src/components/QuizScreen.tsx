@@ -50,8 +50,8 @@ export const QuizScreen = ({ simulation, onFinish, onError }: Props) => {
   if (!currentChallenge) {
     return (
       <div className="max-w-3xl mx-auto py-12 text-center">
-        <div className="bg-white border border-[#F3BEBE] rounded-2xl p-8">
-          <p className="text-[#9C2727] font-medium text-sm">
+        <div className="bg-surface border border-danger-border rounded-2xl p-8">
+          <p className="text-danger font-medium text-sm">
             Impossible de charger la question courante.
           </p>
         </div>
@@ -118,17 +118,17 @@ export const QuizScreen = ({ simulation, onFinish, onError }: Props) => {
   const isMultiChoice = currentChallenge.selectionType === 'MULTIPLE_CHOICE';
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 py-2 sm:py-4">
+    <div className="max-w-4xl min-w-0 mx-auto space-y-8 py-2 sm:py-4">
       {/* Editorial Progress Header */}
       <div className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2">
-            <span className="font-mono uppercase tracking-wider text-[#797E88] font-semibold">
+            <span className="font-mono uppercase tracking-wider text-ink-muted font-semibold">
               {currentChallenge.type === 'ARCHITECTURE'
                 ? `ÉTAPE ${(currentChallenge.stepOrder ?? currentIndex + 1).toString().padStart(2, '0')} / ${(currentChallenge.totalSteps ?? totalChallenges).toString().padStart(2, '0')}`
                 : `QUESTION ${(currentIndex + 1).toString().padStart(2, '0')} / ${totalChallenges.toString().padStart(2, '0')}`}
             </span>
-            <span className="text-[#BAB2B5]">•</span>
+            <span className="text-border-strong">•</span>
             <Badge variant="navy" size="sm">
               {currentChallenge.type === 'CODE_REVIEW'
                 ? 'Code Review'
@@ -140,13 +140,13 @@ export const QuizScreen = ({ simulation, onFinish, onError }: Props) => {
 
           {/* Timer & Live Score */}
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 font-mono text-xs bg-white px-2.5 py-1 rounded-md border border-[#DDD5D8] text-[#123C69] shadow-[0_1px_2px_rgba(18,60,105,0.02)]">
-              <Clock className="w-3.5 h-3.5 text-[#123C69]" />
+            <div className="flex items-center gap-1.5 font-mono text-xs bg-surface px-2.5 py-1 rounded-md border border-border text-navy-900 shadow-card">
+              <Clock className="w-3.5 h-3.5 text-navy-900" />
               <span>{formatTime(secondsElapsed)}</span>
             </div>
 
-            <div className="flex items-center gap-1.5 font-mono text-xs bg-white px-2.5 py-1 rounded-md border border-[#DDD5D8] text-[#AC3B61] font-semibold shadow-[0_1px_2px_rgba(18,60,105,0.02)]">
-              <Award className="w-3.5 h-3.5 text-[#AC3B61]" />
+            <div className="flex items-center gap-1.5 font-mono text-xs bg-surface px-2.5 py-1 rounded-md border border-border text-crimson-700 font-semibold shadow-card">
+              <Award className="w-3.5 h-3.5 text-crimson-700" />
               <span>
                 {feedback ? feedback.totalSimulationScore : simulation.totalScore} pts
               </span>
@@ -154,30 +154,30 @@ export const QuizScreen = ({ simulation, onFinish, onError }: Props) => {
           </div>
         </div>
 
-        {/* Minimal Progress Bar in Accent Rosewood (#AC3B61) */}
-        <div className="w-full h-1 bg-[#DDD5D8] rounded-full overflow-hidden">
+        {/* Minimal Progress Bar in Accent Rosewood (crimson-700) */}
+        <div className="w-full h-1 bg-border rounded-full overflow-hidden">
           <div
-            className="h-full bg-[#AC3B61] transition-all duration-300 ease-out"
+            className="h-full bg-crimson-700 transition-all duration-300 ease-out"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
       </div>
 
       {/* Main Challenge Surface */}
-      <div className="bg-white border border-[#DDD5D8] rounded-2xl p-6 sm:p-9 shadow-[0_4px_16px_rgba(18,60,105,0.05)] space-y-7">
+      <div className="bg-surface border border-border rounded-2xl p-6 sm:p-9 shadow-elevated space-y-7">
         {/* Architecture Scenario Context (if Architecture) */}
         {currentChallenge.type === 'ARCHITECTURE' && currentChallenge.scenarioTitle && (
-          <div className="rounded-xl border border-[#B8D3EC] bg-[#F1F6FB] p-4 sm:p-5">
+          <div className="rounded-xl border border-navy-200 bg-navy-50 p-4 sm:p-5">
             <div className="flex items-start gap-3">
-              <div className="p-2 rounded-lg bg-white border border-[#B8D3EC] text-[#123C69] flex-shrink-0">
+              <div className="p-2 rounded-lg bg-surface border border-navy-200 text-navy-900 flex-shrink-0">
                 <Layers className="w-4 h-4" />
               </div>
               <div className="space-y-1">
-                <p className="font-serif font-bold text-base text-[#123C69]">
+                <p className="font-serif font-bold text-base text-navy-900">
                   {currentChallenge.scenarioTitle}
                 </p>
                 {currentChallenge.scenarioDescription && (
-                  <p className="text-xs sm:text-sm text-[#484F59] leading-relaxed">
+                  <p className="text-xs sm:text-sm text-ink-secondary leading-relaxed">
                     {currentChallenge.scenarioDescription}
                   </p>
                 )}
@@ -188,17 +188,17 @@ export const QuizScreen = ({ simulation, onFinish, onError }: Props) => {
 
         {/* Challenge Title */}
         <div className="space-y-3">
-          <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#102136] tracking-tight leading-snug">
+          <h2 className="font-serif text-2xl sm:text-3xl font-bold text-ink tracking-tight leading-snug">
             {currentChallenge.title}
           </h2>
 
           {/* Context box if available */}
           {currentChallenge.context && (
-            <div className="p-4 rounded-xl bg-[#FAF7F5] border border-[#DDD5D8] text-sm text-[#484F59] leading-relaxed">
-              <div className="text-[11px] font-mono text-[#797E88] uppercase tracking-wider mb-1 font-semibold">
+            <div className="p-4 rounded-xl bg-canvas-subtle border border-border text-sm text-ink-secondary leading-relaxed">
+              <div className="text-[11px] font-mono text-ink-muted uppercase tracking-wider mb-1 font-semibold">
                 Mise en situation
               </div>
-              <p className="italic text-[#102136] font-serif text-base">{currentChallenge.context}</p>
+              <p className="italic text-ink font-serif text-base">{currentChallenge.context}</p>
             </div>
           )}
         </div>
@@ -206,9 +206,9 @@ export const QuizScreen = ({ simulation, onFinish, onError }: Props) => {
         {/* Code Snippet for Code Review */}
         {currentChallenge.codeSnippet && (
           <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs text-[#484F59]">
-              <span className="font-sans font-medium flex items-center gap-1.5 text-[#123C69]">
-                <Code2 className="w-4 h-4 text-[#AC3B61]" />
+            <div className="flex items-center justify-between text-xs text-ink-secondary">
+              <span className="font-sans font-medium flex items-center gap-1.5 text-navy-900">
+                <Code2 className="w-4 h-4 text-crimson-700" />
                 Extrait de code source à inspecter
               </span>
               {currentChallenge.codeLanguage && (
@@ -227,9 +227,9 @@ export const QuizScreen = ({ simulation, onFinish, onError }: Props) => {
         )}
 
         {/* Question Prompt */}
-        <div className="space-y-2 pt-2 border-t border-[#E9E1DE]">
+        <div className="space-y-2 pt-2 border-t border-border">
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-mono text-[#AC3B61] font-semibold tracking-wider uppercase">
+            <span className="text-[11px] font-mono text-crimson-700 font-semibold tracking-wider uppercase">
               Question
             </span>
             {isMultiChoice && !feedback && (
@@ -238,7 +238,7 @@ export const QuizScreen = ({ simulation, onFinish, onError }: Props) => {
               </Badge>
             )}
           </div>
-          <p className="text-lg sm:text-xl font-serif text-[#102136] font-semibold leading-relaxed">
+          <p className="text-lg sm:text-xl font-serif text-ink font-semibold leading-relaxed">
             {currentChallenge.question}
           </p>
         </div>
@@ -253,40 +253,40 @@ export const QuizScreen = ({ simulation, onFinish, onError }: Props) => {
 
             // Dynamic styling
             let cardStyle =
-              'border-[#DDD5D8] bg-white hover:border-[#BAB2B5] hover:bg-[#FAF7F5] text-[#102136] shadow-[0_1px_2px_rgba(18,60,105,0.02)]';
+              'border-border bg-surface hover:border-border-strong hover:bg-canvas-subtle text-ink shadow-card';
             let indicatorStyle =
-              'border-[#DDD5D8] bg-[#FAF7F5] text-[#484F59]';
+              'border-border bg-canvas-subtle text-ink-secondary';
 
             if (feedback) {
               if (correction?.isCorrect && correction.wasSelected) {
                 // Correct & Selected
                 cardStyle =
-                  'border-[#B6DEC5] bg-[#F0F7F3] text-[#185E37] ring-1 ring-[#B6DEC5]';
+                  'border-success-border bg-success-soft text-success ring-1 ring-success-border';
                 indicatorStyle =
-                  'border-[#185E37] bg-[#185E37] text-white font-bold';
+                  'border-success bg-success text-white font-bold';
               } else if (correction?.isCorrect) {
                 // Correct but missed
                 cardStyle =
-                  'border-[#B6DEC5] bg-[#F0F7F3]/50 text-[#185E37]';
+                  'border-success-border bg-success-soft/50 text-success';
                 indicatorStyle =
-                  'border-[#B6DEC5] bg-white text-[#185E37]';
+                  'border-success-border bg-surface text-success';
               } else if (correction?.wasSelected) {
                 // Incorrectly chosen
                 cardStyle =
-                  'border-[#F3BEBE] bg-[#FDF2F2] text-[#9C2727] ring-1 ring-[#F3BEBE]';
+                  'border-danger-border bg-danger-soft text-danger ring-1 ring-danger-border';
                 indicatorStyle =
-                  'border-[#9C2727] bg-[#9C2727] text-white font-bold';
+                  'border-danger bg-danger text-white font-bold';
               } else {
                 // Unselected incorrect
                 cardStyle =
-                  'border-[#E9E1DE] bg-white opacity-50 text-[#797E88]';
+                  'border-border bg-surface opacity-50 text-ink-muted';
               }
             } else if (isSelected) {
-              // User selected -> Rosewood / Crimson active state (#AC3B61)
+              // User selected -> Rosewood / Crimson active state (crimson-700)
               cardStyle =
-                'border-[#AC3B61] bg-[#FCEBF1] text-[#102136] ring-1 ring-[#AC3B61] shadow-[0_2px_6px_rgba(172,59,97,0.06)]';
+                'border-crimson-700 bg-crimson-100 text-ink ring-1 ring-crimson-700 shadow-[0_2px_6px_rgba(172,59,97,0.06)]';
               indicatorStyle =
-                'border-[#AC3B61] bg-[#AC3B61] text-white font-bold';
+                'border-crimson-700 bg-crimson-700 text-white font-bold';
             }
 
             return (
@@ -294,7 +294,7 @@ export const QuizScreen = ({ simulation, onFinish, onError }: Props) => {
                 key={option.id}
                 onClick={() => handleSelectOption(option.id)}
                 className={`relative flex items-start gap-4 p-4 sm:p-5 rounded-xl border transition-all duration-150 select-none ${
-                  feedback ? 'cursor-default' : 'cursor-pointer active:scale-[0.998]'
+                  feedback ? 'cursor-default' : 'cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.998]'
                 } ${cardStyle}`}
               >
                 {/* Index / Checkbox indicator */}
@@ -327,11 +327,11 @@ export const QuizScreen = ({ simulation, onFinish, onError }: Props) => {
 
         {/* Diagnostic Assessment Panel */}
         {feedback && (
-          <div className="rounded-2xl border border-[#DDD5D8] bg-[#FAF7F5] p-5 sm:p-7 space-y-4 shadow-[0_2px_12px_rgba(18,60,105,0.04)] animate-in fade-in duration-200">
+          <div className="rounded-2xl border border-border bg-canvas-subtle p-5 sm:p-7 space-y-4 shadow-panel animate-in fade-in duration-200">
             {/* Header */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[#DDD5D8]">
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-border">
               <div className="flex items-center gap-2">
-                <span className="font-mono text-xs uppercase tracking-wider text-[#797E88]">
+                <span className="font-mono text-xs uppercase tracking-wider text-ink-muted">
                   Évaluation :
                 </span>
                 <Badge
@@ -343,7 +343,7 @@ export const QuizScreen = ({ simulation, onFinish, onError }: Props) => {
                 </Badge>
               </div>
 
-              <div className="font-mono text-xs text-[#AC3B61] font-semibold">
+              <div className="font-mono text-xs text-crimson-700 font-semibold">
                 +{feedback.scoreAwarded} point(s) attribué(s)
               </div>
             </div>
@@ -351,11 +351,11 @@ export const QuizScreen = ({ simulation, onFinish, onError }: Props) => {
             {/* Explanation */}
             {feedback.explanation && (
               <div className="space-y-1.5">
-                <div className="text-xs font-sans text-[#123C69] font-semibold uppercase tracking-wider flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-[#AC3B61]" />
+                <div className="text-xs font-sans text-navy-900 font-semibold uppercase tracking-wider flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-crimson-700" />
                   Explication de l'évaluateur
                 </div>
-                <p className="text-sm text-[#102136] leading-relaxed font-sans bg-white p-4 rounded-xl border border-[#DDD5D8]">
+                <p className="text-sm text-ink leading-relaxed font-sans bg-surface p-4 rounded-xl border border-border">
                   {feedback.explanation}
                 </p>
               </div>
@@ -363,12 +363,12 @@ export const QuizScreen = ({ simulation, onFinish, onError }: Props) => {
 
             {/* Architecture: Revealed Information */}
             {feedback.revealedInformation && (
-              <div className="rounded-xl border border-[#B8D3EC] bg-[#F1F6FB] p-4 space-y-1">
-                <div className="flex items-center gap-1.5 text-xs font-sans uppercase tracking-wider text-[#123C69] font-semibold">
-                  <Layers className="w-3.5 h-3.5 text-[#123C69]" />
+              <div className="rounded-xl border border-navy-200 bg-navy-50 p-4 space-y-1">
+                <div className="flex items-center gap-1.5 text-xs font-sans uppercase tracking-wider text-navy-900 font-semibold">
+                  <Layers className="w-3.5 h-3.5 text-navy-900" />
                   Information révélée sur le système
                 </div>
-                <p className="text-xs sm:text-sm text-[#102136] leading-relaxed">
+                <p className="text-xs sm:text-sm text-ink leading-relaxed">
                   {feedback.revealedInformation}
                 </p>
               </div>
@@ -376,12 +376,12 @@ export const QuizScreen = ({ simulation, onFinish, onError }: Props) => {
 
             {/* Architecture: Trade-off */}
             {feedback.tradeoff && (
-              <div className="rounded-xl border border-[#E8D2A7] bg-[#FBF6ED] p-4 space-y-1">
-                <div className="flex items-center gap-1.5 text-xs font-sans uppercase tracking-wider text-[#7A5214] font-semibold">
-                  <Scale className="w-3.5 h-3.5 text-[#7A5214]" />
+              <div className="rounded-xl border border-warning-border bg-warning-soft p-4 space-y-1">
+                <div className="flex items-center gap-1.5 text-xs font-sans uppercase tracking-wider text-warning font-semibold">
+                  <Scale className="w-3.5 h-3.5 text-warning" />
                   Arbitrage & Compromis architectural (Trade-off)
                 </div>
-                <p className="text-xs sm:text-sm text-[#102136] leading-relaxed">
+                <p className="text-xs sm:text-sm text-ink leading-relaxed">
                   {feedback.tradeoff}
                 </p>
               </div>
@@ -390,8 +390,8 @@ export const QuizScreen = ({ simulation, onFinish, onError }: Props) => {
             {/* Code Review: Detailed per-issue corrections */}
             {feedback.corrections.some((c) => c.explanation) && (
               <div className="pt-2 space-y-2">
-                <div className="text-xs font-sans uppercase tracking-wider text-[#484F59] font-semibold flex items-center gap-1.5">
-                  <ShieldAlert className="w-3.5 h-3.5 text-[#AC3B61]" />
+                <div className="text-xs font-sans uppercase tracking-wider text-ink-secondary font-semibold flex items-center gap-1.5">
+                  <ShieldAlert className="w-3.5 h-3.5 text-crimson-700" />
                   Détail des anomalies
                 </div>
                 <div className="space-y-2">
@@ -400,7 +400,7 @@ export const QuizScreen = ({ simulation, onFinish, onError }: Props) => {
                     .map((correction) => (
                       <div
                         key={correction.optionId}
-                        className="p-3.5 rounded-xl bg-white border border-[#DDD5D8] text-xs text-[#484F59] leading-relaxed space-y-1"
+                        className="p-3.5 rounded-xl bg-surface border border-border text-xs text-ink-secondary leading-relaxed space-y-1"
                       >
                         <div className="flex items-center gap-2">
                           {correction.severity && (
@@ -408,11 +408,11 @@ export const QuizScreen = ({ simulation, onFinish, onError }: Props) => {
                               {correction.severity}
                             </Badge>
                           )}
-                          <span className="font-semibold text-[#102136]">
+                          <span className="font-semibold text-ink">
                             {correction.content}
                           </span>
                         </div>
-                        <p className="text-[#484F59] pt-0.5">
+                        <p className="text-ink-secondary pt-0.5">
                           {correction.explanation}
                         </p>
                       </div>
@@ -424,8 +424,8 @@ export const QuizScreen = ({ simulation, onFinish, onError }: Props) => {
         )}
 
         {/* Footer Actions */}
-        <div className="pt-4 border-t border-[#E9E1DE] flex items-center justify-between gap-4">
-          <div className="text-xs text-[#797E88] font-sans hidden sm:block">
+        <div className="pt-4 border-t border-border flex items-center justify-between gap-4">
+          <div className="text-xs text-ink-muted font-sans hidden sm:block">
             {!feedback ? (
               <span>
                 {selectedOptionIds.length} option(s) sélectionnée(s)

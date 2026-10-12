@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Logo } from './Logo';
+import { PageTitle } from './PageTitle';
 import { Badge } from './Badge';
 import { Button } from './Button';
 import {
@@ -86,8 +87,8 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <>
-      <header className="sticky top-0 z-30 w-full border-b border-[#DDD5D8] bg-[#EEE2DC]/75 backdrop-blur-md">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-6">
+      <header className="sticky top-0 z-30 w-full border-b border-border bg-sand-100/75 backdrop-blur-md">
+        <div className="max-w-6xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-6">
           {/* Left: Brand */}
           <div className="flex items-center gap-6">
             <button
@@ -98,7 +99,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   onQuit();
                 }
               }}
-              className="text-left focus:outline-none cursor-pointer"
+              className="text-left focus:outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
               title="Accueil Dev Interview Simulator"
             >
               <Logo size="sm" showSubtitle={false} />
@@ -106,23 +107,16 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           </div>
 
-          {/* Center Context (When Quiz in progress) */}
+          {/* Center Context (When Quiz in progress) — compact on mobile */}
           {currentScreen === 'QUIZ' && mode && (
-            <div className="flex items-center gap-2">
-              <Badge variant="navy" size="sm" dot>
-                Session active
-              </Badge>
-              <span className="text-[#BAB2B5] text-xs">/</span>
-              <span className="text-xs font-semibold text-[#123C69]">
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+              <span className="hidden sm:inline text-xs font-semibold text-navy-900 whitespace-nowrap">
                 {getModeLabel(mode)}
               </span>
               {difficulty && (
-                <>
-                  <span className="text-[#BAB2B5] text-xs">/</span>
-                  <Badge variant="default" size="sm">
-                    {difficulty}
-                  </Badge>
-                </>
+                <Badge variant="default" size="sm">
+                  {difficulty}
+                </Badge>
               )}
             </div>
           )}
@@ -134,39 +128,39 @@ export const Navbar: React.FC<NavbarProps> = ({
                 variant="outline"
                 size="sm"
                 onClick={() => setShowQuitModal(true)}
-                leftIcon={<X className="w-3.5 h-3.5 text-[#AC3B61]" />}
-                className="text-xs text-[#AC3B61] hover:border-[#AC3B61]"
+                leftIcon={<X className="w-3.5 h-3.5 text-crimson-700" />}
+                className="text-xs text-crimson-700 hover:border-crimson-700"
               >
                 <span>Quitter</span>
               </Button>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 {/* Secondary Menu "Plus" */}
                 <div className="relative" ref={plusMenuRef}>
                   <button
                     type="button"
                     onClick={() => setShowPlusMenu(!showPlusMenu)}
-                    className="flex items-center gap-1 text-xs font-sans text-[#5C554E] hover:text-[#123C69] px-2.5 py-1.5 rounded-lg hover:bg-[#FAF9F7] transition cursor-pointer"
+                    className="flex items-center gap-1 text-xs font-sans text-ink-warm hover:text-navy-900 px-2 sm:px-2.5 py-1.5 rounded-lg hover:bg-canvas-subtle transition cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
                   >
-                    <span>Explorer</span>
+                    <span className="hidden sm:inline">Explorer</span>
                     <ChevronDown className="w-3.5 h-3.5" />
                   </button>
 
                   {/* Dropdown Menu for Future Features */}
                   {showPlusMenu && (
-                    <div className="absolute right-0 mt-2 w-64 bg-white border border-[#E8E2D8] rounded-2xl p-2 shadow-xl animate-in fade-in slide-in-from-top-1 duration-150 z-40 space-y-1">
-                      <div className="px-3 py-2 border-b border-[#F2EDE6]">
-                        <span className="text-[10px] font-mono uppercase tracking-wider text-[#797E88] font-semibold">
+                    <div className="absolute right-0 mt-2 w-64 bg-surface border border-border rounded-2xl p-2 shadow-xl animate-in fade-in slide-in-from-top-1 duration-150 z-40 space-y-1">
+                      <div className="px-3 py-2 border-b border-border-subtle">
+                        <span className="text-[10px] font-mono uppercase tracking-wider text-ink-muted font-semibold">
                           Modules à venir
                         </span>
                       </div>
 
-                      <div className="p-2.5 rounded-xl hover:bg-[#FAF9F7] transition flex items-center justify-between cursor-default">
-                        <div className="flex items-center gap-2.5 text-xs text-[#102136]">
-                          <Radio className="w-4 h-4 text-[#123C69]" />
+                      <div className="p-2.5 rounded-xl hover:bg-canvas-subtle transition flex items-center justify-between cursor-default">
+                        <div className="flex items-center gap-2.5 text-xs text-ink">
+                          <Radio className="w-4 h-4 text-navy-900" />
                           <div>
                             <p className="font-semibold">Veille technique</p>
-                            <p className="text-[10px] text-[#797E88]">Radar & actualités dev</p>
+                            <p className="text-[10px] text-ink-muted">Radar & actualités dev</p>
                           </div>
                         </div>
                         <Badge variant="default" size="sm">
@@ -174,12 +168,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                         </Badge>
                       </div>
 
-                      <div className="p-2.5 rounded-xl hover:bg-[#FAF9F7] transition flex items-center justify-between cursor-default">
-                        <div className="flex items-center gap-2.5 text-xs text-[#102136]">
-                          <Trophy className="w-4 h-4 text-[#AC3B61]" />
+                      <div className="p-2.5 rounded-xl hover:bg-canvas-subtle transition flex items-center justify-between cursor-default">
+                        <div className="flex items-center gap-2.5 text-xs text-ink">
+                          <Trophy className="w-4 h-4 text-crimson-700" />
                           <div>
                             <p className="font-semibold">Classement</p>
-                            <p className="text-[10px] text-[#797E88]">Top scores de la promo</p>
+                            <p className="text-[10px] text-ink-muted">Top scores de la promo</p>
                           </div>
                         </div>
                         <Badge variant="default" size="sm">
@@ -187,12 +181,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                         </Badge>
                       </div>
 
-                      <div className="p-2.5 rounded-xl hover:bg-[#FAF9F7] transition flex items-center justify-between cursor-default">
-                        <div className="flex items-center gap-2.5 text-xs text-[#102136]">
-                          <TrendingUp className="w-4 h-4 text-[#C89D58]" />
+                      <div className="p-2.5 rounded-xl hover:bg-canvas-subtle transition flex items-center justify-between cursor-default">
+                        <div className="flex items-center gap-2.5 text-xs text-ink">
+                          <TrendingUp className="w-4 h-4 text-warning-accent" />
                           <div>
                             <p className="font-semibold">Progression</p>
-                            <p className="text-[10px] text-[#797E88]">Historique & analytics</p>
+                            <p className="text-[10px] text-ink-muted">Historique & analytics</p>
                           </div>
                         </div>
                         <Badge variant="default" size="sm">
@@ -204,7 +198,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </div>
 
                 {/* Profile indicator */}
-                <div className="relative pl-2 border-l border-[#E8E2D8]" ref={userMenuRef}>
+                <div className="relative sm:pl-2 sm:border-l border-border" ref={userMenuRef}>
                   <button
                     type="button"
                     onClick={() => {
@@ -214,20 +208,20 @@ export const Navbar: React.FC<NavbarProps> = ({
                         setShowAccessModal(true);
                       }
                     }}
-                    className="flex items-center gap-2 text-xs font-sans text-[#5C554E] transition hover:text-[#123C69]"
+                    className="flex items-center gap-2 text-xs font-sans text-ink-warm transition hover:text-navy-900 cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
                     aria-label={user ? 'Ouvrir le menu utilisateur' : 'Ouvrir la connexion'}
                   >
-                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#E6EFF8] text-[#123C69]">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-navy-100 text-navy-900">
                       <User className="w-3.5 h-3.5" />
                     </div>
-                    <span className="font-medium text-[#102136]">
+                    <span className="hidden md:inline font-medium text-ink">
                       {user?.username || 'Invité'}
                     </span>
-                    <ChevronDown className="h-3.5 w-3.5 text-[#797E88]" />
+                    <ChevronDown className="h-3.5 w-3.5 text-ink-muted" />
                   </button>
 
                   {user && showUserMenu && (
-                    <div className="absolute right-0 mt-2 w-52 rounded-2xl border border-[#E8E2D8] bg-white p-2 shadow-xl z-40">
+                    <div className="absolute right-0 mt-2 w-52 rounded-2xl border border-border bg-surface p-2 shadow-xl z-40">
                       {user.role === 'ADMIN' && (
                         <button
                           type="button"
@@ -235,7 +229,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                             setShowUserMenu(false);
                             onOpenAdmin?.();
                           }}
-                          className="w-full rounded-xl px-3 py-2.5 text-left text-xs font-semibold text-[#102136] transition hover:bg-[#FAF9F7]"
+                          className="w-full rounded-xl px-3 py-2.5 text-left text-xs font-semibold text-ink transition hover:bg-canvas-subtle"
                         >
                           Administration
                         </button>
@@ -246,7 +240,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                           setShowUserMenu(false);
                           onOpenDashboard?.();
                         }}
-                        className="w-full rounded-xl px-3 py-2.5 text-left text-xs font-semibold text-[#102136] transition hover:bg-[#FAF9F7]"
+                        className="w-full rounded-xl px-3 py-2.5 text-left text-xs font-semibold text-ink transition hover:bg-canvas-subtle"
                       >
                         Mon tableau de bord
                       </button>
@@ -256,7 +250,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                           setShowUserMenu(false);
                           onLogout?.();
                         }}
-                        className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-xs text-[#AC3B61] transition hover:bg-[#FCF4F7]"
+                        className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-xs text-crimson-700 transition hover:bg-crimson-50"
                       >
                         <LogOut className="h-3.5 w-3.5" />
                         Se déconnecter
@@ -273,16 +267,16 @@ export const Navbar: React.FC<NavbarProps> = ({
       {/* Confirmation Modal to Quit Quiz */}
       {showQuitModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="w-full max-w-md bg-white border border-[#E8E2D8] rounded-2xl p-6 shadow-2xl space-y-4">
+          <div className="w-full max-w-md bg-surface border border-border rounded-2xl p-6 shadow-2xl space-y-4">
             <div className="flex items-start gap-3.5">
-              <div className="p-2.5 rounded-xl bg-[#FDF2F2] border border-[#F3BEBE] text-[#9C2727] flex-shrink-0">
+              <div className="p-2.5 rounded-xl bg-danger-soft border border-danger-border text-danger flex-shrink-0">
                 <AlertTriangle className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-base font-serif font-bold text-[#102136]">
+                <PageTitle as="h3" size="xs" tone="ink">
                   Quitter la session en cours ?
-                </h3>
-                <p className="text-sm text-[#484F59] mt-1 leading-relaxed">
+                </PageTitle>
+                <p className="text-sm text-ink-secondary mt-1 leading-relaxed">
                   Votre progression actuelle et les réponses non soumises seront perdues. Souhaitez-vous vraiment revenir au choix des entraînements ?
                 </p>
               </div>

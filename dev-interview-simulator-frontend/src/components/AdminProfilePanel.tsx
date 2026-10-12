@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { adminProfileApi } from '../api/adminApi';
 import type { AdminProfile } from '../api/adminApi';
 import { Button } from './common/Button';
+import { fieldInputSmall, fieldLabel, panel, panelToolbar, panelForm, emptyState } from '../styles/ui';
+import { IconButton } from './common/IconButton';
 import { Badge } from './common/Badge';
 import { Plus, Edit2 } from 'lucide-react';
 
@@ -103,47 +105,47 @@ export const AdminProfilePanel = () => {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-[#E8E2D8] shadow-[0_2px_10px_rgba(18,60,105,0.05)] overflow-hidden">
-      <div className="p-4 border-b border-[#F2EDE6] flex justify-end">
+    <div className={panel}>
+      <div className={panelToolbar}>
         <Button onClick={openCreate} variant="secondary" leftIcon={<Plus className="w-4 h-4" />}>
           Nouveau profil
         </Button>
       </div>
 
       {(creating || editingId) && (
-        <div className="p-4 border-b border-[#F2EDE6] space-y-3 bg-[#FAF9F7]">
+        <div className={panelForm}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <label className="block space-y-1.5">
-              <span className="text-sm font-semibold text-[#102136]">Code</span>
+              <span className={fieldLabel}>Code</span>
               <input
                 value={form.code}
                 onChange={e => setForm({ ...form, code: e.target.value })}
                 placeholder="Ex. BACKEND"
-                className="w-full rounded-xl border border-[#E8E2D8] p-2.5 text-sm focus:border-[#123C69] outline-none bg-white"
+                className={fieldInputSmall}
               />
             </label>
             <label className="block space-y-1.5">
-              <span className="text-sm font-semibold text-[#102136]">Nom</span>
+              <span className={fieldLabel}>Nom</span>
               <input
                 value={form.name}
                 onChange={e => setForm({ ...form, name: e.target.value })}
                 placeholder="Ex. Backend"
-                className="w-full rounded-xl border border-[#E8E2D8] p-2.5 text-sm focus:border-[#123C69] outline-none bg-white"
+                className={fieldInputSmall}
               />
             </label>
           </div>
           <label className="block space-y-1.5">
-            <span className="text-sm font-semibold text-[#102136]">Description</span>
+            <span className={fieldLabel}>Description</span>
             <textarea
               value={form.description}
               onChange={e => setForm({ ...form, description: e.target.value })}
               rows={2}
-              className="w-full rounded-xl border border-[#E8E2D8] p-2.5 text-sm focus:border-[#123C69] outline-none bg-white"
+              className={fieldInputSmall}
             />
           </label>
           <div className="space-y-1.5">
-            <span className="text-sm font-semibold text-[#102136]">Types de challenges autorisés</span>
-            <p className="text-xs text-[#797E88]">Aucun type coché = tous les types autorisés.</p>
+            <span className={fieldLabel}>Types de challenges autorisés</span>
+            <p className="text-xs text-ink-muted">Aucun type coché = tous les types autorisés.</p>
             <div className="flex flex-wrap gap-2">
               {ALL_TYPES.map(type => {
                 const isSelected = form.allowedTypes.includes(type);
@@ -152,10 +154,10 @@ export const AdminProfilePanel = () => {
                     key={type}
                     type="button"
                     onClick={() => toggleAllowedType(type)}
-                    className={`px-3 py-2 rounded-xl border text-sm transition cursor-pointer ${
+                    className={`px-3 py-2 rounded-xl border text-sm transition cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
                       isSelected
-                        ? 'bg-[#E6EFF8] border-[#123C69] text-[#123C69] font-semibold'
-                        : 'bg-white border-[#E8E2D8] text-[#484F59] hover:bg-[#FAF9F7]'
+                        ? 'bg-navy-100 border-navy-900 text-navy-900 font-semibold'
+                        : 'bg-surface border-border text-ink-secondary hover:bg-canvas-subtle'
                     }`}
                   >
                     {type}
@@ -165,7 +167,7 @@ export const AdminProfilePanel = () => {
             </div>
           </div>
           {error && (
-            <p className="text-sm text-[#9C2727]">{error}</p>
+            <p className="text-sm text-danger">{error}</p>
           )}
           <div className="flex justify-end gap-3">
             <Button variant="secondary" size="sm" onClick={closeForm} disabled={saving}>
@@ -184,44 +186,43 @@ export const AdminProfilePanel = () => {
       )}
 
       {loading ? (
-        <div className="px-6 py-8 text-center text-sm text-[#797E88]">Chargement...</div>
+        <div className={emptyState}>Chargement...</div>
       ) : profiles.length === 0 ? (
-        <div className="px-6 py-8 text-center text-sm text-[#797E88]">Aucun profil pour le moment.</div>
+        <div className={emptyState}>Aucun profil pour le moment.</div>
       ) : (
-        <div className="divide-y divide-[#F2EDE6]">
+        <div className="divide-y divide-border-subtle">
           {profiles.map(profile => (
             <div key={profile.id} className="px-6 py-4 flex items-center justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-semibold text-[#102136]">{profile.name}</span>
-                  <span className="font-mono text-xs text-[#797E88]">{profile.code}</span>
+                  <span className="font-semibold text-ink">{profile.name}</span>
+                  <span className="font-mono text-xs text-ink-muted">{profile.code}</span>
                   <Badge variant={profile.active ? 'success' : 'default'}>
                     {profile.active ? 'Actif' : 'Inactif'}
                   </Badge>
                 </div>
                 {profile.description && (
-                  <p className="text-xs text-[#484F59] mt-1">{profile.description}</p>
+                  <p className="text-xs text-ink-secondary mt-1">{profile.description}</p>
                 )}
               </div>
               <div className="flex gap-2">
                 <button
                   onClick={() => handleToggleActive(profile)}
                   title={profile.active ? 'Désactiver' : 'Activer'}
-                  className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
                     profile.active
-                      ? 'border-[#E8E2D8] text-[#484F59] hover:bg-[#FAF9F7]'
-                      : 'border-[#B8D3EC] text-[#123C69] hover:bg-[#E6EFF8]'
+                      ? 'border-border text-ink-secondary hover:bg-canvas-subtle'
+                      : 'border-navy-200 text-navy-900 hover:bg-navy-100'
                   }`}
                 >
                   {profile.active ? 'Désactiver' : 'Activer'}
                 </button>
-                <button
+                <IconButton
                   onClick={() => openEdit(profile)}
                   title="Modifier"
-                  className="p-2 text-[#123C69] hover:bg-[#E6EFF8] rounded-lg transition"
                 >
                   <Edit2 className="w-4 h-4" />
-                </button>
+                </IconButton>
               </div>
             </div>
           ))}

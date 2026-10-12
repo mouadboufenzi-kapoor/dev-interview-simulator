@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Button } from './common/Button';
+import { PageTitle } from './common/PageTitle';
 import { Mail, UserRound, X } from 'lucide-react';
 import { authApi } from '../api/authApi';
 import { clearStoredAuth } from '../api/authStorage';
@@ -60,35 +61,35 @@ export const UserAccessModal = ({ onClose, onAuthenticated }: Props) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#102136]/25 p-4 backdrop-blur-[2px]">
-      <div className="w-full max-w-md rounded-2xl border border-[#E8E2D8] bg-white p-6 shadow-[0_12px_35px_rgba(18,60,105,0.12)]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/25 p-4 backdrop-blur-[2px]">
+      <div className="w-full max-w-md rounded-2xl border border-border bg-surface p-6 shadow-modal">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#797E88]">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-muted">
               Espace personnel
             </p>
-            <h2 className="mt-2 font-serif text-2xl font-bold text-[#123C69]">
+            <PageTitle as="h2" size="md" className="mt-2">
               {mode === 'login' ? 'Ravi de vous revoir' : 'Créer votre compte'}
-            </h2>
+            </PageTitle>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 text-[#797E88] transition hover:bg-[#FAF9F7] hover:text-[#123C69]"
+            className="rounded-lg p-1.5 text-ink-muted transition hover:bg-canvas-subtle hover:text-navy-900"
             aria-label="Fermer"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="mt-6 flex gap-5 border-b border-[#F2EDE6] text-sm">
+        <div className="mt-6 flex gap-5 border-b border-border-subtle text-sm">
           <button
             type="button"
             onClick={() => setMode('login')}
             className={`border-b-2 pb-3 font-medium transition ${
               mode === 'login'
-                ? 'border-[#AC3B61] text-[#123C69]'
-                : 'border-transparent text-[#797E88]'
+                ? 'border-crimson-700 text-navy-900'
+                : 'border-transparent text-ink-muted'
             }`}
           >
             Se connecter
@@ -98,8 +99,8 @@ export const UserAccessModal = ({ onClose, onAuthenticated }: Props) => {
             onClick={() => setMode('register')}
             className={`border-b-2 pb-3 font-medium transition ${
               mode === 'register'
-                ? 'border-[#AC3B61] text-[#123C69]'
-                : 'border-transparent text-[#797E88]'
+                ? 'border-crimson-700 text-navy-900'
+                : 'border-transparent text-ink-muted'
             }`}
           >
             Créer un compte
@@ -107,23 +108,23 @@ export const UserAccessModal = ({ onClose, onAuthenticated }: Props) => {
         </div>
 
         {error && (
-          <div className="mt-4 rounded-xl bg-[#FDF2F2] border border-[#F3BEBE] p-3 text-sm text-[#AC3B61]">
+          <div className="mt-4 rounded-xl bg-danger-soft border border-danger-border p-3 text-sm text-crimson-700">
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <label className="block space-y-1.5">
-            <span className="text-xs font-semibold text-[#484F59]">
+            <span className="text-xs font-semibold text-ink-secondary">
               {mode === 'login' ? 'Username ou Email' : 'Username'}
             </span>
-            <div className="flex items-center gap-2 rounded-xl border border-[#E8E2D8] px-3 focus-within:border-[#123C69]">
-              <UserRound className="h-4 w-4 text-[#797E88]" />
+            <div className="flex items-center gap-2 rounded-xl border border-border px-3 focus-within:border-navy-900">
+              <UserRound className="h-4 w-4 text-ink-muted" />
               <input
                 required
                 value={usernameOrEmail}
                 onChange={(event) => setUsernameOrEmail(event.target.value)}
-                className="h-11 min-w-0 flex-1 bg-transparent text-sm text-[#102136] outline-none"
+                className="h-11 min-w-0 flex-1 bg-transparent text-sm text-ink outline-none"
                 placeholder={mode === 'login' ? 'nom@exemple.com' : 'votre-username'}
               />
             </div>
@@ -131,15 +132,15 @@ export const UserAccessModal = ({ onClose, onAuthenticated }: Props) => {
 
           {mode === 'register' && (
             <label className="block space-y-1.5">
-              <span className="text-xs font-semibold text-[#484F59]">Email</span>
-              <div className="flex items-center gap-2 rounded-xl border border-[#E8E2D8] px-3 focus-within:border-[#123C69]">
-                <Mail className="h-4 w-4 text-[#797E88]" />
+              <span className="text-xs font-semibold text-ink-secondary">Email</span>
+              <div className="flex items-center gap-2 rounded-xl border border-border px-3 focus-within:border-navy-900">
+                <Mail className="h-4 w-4 text-ink-muted" />
                 <input
                   required
                   type="email"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
-                  className="h-11 min-w-0 flex-1 bg-transparent text-sm text-[#102136] outline-none"
+                  className="h-11 min-w-0 flex-1 bg-transparent text-sm text-ink outline-none"
                   placeholder="nom@exemple.com"
                 />
               </div>
@@ -147,18 +148,18 @@ export const UserAccessModal = ({ onClose, onAuthenticated }: Props) => {
           )}
 
           <label className="block space-y-1.5">
-            <span className="text-xs font-semibold text-[#484F59]">Mot de passe</span>
+            <span className="text-xs font-semibold text-ink-secondary">Mot de passe</span>
             <input
               required
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className="h-11 w-full rounded-xl border border-[#E8E2D8] bg-transparent px-3 text-sm text-[#102136] outline-none focus:border-[#123C69]"
+              className="h-11 w-full rounded-xl border border-border bg-transparent px-3 text-sm text-ink outline-none focus:border-navy-900"
               placeholder="••••••••"
             />
           </label>
 
-          <Button type="submit" variant="primary" fullWidth className="mt-2">
+          <Button type="submit" variant="primary" fullWidth loading={loading} className="mt-2">
             {mode === 'login' ? 'Se connecter' : 'Créer mon compte'}
           </Button>
         </form>

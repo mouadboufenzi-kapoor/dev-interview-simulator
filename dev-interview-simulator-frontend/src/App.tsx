@@ -153,7 +153,7 @@ export default function App() {
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col overflow-hidden bg-white watermark-pattern text-[#102136] selection:bg-[#EDC7B7] selection:text-[#123C69]">
+    <div className="relative min-h-screen flex flex-col overflow-x-clip bg-canvas watermark-pattern text-ink selection:bg-peach-500 selection:text-navy-900">
       {screen === 'SETUP' && (
         <div
           className="pointer-events-none absolute inset-0 z-0 hidden overflow-hidden lg:block"
@@ -174,7 +174,7 @@ export default function App() {
             ].map(([word, position]) => (
               <span
                 key={word}
-                className={`absolute select-none whitespace-nowrap font-serif font-medium tracking-tight text-[#102136]/[0.06] ${position}`}
+                className={`absolute select-none whitespace-nowrap font-serif font-medium tracking-tight text-ink/[0.06] ${position}`}
               >
                 {word}
               </span>
@@ -196,7 +196,7 @@ export default function App() {
             ].map(([word, position]) => (
               <span
                 key={word}
-                className={`absolute select-none whitespace-nowrap font-serif font-medium tracking-tight text-[#102136]/[0.06] ${position}`}
+                className={`absolute select-none whitespace-nowrap font-serif font-medium tracking-tight text-ink/[0.06] ${position}`}
               >
                 {word}
               </span>
@@ -223,17 +223,17 @@ export default function App() {
       <main className="relative z-10 flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col">
         {/* Soft Error Banner */}
         {error && (
-          <div className="mb-6 p-4 rounded-2xl bg-[#FDF2F2] border border-[#F3BEBE] text-[#9C2727] text-sm flex items-start justify-between gap-3 shadow-[0_2px_10px_rgba(172,59,97,0.08)] animate-in fade-in duration-200">
+          <div className="mb-6 p-4 rounded-2xl bg-danger-soft border border-danger-border text-danger text-sm flex items-start justify-between gap-3 shadow-[0_2px_10px_rgba(172,59,97,0.08)] animate-in fade-in duration-200">
             <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-[#AC3B61] flex-shrink-0 mt-0.5" />
+              <AlertCircle className="w-5 h-5 text-crimson-700 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="font-semibold text-[#8C294A]">Erreur de communication</p>
-                <p className="text-xs text-[#AC3B61] mt-0.5">{error}</p>
+                <p className="font-semibold text-crimson-800">Erreur de communication</p>
+                <p className="text-xs text-crimson-700 mt-0.5">{error}</p>
               </div>
             </div>
             <button
               onClick={() => setError(null)}
-              className="text-[#AC3B61] hover:text-[#6D1B37] p-1 rounded-md transition cursor-pointer"
+              className="text-crimson-700 hover:text-crimson-900 p-1 rounded-md transition cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
               title="Fermer"
             >
               <X className="w-4 h-4" />
@@ -241,8 +241,10 @@ export default function App() {
           </div>
         )}
 
-        {/* Dynamic Screen Transitions */}
-        <div className="flex-1 flex flex-col justify-center">
+        {/* Dynamic Screen Transitions — min-w-0 lets the column shrink to the
+            viewport so only inner scroll zones (e.g. the code block) scroll,
+            instead of the whole screen stretching horizontally. */}
+        <div className="flex-1 flex flex-col justify-center min-w-0">
           {screen === 'SETUP' && (
             <SetupScreen
               onStart={handleStartSimulation}

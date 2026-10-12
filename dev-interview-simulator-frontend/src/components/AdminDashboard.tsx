@@ -5,6 +5,9 @@ import { profileApi } from '../api/profileApi';
 import type { Profile } from '../api/profileApi';
 
 import { Button } from './common/Button';
+import { panel, tableHead } from '../styles/ui';
+import { IconButton } from './common/IconButton';
+import { PageTitle } from './common/PageTitle';
 import { Plus, Search, Edit2, Archive, CheckCircle} from 'lucide-react';
 import { AdminChallengeForm } from './AdminChallengeForm';
 import { AdminScenarioPanel } from './AdminScenarioPanel';
@@ -115,8 +118,8 @@ const loadChallenges = async () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-serif font-bold text-[#123C69]">Administration</h1>
-          <p className="text-sm text-[#484F59] mt-1">Gérez les questions et contenus de la plateforme</p>
+          <PageTitle>Administration</PageTitle>
+          <p className="text-sm text-ink-secondary mt-1">Gérez les questions et contenus de la plateforme</p>
         </div>
         <Button
           onClick={() => setIsCreating(true)}
@@ -127,13 +130,13 @@ const loadChallenges = async () => {
         </Button>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <button
           onClick={() => setTab('stats')}
           className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${
             tab === 'stats'
-              ? 'bg-[#123C69] text-white'
-              : 'bg-white border border-[#E8E2D8] text-[#484F59] hover:bg-[#FAF9F7]'
+              ? 'bg-navy-900 text-white'
+              : 'bg-surface border border-border text-ink-secondary hover:bg-canvas-subtle'
           }`}
         >
           Statistiques
@@ -142,8 +145,8 @@ const loadChallenges = async () => {
           onClick={() => setTab('content')}
           className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${
             tab === 'content'
-              ? 'bg-[#123C69] text-white'
-              : 'bg-white border border-[#E8E2D8] text-[#484F59] hover:bg-[#FAF9F7]'
+              ? 'bg-navy-900 text-white'
+              : 'bg-surface border border-border text-ink-secondary hover:bg-canvas-subtle'
           }`}
         >
           Contenus
@@ -152,8 +155,8 @@ const loadChallenges = async () => {
           onClick={() => setTab('scenarios')}
           className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${
             tab === 'scenarios'
-              ? 'bg-[#123C69] text-white'
-              : 'bg-white border border-[#E8E2D8] text-[#484F59] hover:bg-[#FAF9F7]'
+              ? 'bg-navy-900 text-white'
+              : 'bg-surface border border-border text-ink-secondary hover:bg-canvas-subtle'
           }`}
         >
           Scénarios
@@ -162,8 +165,8 @@ const loadChallenges = async () => {
           onClick={() => setTab('profiles')}
           className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${
             tab === 'profiles'
-              ? 'bg-[#123C69] text-white'
-              : 'bg-white border border-[#E8E2D8] text-[#484F59] hover:bg-[#FAF9F7]'
+              ? 'bg-navy-900 text-white'
+              : 'bg-surface border border-border text-ink-secondary hover:bg-canvas-subtle'
           }`}
         >
           Profils
@@ -177,22 +180,22 @@ const loadChallenges = async () => {
       ) : tab === 'profiles' ? (
         <AdminProfilePanel />
       ) : (
-      <div className="bg-white rounded-2xl border border-[#E8E2D8] shadow-[0_2px_10px_rgba(18,60,105,0.05)] overflow-hidden">
-        <div className="p-4 border-b border-[#F2EDE6] flex flex-wrap gap-4">
+      <div className={panel}>
+        <div className="p-4 border-b border-border-subtle flex flex-wrap gap-4">
           <div className="relative flex-1 min-w-[220px] max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#797E88]" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted" />
             <input
               type="text"
               placeholder="Rechercher une question..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-sm rounded-xl border border-[#E8E2D8] focus:border-[#123C69] outline-none"
+              className="w-full pl-9 pr-4 py-2 text-sm rounded-xl border border-border focus:border-navy-900 outline-none"
             />
           </div>
           <select
             value={profileFilter}
             onChange={(e) => setProfileFilter(e.target.value)}
-            className="py-2 px-3 text-sm rounded-xl border border-[#E8E2D8] focus:border-[#123C69] outline-none bg-white"
+            className="py-2 px-3 text-sm rounded-xl border border-border focus:border-navy-900 outline-none bg-surface"
           >
             <option value="">Tous les profils</option>
             {profiles.map(p => (
@@ -202,7 +205,7 @@ const loadChallenges = async () => {
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="py-2 px-3 text-sm rounded-xl border border-[#E8E2D8] focus:border-[#123C69] outline-none bg-white"
+            className="py-2 px-3 text-sm rounded-xl border border-border focus:border-navy-900 outline-none bg-surface"
           >
             <option value="">Tous les types</option>
             <option value="SITUATIONAL_QCM">SITUATIONAL_QCM</option>
@@ -213,7 +216,7 @@ const loadChallenges = async () => {
           <select
             value={difficultyFilter}
             onChange={(e) => setDifficultyFilter(e.target.value)}
-            className="py-2 px-3 text-sm rounded-xl border border-[#E8E2D8] focus:border-[#123C69] outline-none bg-white"
+            className="py-2 px-3 text-sm rounded-xl border border-border focus:border-navy-900 outline-none bg-surface"
           >
             <option value="">Toutes les difficultés</option>
             <option value="JUNIOR">JUNIOR</option>
@@ -223,7 +226,7 @@ const loadChallenges = async () => {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="py-2 px-3 text-sm rounded-xl border border-[#E8E2D8] focus:border-[#123C69] outline-none bg-white"
+            className="py-2 px-3 text-sm rounded-xl border border-border focus:border-navy-900 outline-none bg-surface"
           >
             <option value="">Tous les statuts</option>
             <option value="DRAFT">DRAFT</option>
@@ -234,7 +237,7 @@ const loadChallenges = async () => {
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
-            <thead className="text-xs text-[#797E88] uppercase bg-[#FAF9F7] border-b border-[#F2EDE6]">
+            <thead className={tableHead}>
               <tr>
                 <th className="px-6 py-4 font-medium">Titre / Question</th>
                 <th className="px-6 py-4 font-medium">Type</th>
@@ -243,25 +246,25 @@ const loadChallenges = async () => {
                 <th className="px-6 py-4 font-medium text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#F2EDE6]">
+            <tbody className="divide-y divide-border-subtle">
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-[#797E88]">Chargement...</td>
+                  <td colSpan={5} className="px-6 py-8 text-center text-ink-muted">Chargement...</td>
                 </tr>
               ) : challenges.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-[#797E88]">Aucune question trouvée.</td>
+                  <td colSpan={5} className="px-6 py-8 text-center text-ink-muted">Aucune question trouvée.</td>
                 </tr>
               ) : (
                 challenges.map((c) => (
-                  <tr key={c.id} className="hover:bg-[#FCFBF9] transition">
+                  <tr key={c.id} className="hover:bg-surface-elevated transition">
                     <td className="px-6 py-4">
-                      <div className="font-semibold text-[#102136]">{c.title}</div>
-                      <div className="text-xs text-[#484F59] mt-1 line-clamp-1">{c.question}</div>
+                      <div className="font-semibold text-ink">{c.title}</div>
+                      <div className="text-xs text-ink-secondary mt-1 line-clamp-1">{c.question}</div>
                     </td>
                     <td className="px-6 py-4">
                       <Badge variant="default">{c.type}</Badge>
-                      <div className="text-xs text-[#797E88] mt-1">{c.difficulty}</div>
+                      <div className="text-xs text-ink-muted mt-1">{c.difficulty}</div>
                     </td>
                     <td className="px-6 py-4">
                       <Badge variant={c.status === 'VALIDATED' ? 'success' : c.status === 'ARCHIVED' ? 'default' : 'warning'}>
@@ -269,9 +272,9 @@ const loadChallenges = async () => {
                       </Badge>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="text-xs text-[#484F59]">
+                      <div className="text-xs text-ink-secondary">
                         {(c.profileIds ?? []).length === 0 ? (
-                          <span className="text-[#797E88]">—</span>
+                          <span className="text-ink-muted">—</span>
                         ) : (
                           (c.profileIds ?? [])
                             .map(id => profiles.find(p => p.id === id)?.name ?? `#${id}`)
@@ -282,16 +285,16 @@ const loadChallenges = async () => {
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">
                         {c.status === 'DRAFT' && (
-                          <button onClick={() => handleValidate(c.id)} title="Valider" className="p-2 text-[#2E7D32] hover:bg-[#E8F5E9] rounded-lg transition">
+                          <IconButton variant="success" onClick={() => handleValidate(c.id)} title="Valider">
                             <CheckCircle className="w-4 h-4" />
-                          </button>
+                          </IconButton>
                         )}
-                        <button onClick={() => setEditingId(c.id)} title="Modifier" className="p-2 text-[#123C69] hover:bg-[#E6EFF8] rounded-lg transition">
+                        <IconButton onClick={() => setEditingId(c.id)} title="Modifier">
                           <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => handleStatusChange(c.id, c.status)} title={c.status === 'ARCHIVED' ? 'Restaurer' : 'Archiver'} className="p-2 text-[#AC3B61] hover:bg-[#FDF2F2] rounded-lg transition">
+                        </IconButton>
+                        <IconButton variant="danger" onClick={() => handleStatusChange(c.id, c.status)} title={c.status === 'ARCHIVED' ? 'Restaurer' : 'Archiver'}>
                           <Archive className="w-4 h-4" />
-                        </button>
+                        </IconButton>
                       </div>
                     </td>
                   </tr>
@@ -302,7 +305,7 @@ const loadChallenges = async () => {
         </div>   {/* fin de overflow-x-auto */}
 
             {totalPages > 1 && (
-              <div className="flex items-center justify-between px-6 py-4 border-t border-[#F2EDE6] text-xs text-[#484F59]">
+              <div className="flex items-center justify-between px-6 py-4 border-t border-border-subtle text-xs text-ink-secondary">
                 <span>
                   {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, totalElements)} sur {totalElements}
                 </span>
@@ -310,7 +313,7 @@ const loadChallenges = async () => {
                   <button
                     onClick={() => setPage((p) => Math.max(0, p - 1))}
                     disabled={page === 0 || loading}
-                    className="px-3 py-1.5 rounded-lg border border-[#E8E2D8] bg-white hover:bg-[#FAF9F7] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                    className="px-3 py-1.5 rounded-lg border border-border bg-surface hover:bg-canvas-subtle disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
                   >
                     Précédent
                   </button>
@@ -318,7 +321,7 @@ const loadChallenges = async () => {
                   <button
                     onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                     disabled={page >= totalPages - 1 || loading}
-                    className="px-3 py-1.5 rounded-lg border border-[#E8E2D8] bg-white hover:bg-[#FAF9F7] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                    className="px-3 py-1.5 rounded-lg border border-border bg-surface hover:bg-canvas-subtle disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
                   >
                     Suivant
                   </button>

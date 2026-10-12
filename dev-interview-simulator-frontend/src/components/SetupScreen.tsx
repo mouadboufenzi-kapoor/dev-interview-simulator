@@ -8,6 +8,7 @@ import type {
 } from '../types';
 import { simulationApi } from '../api/simulationApi';
 import { Button } from './common/Button';
+import { PageTitle } from './common/PageTitle';
 import {
   HelpCircle,
   Code2,
@@ -198,13 +199,13 @@ export const SetupScreen = ({ onStart, loading, activeMode, initialCategoryIds }
       <div className="relative w-full min-h-[calc(80vh-80px)] flex flex-col items-center justify-center py-10 sm:py-16 px-4">
         <div className="w-full max-w-4xl mx-auto space-y-10 sm:space-y-12 text-center">
           <div className="space-y-4">
-            <p className="font-sans text-xs uppercase tracking-[0.2em] text-[#797E88] font-semibold">
+            <p className="font-sans text-xs uppercase tracking-[0.2em] text-ink-muted font-semibold">
               Dev Interview Simulator
             </p>
-            <h1 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-semibold text-[#123C69] tracking-tight leading-[1.12]">
+            <PageTitle size="hero">
               Vous êtes quel profil ?
-            </h1>
-            <p className="text-sm sm:text-base text-[#484F59] font-sans max-w-lg mx-auto leading-relaxed">
+            </PageTitle>
+            <p className="text-sm sm:text-base text-ink-secondary font-sans max-w-lg mx-auto leading-relaxed">
               Choisissez votre domaine pour commencer une simulation adaptée à
               votre parcours.
             </p>
@@ -221,18 +222,18 @@ export const SetupScreen = ({ onStart, loading, activeMode, initialCategoryIds }
                   type="button"
                   onClick={() => setSelectedProfile(profile.id)}
                   aria-pressed={isSelected}
-                  className={`group relative min-h-36 rounded-2xl border p-5 text-left transition-all duration-200 cursor-pointer ${
+                  className={`group relative min-h-36 rounded-2xl border p-5 text-left transition-all duration-200 cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
                     isSelected
-                      ? 'bg-white border-[#123C69] shadow-[0_4px_20px_rgba(18,60,105,0.08)] ring-1 ring-[#123C69]'
-                      : 'bg-white/90 border-[#E8E2D8] hover:border-[#BAB2B5] hover:shadow-[0_2px_10px_rgba(18,60,105,0.03)]'
+                      ? 'bg-surface border-navy-900 shadow-elevated ring-1 ring-navy-900'
+                      : 'bg-surface/90 border-border hover:border-border-strong hover:shadow-panel'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div
                       className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-colors ${
                         isSelected
-                          ? 'bg-[#E6EFF8] border-[#B8D3EC] text-[#123C69]'
-                          : 'bg-[#FAF9F7] border-[#E8E2D8] text-[#797E88] group-hover:text-[#123C69]'
+                          ? 'bg-navy-100 border-navy-200 text-navy-900'
+                          : 'bg-canvas-subtle border-border text-ink-muted group-hover:text-navy-900'
                       }`}
                     >
                       <Icon className="w-4 h-4 stroke-[2]" />
@@ -240,8 +241,8 @@ export const SetupScreen = ({ onStart, loading, activeMode, initialCategoryIds }
                     <div
                       className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
                         isSelected
-                          ? 'border-[#123C69] bg-[#123C69] text-white'
-                          : 'border-[#DDD5D8] bg-white'
+                          ? 'border-navy-900 bg-navy-900 text-white'
+                          : 'border-border bg-surface'
                       }`}
                     >
                       {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
@@ -251,12 +252,12 @@ export const SetupScreen = ({ onStart, loading, activeMode, initialCategoryIds }
                   <div className="space-y-1.5 mt-6">
                     <h2
                       className={`font-serif text-xl font-bold transition-colors ${
-                        isSelected ? 'text-[#123C69]' : 'text-[#102136]'
+                        isSelected ? 'text-navy-900' : 'text-ink'
                       }`}
                     >
                       {profile.title}
                     </h2>
-                    <p className="text-xs text-[#5C554E] leading-relaxed">
+                    <p className="text-xs text-ink-warm leading-relaxed">
                       {profile.description}
                     </p>
                   </div>
@@ -290,7 +291,7 @@ export const SetupScreen = ({ onStart, loading, activeMode, initialCategoryIds }
         <button
           type="button"
           onClick={() => setShowConfiguration(false)}
-          className="mx-auto flex items-center gap-2 text-xs font-medium text-[#797E88] hover:text-[#123C69] transition-colors cursor-pointer"
+          className="mx-auto flex items-center gap-2 text-xs font-medium text-ink-muted hover:text-navy-900 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           Changer de profil
@@ -298,14 +299,14 @@ export const SetupScreen = ({ onStart, loading, activeMode, initialCategoryIds }
 
         {/* Brand & Main Headline */}
         <div className="space-y-4">
-          <p className="font-sans text-xs uppercase tracking-[0.2em] text-[#797E88] font-semibold">
+          <p className="font-sans text-xs uppercase tracking-[0.2em] text-ink-muted font-semibold">
             Dev Interview Simulator
           </p>
-          <h1 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-semibold text-[#123C69] tracking-tight leading-[1.12]">
+          <PageTitle size="hero">
             Préparez votre prochain <br className="hidden sm:inline" />
             entretien technique.
-          </h1>
-          <p className="text-sm sm:text-base text-[#484F59] font-sans max-w-md mx-auto leading-relaxed">
+          </PageTitle>
+          <p className="text-sm sm:text-base text-ink-secondary font-sans max-w-md mx-auto leading-relaxed">
             {selectedProfileLabel
               ? `Configurez votre entraînement ${selectedProfileLabel.toLowerCase()} en conditions réelles.`
               : "Choisissez un mode d'évaluation pour vous entraîner en conditions réelles."}
@@ -323,10 +324,10 @@ export const SetupScreen = ({ onStart, loading, activeMode, initialCategoryIds }
                 <div
                   key={mode.id}
                   onClick={() => setSelectedMode(mode.id)}
-                  className={`group relative rounded-2xl border p-6 transition-all duration-200 cursor-pointer flex flex-col justify-between select-none ${
+                  className={`group relative rounded-2xl border p-6 transition-all duration-200 cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white flex flex-col justify-between select-none ${
                     isSelected
-                      ? 'bg-white border-[#123C69] shadow-[0_4px_20px_rgba(18,60,105,0.08)] ring-1 ring-[#123C69]'
-                      : 'bg-white border-[#E8E2D8] hover:border-[#BAB2B5] hover:shadow-[0_2px_10px_rgba(18,60,105,0.03)]'
+                      ? 'bg-surface border-navy-900 shadow-elevated ring-1 ring-navy-900'
+                      : 'bg-surface border-border hover:border-border-strong hover:shadow-panel'
                   }`}
                 >
                   <div className="space-y-4">
@@ -335,8 +336,8 @@ export const SetupScreen = ({ onStart, loading, activeMode, initialCategoryIds }
                       <div
                         className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-colors ${
                           isSelected
-                            ? 'bg-[#E6EFF8] border-[#B8D3EC] text-[#123C69]'
-                            : 'bg-[#FAF9F7] border-[#E8E2D8] text-[#797E88] group-hover:text-[#123C69]'
+                            ? 'bg-navy-100 border-navy-200 text-navy-900'
+                            : 'bg-canvas-subtle border-border text-ink-muted group-hover:text-navy-900'
                         }`}
                       >
                         <Icon className="w-4 h-4 stroke-[2]" />
@@ -345,8 +346,8 @@ export const SetupScreen = ({ onStart, loading, activeMode, initialCategoryIds }
                       <div
                         className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
                           isSelected
-                            ? 'border-[#123C69] bg-[#123C69] text-white'
-                            : 'border-[#DDD5D8] bg-white'
+                            ? 'border-navy-900 bg-navy-900 text-white'
+                            : 'border-border bg-surface'
                         }`}
                       >
                         {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
@@ -356,12 +357,12 @@ export const SetupScreen = ({ onStart, loading, activeMode, initialCategoryIds }
                     <div className="space-y-1.5">
                       <h3
                         className={`font-serif text-xl font-bold transition-colors ${
-                          isSelected ? 'text-[#123C69]' : 'text-[#102136]'
+                          isSelected ? 'text-navy-900' : 'text-ink'
                         }`}
                       >
                         {mode.title}
                       </h3>
-                      <p className="text-xs text-[#5C554E] leading-relaxed">
+                      <p className="text-xs text-ink-warm leading-relaxed">
                         {mode.description}
                       </p>
                     </div>
@@ -374,8 +375,8 @@ export const SetupScreen = ({ onStart, loading, activeMode, initialCategoryIds }
           {/* Minimalist Configuration Bar (Level + Options) */}
           <div className="flex flex-col items-center justify-center gap-6 pt-2">
             <div className="flex flex-wrap items-center justify-center gap-2 text-xs font-sans">
-              <span className="text-[#797E88] font-medium mr-2">Niveau attendu :</span>
-              <div className="inline-flex p-1 rounded-xl bg-white border border-[#E8E2D8] shadow-[0_1px_2px_rgba(18,60,105,0.02)]">
+              <span className="text-ink-muted font-medium mr-2">Niveau attendu :</span>
+              <div className="inline-flex p-1 rounded-xl bg-surface border border-border shadow-card">
                 {DIFFICULTIES.map((diff) => {
                   const isDiffSelected = selectedDifficulty === diff.id;
                   return (
@@ -383,10 +384,10 @@ export const SetupScreen = ({ onStart, loading, activeMode, initialCategoryIds }
                       key={diff.id}
                       type="button"
                       onClick={() => setSelectedDifficulty(diff.id)}
-                      className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                      className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
                         isDiffSelected
-                          ? 'bg-[#123C69] text-white shadow-sm'
-                          : 'text-[#484F59] hover:text-[#102136] hover:bg-[#FAF9F7]'
+                          ? 'bg-navy-900 text-white shadow-sm'
+                          : 'text-ink-secondary hover:text-ink hover:bg-canvas-subtle'
                       }`}
                     >
                       {diff.label}
@@ -396,13 +397,13 @@ export const SetupScreen = ({ onStart, loading, activeMode, initialCategoryIds }
               </div>
             </div>
 
-            <div className="w-full max-w-2xl rounded-2xl border border-[#E8E2D8] bg-[#FCFBF9] px-4 py-4 text-left sm:px-5">
+            <div className="w-full max-w-2xl rounded-2xl border border-border bg-surface-elevated px-4 py-4 text-left sm:px-5">
               <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h2 className="text-sm font-semibold text-[#102136]">
-                    Technologies / sujets <span className="font-normal text-[#797E88]">— optionnel</span>
+                  <h2 className="text-sm font-semibold text-ink">
+                    Technologies / sujets <span className="font-normal text-ink-muted">— optionnel</span>
                   </h2>
-                  <p className="mt-1 text-xs text-[#797E88]">
+                  <p className="mt-1 text-xs text-ink-muted">
                     Affinez les questions proposées, ou continuez sans filtre.
                   </p>
                 </div>
@@ -413,7 +414,7 @@ export const SetupScreen = ({ onStart, loading, activeMode, initialCategoryIds }
                       setSelectedCategoryIds([]);
                       setSelectedSkillIds([]);
                     }}
-                    className="self-start text-xs font-medium text-[#AC3B61] transition hover:text-[#8C294A] sm:self-auto"
+                    className="self-start text-xs font-medium text-crimson-700 transition hover:text-crimson-800 sm:self-auto"
                   >
                     Tout désélectionner
                   </button>
@@ -421,12 +422,12 @@ export const SetupScreen = ({ onStart, loading, activeMode, initialCategoryIds }
               </div>
 
               {isLoadingTopics ? (
-                <div className="mt-4 flex items-center gap-2 text-xs text-[#797E88]">
+                <div className="mt-4 flex items-center gap-2 text-xs text-ink-muted">
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   Chargement des technologies…
                 </div>
               ) : topicsError ? (
-                <p className="mt-4 text-xs text-[#AC3B61]">{topicsError}</p>
+                <p className="mt-4 text-xs text-crimson-700">{topicsError}</p>
               ) : (
                 <div className="mt-4 flex flex-wrap gap-2">
                   {categories.map((category) => {
@@ -439,8 +440,8 @@ export const SetupScreen = ({ onStart, loading, activeMode, initialCategoryIds }
                         aria-pressed={isSelected}
                         className={`rounded-lg border px-3 py-1.5 text-xs transition ${
                           isSelected
-                            ? 'border-[#123C69] bg-[#E6EFF8] font-semibold text-[#123C69]'
-                            : 'border-[#E8E2D8] bg-white text-[#484F59] hover:border-[#BAB2B5] hover:text-[#123C69]'
+                            ? 'border-navy-900 bg-navy-100 font-semibold text-navy-900'
+                            : 'border-border bg-surface text-ink-secondary hover:border-border-strong hover:text-navy-900'
                         }`}
                       >
                         {category.name}
@@ -457,8 +458,8 @@ export const SetupScreen = ({ onStart, loading, activeMode, initialCategoryIds }
                         aria-pressed={isSelected}
                         className={`rounded-lg border px-3 py-1.5 text-xs transition ${
                           isSelected
-                            ? 'border-[#123C69] bg-[#E6EFF8] font-semibold text-[#123C69]'
-                            : 'border-[#E8E2D8] bg-white text-[#484F59] hover:border-[#BAB2B5] hover:text-[#123C69]'
+                            ? 'border-navy-900 bg-navy-100 font-semibold text-navy-900'
+                            : 'border-border bg-surface text-ink-secondary hover:border-border-strong hover:text-navy-900'
                         }`}
                       >
                         {skill.name}
@@ -466,7 +467,7 @@ export const SetupScreen = ({ onStart, loading, activeMode, initialCategoryIds }
                     );
                   })}
                   {categories.length === 0 && skills.length === 0 && (
-                    <p className="text-xs text-[#797E88]">
+                    <p className="text-xs text-ink-muted">
                       Aucun sujet disponible pour cette configuration.
                     </p>
                   )}
@@ -476,7 +477,7 @@ export const SetupScreen = ({ onStart, loading, activeMode, initialCategoryIds }
 
             {/* Architecture step options (discreetly visible if ARCHITECTURE) */}
             {selectedMode === 'ARCHITECTURE' && (
-              <div className="inline-flex items-center gap-3 text-xs font-sans text-[#5C554E] bg-white border border-[#E8E2D8] px-4 py-2 rounded-xl">
+              <div className="inline-flex items-center gap-3 text-xs font-sans text-ink-warm bg-surface border border-border px-4 py-2 rounded-xl">
                 <span>Scénario :</span>
                 <div className="flex items-center gap-1">
                   {[3, 4, 5].map((count) => (
@@ -484,21 +485,21 @@ export const SetupScreen = ({ onStart, loading, activeMode, initialCategoryIds }
                       key={count}
                       type="button"
                       onClick={() => setQuestionCount(count)}
-                      className={`w-6 h-6 rounded text-xs font-mono font-semibold transition-colors cursor-pointer ${
+                      className={`w-6 h-6 rounded text-xs font-mono font-semibold transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
                         questionCount === count
-                          ? 'bg-[#123C69] text-white'
-                          : 'text-[#5C554E] hover:bg-[#FAF9F7]'
+                          ? 'bg-navy-900 text-white'
+                          : 'text-ink-warm hover:bg-canvas-subtle'
                       }`}
                     >
                       {count}
                     </button>
                   ))}
-                  <span className="text-[11px] text-[#797E88] ml-1">étapes</span>
+                  <span className="text-[11px] text-ink-muted ml-1">étapes</span>
                 </div>
               </div>
             )}
 
-            {/* Prominent Action Button (Rosewood Accent #AC3B61) */}
+            {/* Prominent Action Button (Rosewood Accent: crimson-700) */}
             <div className="pt-2">
               <Button
                 type="submit"

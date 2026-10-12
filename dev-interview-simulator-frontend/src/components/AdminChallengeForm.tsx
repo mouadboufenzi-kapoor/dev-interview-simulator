@@ -8,6 +8,9 @@ import type { Profile } from '../api/profileApi';
 import { simulationApi } from '../api/simulationApi';
 import type { Category, Skill } from '../types';
 import { MultiSelect } from './common/MultiSelect';
+import { Field } from './common/Field';
+import { PageTitle } from './common/PageTitle';
+import { fieldInput, fieldLabel } from '../styles/ui';
 import type { ChallengeType } from '../types';
 
 interface Props {
@@ -231,41 +234,38 @@ export const AdminChallengeForm = ({ challengeId, defaultScenarioId, onBack, onS
   };
 
   const contextField = (
-    <label className="block space-y-1.5">
-      <span className="text-sm font-semibold text-[#102136]">Contexte</span>
-      <textarea value={formData.context} onChange={e => setFormData({...formData, context: e.target.value})} className="w-full rounded-xl border border-[#E8E2D8] p-3 text-sm focus:border-[#123C69] outline-none" rows={2} />
-    </label>
+    <Field label="Contexte">
+            <textarea value={formData.context} onChange={e => setFormData({...formData, context: e.target.value})} className={fieldInput} rows={2} />
+    </Field>
   );
 
   const pointsTimeFields = (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <label className="block space-y-1.5">
-        <span className="text-sm font-semibold text-[#102136]">Points</span>
-        <input type="number" required value={formData.points} onChange={e => setFormData({...formData, points: parseInt(e.target.value)})} className="w-full rounded-xl border border-[#E8E2D8] p-3 text-sm focus:border-[#123C69] outline-none" />
-      </label>
-      <label className="block space-y-1.5">
-        <span className="text-sm font-semibold text-[#102136]">Temps estimé (secondes)</span>
-        <input type="number" min={1} required={formData.type !== 'ARCHITECTURE'} value={formData.estimatedTimeSeconds ?? ''} onChange={e => setFormData({...formData, estimatedTimeSeconds: e.target.value ? parseInt(e.target.value) : undefined})} className="w-full rounded-xl border border-[#E8E2D8] p-3 text-sm focus:border-[#123C69] outline-none" />
-      </label>
+      <Field label="Points">
+                <input type="number" required value={formData.points} onChange={e => setFormData({...formData, points: parseInt(e.target.value)})} className={fieldInput} />
+      </Field>
+      <Field label="Temps estimé (secondes)">
+                <input type="number" min={1} required={formData.type !== 'ARCHITECTURE'} value={formData.estimatedTimeSeconds ?? ''} onChange={e => setFormData({...formData, estimatedTimeSeconds: e.target.value ? parseInt(e.target.value) : undefined})} className={fieldInput} />
+      </Field>
     </div>
   );
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <button onClick={onBack} className="p-2 hover:bg-[#FAF9F7] rounded-lg transition">
-          <ArrowLeft className="w-5 h-5 text-[#797E88]" />
+        <button onClick={onBack} className="p-2 hover:bg-canvas-subtle rounded-lg transition">
+          <ArrowLeft className="w-5 h-5 text-ink-muted" />
         </button>
         <div>
-          <h2 className="text-2xl font-serif font-bold text-[#123C69]">
+          <PageTitle as="h2" size="md">
             {challengeId
               ? 'Modifier la question'
               : defaultScenarioId
                 ? 'Nouvelle étape'
                 : 'Nouvelle question'}
-          </h2>
+          </PageTitle>
           {formData.scenarioId != null && (
-            <p className="text-sm text-[#484F59] mt-1">
+            <p className="text-sm text-ink-secondary mt-1">
               Scénario : {scenarios.find(s => s.id === formData.scenarioId)?.title || `#${formData.scenarioId}`}
             </p>
           )}
@@ -273,60 +273,54 @@ export const AdminChallengeForm = ({ challengeId, defaultScenarioId, onBack, onS
       </div>
 
       {error && (
-        <div className="p-4 rounded-xl bg-[#FDF2F2] border border-[#F3BEBE] text-[#9C2727] text-sm">
+        <div className="p-4 rounded-xl bg-danger-soft border border-danger-border text-danger text-sm">
           {error}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-6 border border-[#E8E2D8] shadow-[0_4px_12px_rgba(18,60,105,0.05)] space-y-6">
+      <form onSubmit={handleSubmit} className="bg-surface rounded-2xl p-6 border border-border shadow-panel space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <label className="block space-y-1.5">
-            <span className="text-sm font-semibold text-[#102136]">Titre</span>
-            <input required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full rounded-xl border border-[#E8E2D8] p-3 text-sm focus:border-[#123C69] outline-none" />
-          </label>
+          <Field label="Titre">
+                        <input required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className={fieldInput} />
+          </Field>
           
-          <label className="block space-y-1.5">
-            <span className="text-sm font-semibold text-[#102136]">Type</span>
-            <select required value={formData.type} onChange={e => setFormData({...formData, type: e.target.value as ChallengeType})} className="w-full rounded-xl border border-[#E8E2D8] p-3 text-sm focus:border-[#123C69] outline-none">
+          <Field label="Type">
+                        <select required value={formData.type} onChange={e => setFormData({...formData, type: e.target.value as ChallengeType})} className={fieldInput}>
               {effectiveAllowedTypes.map(t => (
                 <option key={t} value={t}>{t}</option>
               ))}
             </select>
-          </label>
+          </Field>
 
-          <label className="block space-y-1.5">
-            <span className="text-sm font-semibold text-[#102136]">Difficulté</span>
-            <select required value={formData.difficulty} onChange={e => setFormData({...formData, difficulty: e.target.value})} className="w-full rounded-xl border border-[#E8E2D8] p-3 text-sm focus:border-[#123C69] outline-none">
+          <Field label="Difficulté">
+                        <select required value={formData.difficulty} onChange={e => setFormData({...formData, difficulty: e.target.value})} className={fieldInput}>
               <option value="JUNIOR">JUNIOR</option>
               <option value="INTERMEDIATE">INTERMEDIATE</option>
               <option value="SENIOR">SENIOR</option>
             </select>
-          </label>
+          </Field>
 
-          <label className="block space-y-1.5">
-            <span className="text-sm font-semibold text-[#102136]">Type de sélection</span>
-            <select required value={formData.selectionType} onChange={e => setFormData({...formData, selectionType: e.target.value})} className="w-full rounded-xl border border-[#E8E2D8] p-3 text-sm focus:border-[#123C69] outline-none">
+          <Field label="Type de sélection">
+                        <select required value={formData.selectionType} onChange={e => setFormData({...formData, selectionType: e.target.value})} className={fieldInput}>
               <option value="SINGLE_CHOICE">SINGLE_CHOICE</option>
               <option value="MULTIPLE_CHOICE">MULTIPLE_CHOICE</option>
             </select>
-          </label>
+          </Field>
         </div>
 
         {formData.type !== 'ARCHITECTURE' && contextField}
 
-        <label className="block space-y-1.5">
-          <span className="text-sm font-semibold text-[#102136]">Question *</span>
-          <textarea required value={formData.question} onChange={e => setFormData({...formData, question: e.target.value})} className="w-full rounded-xl border border-[#E8E2D8] p-3 text-sm focus:border-[#123C69] outline-none" rows={2} />
-        </label>
+        <Field label="Question *">
+                    <textarea required value={formData.question} onChange={e => setFormData({...formData, question: e.target.value})} className={fieldInput} rows={2} />
+        </Field>
 
-        <label className="block space-y-1.5">
-          <span className="text-sm font-semibold text-[#102136]">Explication globale</span>
-          <textarea value={formData.explanation} onChange={e => setFormData({...formData, explanation: e.target.value})} className="w-full rounded-xl border border-[#E8E2D8] p-3 text-sm focus:border-[#123C69] outline-none" rows={2} />
-        </label>
+        <Field label="Explication globale">
+                    <textarea value={formData.explanation} onChange={e => setFormData({...formData, explanation: e.target.value})} className={fieldInput} rows={2} />
+        </Field>
 
         {formData.type === 'ARCHITECTURE' ? (
           <details className="pt-1">
-            <summary className="cursor-pointer text-sm font-semibold text-[#102136] select-none">
+            <summary className={`cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white ${fieldLabel} select-none`}>
               Champs avancés (contexte, points, temps estimé)
             </summary>
             <div className="mt-6 space-y-6">
@@ -338,8 +332,8 @@ export const AdminChallengeForm = ({ challengeId, defaultScenarioId, onBack, onS
           pointsTimeFields
         )}
 
-        <div className="space-y-4 pt-4 border-t border-[#F2EDE6]">
-          <h3 className="font-serif font-bold text-lg text-[#123C69]">Profils, catégories et compétences</h3>
+        <div className="space-y-4 pt-4 border-t border-border-subtle">
+          <h3 className="font-serif font-bold text-lg text-navy-900">Profils, catégories et compétences</h3>
           <MultiSelect
             label="Profils associés"
             options={profiles}
@@ -364,15 +358,14 @@ export const AdminChallengeForm = ({ challengeId, defaultScenarioId, onBack, onS
         </div>
 
         {formData.type === 'ARCHITECTURE' && (
-        <div className="space-y-4 pt-4 border-t border-[#F2EDE6]">
-          <h3 className="font-serif font-bold text-lg text-[#123C69]">Parcours Architecture</h3>
+        <div className="space-y-4 pt-4 border-t border-border-subtle">
+          <h3 className="font-serif font-bold text-lg text-navy-900">Parcours Architecture</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <label className="block space-y-1.5">
-              <span className="text-sm font-semibold text-[#102136]">Scénario</span>
-              <select
+            <Field label="Scénario">
+                            <select
                 value={formData.scenarioId ?? ''}
                 onChange={e => handleScenarioChange(e.target.value)}
-                className="w-full rounded-xl border border-[#E8E2D8] p-3 text-sm focus:border-[#123C69] outline-none bg-white"
+                className={`${fieldInput} bg-surface`}
               >
                 <option value="">Aucun scénario</option>
                 {scenarios.map(s => (
@@ -380,31 +373,30 @@ export const AdminChallengeForm = ({ challengeId, defaultScenarioId, onBack, onS
                 ))}
                 <option value="__new__">+ Nouveau scénario…</option>
               </select>
-            </label>
-            <label className="block space-y-1.5">
-              <span className="text-sm font-semibold text-[#102136]">Ordre de l'étape</span>
-              <input
+            </Field>
+            <Field label="Ordre de l'étape">
+                            <input
                 type="number"
                 min={1}
                 value={formData.stepOrder ?? ''}
                 onChange={e => setFormData({ ...formData, stepOrder: e.target.value ? parseInt(e.target.value) : undefined })}
-                className="w-full rounded-xl border border-[#E8E2D8] p-3 text-sm focus:border-[#123C69] outline-none"
+                className={fieldInput}
               />
-            </label>
+            </Field>
           </div>
 
           {scenarioSteps.length > 0 && (
             <div className="space-y-1.5">
-              <span className="text-sm font-semibold text-[#102136]">Étapes déjà créées</span>
+              <span className={fieldLabel}>Étapes déjà créées</span>
               <ul className="space-y-1">
                 {scenarioSteps.map(step => (
-                  <li key={step.challengeId} className="flex items-center gap-2 text-sm text-[#484F59]">
-                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#E6EFF8] text-[#123C69] text-xs font-semibold">
+                  <li key={step.challengeId} className="flex items-center gap-2 text-sm text-ink-secondary">
+                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-navy-100 text-navy-900 text-xs font-semibold">
                       {step.stepOrder ?? '–'}
                     </span>
                     <span>{step.title}</span>
                     {challengeId === step.challengeId && (
-                      <span className="text-xs text-[#797E88]">(étape en cours d'édition)</span>
+                      <span className="text-xs text-ink-muted">(étape en cours d'édition)</span>
                     )}
                   </li>
                 ))}
@@ -413,25 +405,23 @@ export const AdminChallengeForm = ({ challengeId, defaultScenarioId, onBack, onS
           )}
 
           {newScenarioOpen && (
-            <div className="p-4 border border-[#E8E2D8] rounded-xl space-y-3 bg-[#FAF9F7]">
-              <label className="block space-y-1.5">
-                <span className="text-sm font-semibold text-[#102136]">Titre du scénario</span>
-                <input
+            <div className="p-4 border border-border rounded-xl space-y-3 bg-canvas-subtle">
+              <Field label="Titre du scénario">
+                                <input
                   value={newScenarioTitle}
                   onChange={e => setNewScenarioTitle(e.target.value)}
                   placeholder="Ex. Design a High-Scale Chat Platform"
-                  className="w-full rounded-lg border border-[#E8E2D8] p-2.5 text-sm focus:border-[#123C69] outline-none bg-white"
+                  className="w-full rounded-lg border border-border p-2.5 text-sm focus:border-navy-900 outline-none bg-surface"
                 />
-              </label>
-              <label className="block space-y-1.5">
-                <span className="text-sm font-semibold text-[#102136]">Description</span>
-                <textarea
+              </Field>
+              <Field label="Description">
+                                <textarea
                   value={newScenarioDescription}
                   onChange={e => setNewScenarioDescription(e.target.value)}
                   rows={2}
-                  className="w-full rounded-lg border border-[#E8E2D8] p-2.5 text-sm focus:border-[#123C69] outline-none bg-white"
+                  className="w-full rounded-lg border border-border p-2.5 text-sm focus:border-navy-900 outline-none bg-surface"
                 />
-              </label>
+              </Field>
               <div className="flex justify-end gap-3">
                 <Button type="button" variant="secondary" size="sm" onClick={() => setNewScenarioOpen(false)} disabled={creatingScenario}>
                   Annuler
@@ -443,30 +433,28 @@ export const AdminChallengeForm = ({ challengeId, defaultScenarioId, onBack, onS
             </div>
           )}
 
-          <label className="block space-y-1.5">
-            <span className="text-sm font-semibold text-[#102136]">Information révélée après validation</span>
-            <textarea
+          <Field label="Information révélée après validation">
+                        <textarea
               value={formData.revealedInformation}
               onChange={e => setFormData({ ...formData, revealedInformation: e.target.value })}
               rows={2}
-              className="w-full rounded-xl border border-[#E8E2D8] p-3 text-sm focus:border-[#123C69] outline-none"
+              className={fieldInput}
             />
-          </label>
-          <label className="block space-y-1.5">
-            <span className="text-sm font-semibold text-[#102136]">Trade-off pédagogique</span>
-            <textarea
+          </Field>
+          <Field label="Trade-off pédagogique">
+                        <textarea
               value={formData.tradeoff}
               onChange={e => setFormData({ ...formData, tradeoff: e.target.value })}
               rows={2}
-              className="w-full rounded-xl border border-[#E8E2D8] p-3 text-sm focus:border-[#123C69] outline-none"
+              className={fieldInput}
             />
-          </label>
+          </Field>
         </div>
         )}
 
-        <div className="space-y-4 pt-4 border-t border-[#F2EDE6]">
+        <div className="space-y-4 pt-4 border-t border-border-subtle">
           <div className="flex items-center justify-between">
-            <h3 className="font-serif font-bold text-lg text-[#123C69]">Options de réponse</h3>
+            <h3 className="font-serif font-bold text-lg text-navy-900">Options de réponse</h3>
             <Button
               type="button"
               onClick={handleAddOption}
@@ -480,35 +468,35 @@ export const AdminChallengeForm = ({ challengeId, defaultScenarioId, onBack, onS
 
           <div className="space-y-3">
             {formData.options.map((opt, idx) => (
-              <div key={idx} className="p-4 border border-[#E8E2D8] rounded-xl space-y-3">
-                <div className="flex gap-4 items-start">
+              <div key={idx} className="p-4 border border-border rounded-xl space-y-3">
+                <div className="flex flex-wrap gap-x-4 gap-y-2 items-start">
                   <div className="flex-1 space-y-3">
                     <input
                       required
                       placeholder="Contenu de l'option..."
                       value={opt.content}
                       onChange={e => handleOptionChange(idx, 'content', e.target.value)}
-                      className="w-full rounded-lg border border-[#E8E2D8] p-2.5 text-sm focus:border-[#123C69] outline-none"
+                      className="w-full rounded-lg border border-border p-2.5 text-sm focus:border-navy-900 outline-none"
                     />
                     {formData.type === 'CODE_REVIEW' && (
                        <input
                         placeholder="Explication (spécifique à l'option)..."
                         value={opt.explanation}
                         onChange={e => handleOptionChange(idx, 'explanation', e.target.value)}
-                        className="w-full rounded-lg border border-[#E8E2D8] p-2.5 text-sm focus:border-[#123C69] outline-none"
+                        className="w-full rounded-lg border border-border p-2.5 text-sm focus:border-navy-900 outline-none"
                       />
                     )}
                   </div>
-                  <label className="flex items-center gap-2 mt-2 cursor-pointer">
+                  <label className="flex items-center gap-2 mt-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white">
                     <input
                       type="checkbox"
                       checked={opt.correct}
                       onChange={e => handleOptionChange(idx, 'correct', e.target.checked)}
-                      className="w-4 h-4 text-[#AC3B61] rounded border-[#E8E2D8]"
+                      className="w-4 h-4 text-crimson-700 rounded border-border"
                     />
                     <span className="text-sm font-medium">Correcte</span>
                   </label>
-                  <button type="button" onClick={() => handleRemoveOption(idx)} className="mt-1 p-2 text-[#AC3B61] hover:bg-[#FDF2F2] rounded-lg transition">
+                  <button type="button" onClick={() => handleRemoveOption(idx)} className="mt-1 p-2 text-crimson-700 hover:bg-danger-soft rounded-lg transition">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -517,7 +505,7 @@ export const AdminChallengeForm = ({ challengeId, defaultScenarioId, onBack, onS
           </div>
         </div>
 
-        <div className="pt-6 border-t border-[#F2EDE6] flex justify-end gap-3">
+        <div className="pt-6 border-t border-border-subtle flex justify-end gap-3">
           <Button type="button" variant="secondary" onClick={onBack} disabled={loading}>
             Annuler
           </Button>
