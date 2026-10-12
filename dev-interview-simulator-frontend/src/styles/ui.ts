@@ -21,11 +21,11 @@ export const fieldLabel = 'text-sm font-semibold text-ink';
 
 /** Panneau blanc arrondi (tableaux et contenus administrés). */
 export const panel =
-  'bg-surface rounded-2xl border border-border shadow-panel overflow-hidden';
+  'bg-surface rounded-2xl border-[0.5px] border-card-border shadow-panel overflow-hidden';
 
 /** Carte de contenu blanche (sections avec padding interne, sans crop). */
 export const panelCard =
-  'bg-surface rounded-2xl border border-border shadow-panel';
+  'bg-surface rounded-2xl border-[0.5px] border-card-border shadow-panel';
 
 /** Barre d'en-tête interne d'un panneau (titre + actions). */
 export const panelToolbar = 'p-4 border-b border-border-subtle flex justify-end';

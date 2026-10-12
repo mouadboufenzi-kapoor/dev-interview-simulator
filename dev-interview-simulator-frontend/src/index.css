@@ -5,15 +5,16 @@
 
 @theme {
   /* ===== Surfaces ===== */
-  --color-canvas: #FFFFFF;
+  --color-canvas: #FAFAF8; /* fond principal : blanc très légèrement cassé, neutre */
   --color-canvas-subtle: #FAF9F7;
-  --color-surface: #FFFFFF;
+  --color-surface: #FFFDF9; /* cartes : blanc crème */
   --color-surface-elevated: #FCFBF9;
 
   /* ===== Bordures ===== */
   --color-border: #E8E2D8;
   --color-border-subtle: #F2EDE6;
   --color-border-strong: #BAB2B5;
+  --color-card-border: #DDD4C3; /* cartes : bordure 0.5px */
 
   /* ===== Textes ===== */
   --color-ink: #102136;
@@ -102,6 +103,7 @@
   --color-border: #2B3D61;
   --color-border-subtle: #223350;
   --color-border-strong: #55688F;
+  --color-card-border: #2B3D61; /* cartes : nuit = bordure actuelle */
 
   /* Textes */
   --color-ink: #E9EEF8;
@@ -178,6 +180,20 @@
    dans url()) — point de bascule documenté pour le dark mode (étape 11). */
 .watermark-pattern {
   background-image: url("data:image/svg+xml,%3Csvg width='120' height='120' viewBox='0 0 120 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cpath d='M52 68V52L62 60L52 68Z' fill='%23123C69' fill-opacity='0.02'/%3E%3Cpath d='M62 52V68L68 60L62 52Z' fill='%23AC3B61' fill-opacity='0.02'/%3E%3Cpath d='M-8 8V-8L2 0L-8 8Z' fill='%23123C69' fill-opacity='0.02'/%3E%3Cpath d='M112 8V-8L122 0L112 8Z' fill='%23123C69' fill-opacity='0.02'/%3E%3Cpath d='M-8 128V112L2 120L-8 128Z' fill='%23123C69' fill-opacity='0.02'/%3E%3Cpath d='M112 128V112L122 120L112 128Z' fill='%23123C69' fill-opacity='0.02'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Motif pointillé discret (navbar + footer) : points r=1.3px espacés de 12px,
+   très faiblement contrastés (fill-opacity 0.15) — perceptibles seulement à l'attention,
+   sans effet de texture décorative.
+   NOTE : data-URI SVG (var() impossible dans url()) — comme le watermark,
+   le thème sombre est déclaré par une règle .dark dédiée ci-dessous. */
+.navbar-dots {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12'%3E%3Ccircle cx='6' cy='6' r='1.3' fill='%23CFC5B2' fill-opacity='0.15'/%3E%3C/svg%3E");
+}
+
+/* Adaptation nuit du motif : points légèrement plus clairs que la navbar sombre, même faible opacité. */
+.dark .navbar-dots {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12'%3E%3Ccircle cx='6' cy='6' r='1.3' fill='%23354363' fill-opacity='0.15'/%3E%3C/svg%3E");
 }
 
 /* Custom subtle scrollbar */

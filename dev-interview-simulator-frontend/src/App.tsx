@@ -159,49 +159,6 @@ export default function App() {
           className="pointer-events-none absolute inset-0 z-0 hidden overflow-hidden lg:block"
           aria-hidden="true"
         >
-          <div className="absolute left-0 top-16 h-[calc(100%-64px)] w-[calc((100vw-1024px)/2)] min-w-[150px] max-w-[320px]">
-            {[
-              ['Data', 'left-[10%] top-[3%] text-[40px]'],
-              ['DevOps', 'left-[40%] top-[12%] text-[30px]'],
-              ['Sécurité', 'left-[5%] top-[22%] text-[34px]'],
-              ['Java', 'left-[50%] top-[31%] text-[28px]'],
-              ['Cloud', 'left-[12%] top-[40%] text-[38px]'],
-              ['SQL', 'left-[55%] top-[49%] text-[32px]'],
-              ['Python', 'left-[6%] top-[58%] text-[30px]'],
-              ['Réseaux', 'left-[38%] top-[67%] text-[36px]'],
-              ['IA', 'left-[10%] top-[77%] text-[40px]'],
-              ['Pentest', 'left-[42%] top-[87%] text-[30px]'],
-            ].map(([word, position]) => (
-              <span
-                key={word}
-                className={`absolute select-none whitespace-nowrap font-serif font-medium tracking-tight text-ink/[0.06] ${position}`}
-              >
-                {word}
-              </span>
-            ))}
-          </div>
-
-          <div className="absolute right-0 top-16 h-[calc(100%-64px)] w-[calc((100vw-1024px)/2)] min-w-[150px] max-w-[320px]">
-            {[
-              ['Agile', 'left-[12%] top-[4%] text-[38px]'],
-              ['Scrum', 'left-[52%] top-[13%] text-[30px]'],
-              ['Produit', 'left-[8%] top-[23%] text-[34px]'],
-              ['Pilotage', 'left-[40%] top-[32%] text-[30px]'],
-              ['Roadmap', 'left-[6%] top-[41%] text-[36px]'],
-              ['Risques', 'left-[48%] top-[50%] text-[32px]'],
-              ['Kanban', 'left-[10%] top-[59%] text-[30px]'],
-              ['Qualité', 'left-[44%] top-[68%] text-[38px]'],
-              ['Backlog', 'left-[8%] top-[78%] text-[34px]'],
-              ['Analyse', 'left-[45%] top-[88%] text-[30px]'],
-            ].map(([word, position]) => (
-              <span
-                key={word}
-                className={`absolute select-none whitespace-nowrap font-serif font-medium tracking-tight text-ink/[0.06] ${position}`}
-              >
-                {word}
-              </span>
-            ))}
-          </div>
         </div>
       )}
 

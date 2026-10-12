@@ -222,10 +222,10 @@ export const SetupScreen = ({ onStart, loading, activeMode, initialCategoryIds }
                   type="button"
                   onClick={() => setSelectedProfile(profile.id)}
                   aria-pressed={isSelected}
-                  className={`group relative min-h-36 rounded-2xl border p-5 text-left transition-all duration-200 cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas ${
+                  className={`group relative min-h-36 rounded-2xl border-[0.5px] p-5 text-left transition-all duration-200 cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas ${
                     isSelected
                       ? 'bg-surface border-navy-900 shadow-elevated ring-1 ring-navy-900'
-                      : 'bg-surface/90 border-border hover:border-border-strong hover:shadow-panel'
+                      : 'bg-surface/90 border-card-border hover:border-border-strong hover:shadow-panel'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-4">
@@ -324,10 +324,10 @@ export const SetupScreen = ({ onStart, loading, activeMode, initialCategoryIds }
                 <div
                   key={mode.id}
                   onClick={() => setSelectedMode(mode.id)}
-                  className={`group relative rounded-2xl border p-6 transition-all duration-200 cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas flex flex-col justify-between select-none ${
+                  className={`group relative rounded-2xl border-[0.5px] p-6 transition-all duration-200 cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas flex flex-col justify-between select-none ${
                     isSelected
                       ? 'bg-surface border-navy-900 shadow-elevated ring-1 ring-navy-900'
-                      : 'bg-surface border-border hover:border-border-strong hover:shadow-panel'
+                      : 'bg-surface border-card-border hover:border-border-strong hover:shadow-panel'
                   }`}
                 >
                   <div className="space-y-4">
@@ -397,7 +397,7 @@ export const SetupScreen = ({ onStart, loading, activeMode, initialCategoryIds }
               </div>
             </div>
 
-            <div className="w-full max-w-2xl rounded-2xl border border-border bg-surface-elevated px-4 py-4 text-left sm:px-5">
+            <div className="w-full max-w-2xl rounded-2xl border-[0.5px] border-card-border bg-surface-elevated px-4 py-4 text-left sm:px-5">
               <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h2 className="text-sm font-semibold text-ink">

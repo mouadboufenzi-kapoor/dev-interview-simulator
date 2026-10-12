@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Logo } from './Logo';
+import { LogoMark } from './LogoMark';
 import { PageTitle } from './PageTitle';
 import { ThemeToggle } from './ThemeToggle';
 import { Badge } from './Badge';
@@ -88,7 +88,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <>
-      <header className="sticky top-0 z-30 w-full border-b border-border bg-sand-100/75 backdrop-blur-md">
+      <header className="sticky top-0 z-30 w-full border-b border-border bg-sand-100/75 backdrop-blur-md navbar-dots">
         <div className="max-w-6xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-6">
           {/* Left: Brand */}
           <div className="flex items-center gap-6">
@@ -100,10 +100,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                   onQuit();
                 }
               }}
-              className="text-left focus:outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas"
+              className="flex items-center gap-2 text-left focus:outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas"
               title="Accueil Dev Interview Simulator"
             >
-              <Logo size="sm" showSubtitle={false} />
+              <LogoMark size={30} />
+              <span className="text-sm sm:text-base font-semibold tracking-tight text-navy-900 whitespace-nowrap">
+                InterviewLab
+              </span>
             </button>
 
           </div>
@@ -152,7 +155,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
                   {/* Dropdown Menu for Future Features */}
                   {showPlusMenu && (
-                    <div className="absolute right-0 mt-2 w-64 bg-surface border border-border rounded-2xl p-2 shadow-xl animate-in fade-in slide-in-from-top-1 duration-150 z-40 space-y-1">
+                    <div className="absolute right-0 mt-2 w-64 bg-surface border-[0.5px] border-card-border rounded-2xl p-2 shadow-xl animate-in fade-in slide-in-from-top-1 duration-150 z-40 space-y-1">
                       <div className="px-3 py-2 border-b border-border-subtle">
                         <span className="text-[10px] font-mono uppercase tracking-wider text-ink-muted font-semibold">
                           Modules à venir
@@ -225,7 +228,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </button>
 
                   {user && showUserMenu && (
-                    <div className="absolute right-0 mt-2 w-52 rounded-2xl border border-border bg-surface p-2 shadow-xl z-40">
+                    <div className="absolute right-0 mt-2 w-52 rounded-2xl border-[0.5px] border-card-border bg-surface p-2 shadow-xl z-40">
                       {user.role === 'ADMIN' && (
                         <button
                           type="button"
@@ -271,7 +274,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       {/* Confirmation Modal to Quit Quiz */}
       {showQuitModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="w-full max-w-md bg-surface border border-border rounded-2xl p-6 shadow-2xl space-y-4">
+          <div className="w-full max-w-md bg-surface border-[0.5px] border-card-border rounded-2xl p-6 shadow-2xl space-y-4">
             <div className="flex items-start gap-3.5">
               <div className="p-2.5 rounded-xl bg-danger-soft border border-danger-border text-danger flex-shrink-0">
                 <AlertTriangle className="w-5 h-5" />

@@ -62,7 +62,7 @@ export const UserAccessModal = ({ onClose, onAuthenticated }: Props) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/25 p-4 backdrop-blur-[2px]">
-      <div className="w-full max-w-md rounded-2xl border border-border bg-surface p-6 shadow-modal">
+      <div className="w-full max-w-md rounded-2xl border-[0.5px] border-card-border bg-surface p-6 shadow-modal">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-muted">

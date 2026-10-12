@@ -164,7 +164,7 @@ export const QuizScreen = ({ simulation, onFinish, onError }: Props) => {
       </div>
 
       {/* Main Challenge Surface */}
-      <div className="bg-surface border border-border rounded-2xl p-6 sm:p-9 shadow-elevated space-y-7">
+      <div className="bg-surface border-[0.5px] border-card-border rounded-2xl p-6 sm:p-9 shadow-elevated space-y-7">
         {/* Architecture Scenario Context (if Architecture) */}
         {currentChallenge.type === 'ARCHITECTURE' && currentChallenge.scenarioTitle && (
           <div className="rounded-xl border border-navy-200 bg-navy-50 p-4 sm:p-5">
@@ -327,7 +327,7 @@ export const QuizScreen = ({ simulation, onFinish, onError }: Props) => {
 
         {/* Diagnostic Assessment Panel */}
         {feedback && (
-          <div className="rounded-2xl border border-border bg-canvas-subtle p-5 sm:p-7 space-y-4 shadow-panel animate-in fade-in duration-200">
+          <div className="rounded-2xl border-[0.5px] border-card-border bg-canvas-subtle p-5 sm:p-7 space-y-4 shadow-panel animate-in fade-in duration-200">
             {/* Header */}
             <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-border">
               <div className="flex items-center gap-2">

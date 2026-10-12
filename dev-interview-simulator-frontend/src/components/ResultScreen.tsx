@@ -98,7 +98,7 @@ export const ResultScreen = ({ summary, onRestart }: Props) => {
       {/* KPI Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Score Card */}
-        <div className="bg-surface border border-border rounded-2xl p-6 shadow-card space-y-2">
+        <div className="bg-surface border-[0.5px] border-card-border rounded-2xl p-6 shadow-card space-y-2">
           <div className="flex items-center justify-between text-ink-muted font-sans text-xs font-semibold uppercase tracking-wider">
             <span>Taux de réussite</span>
             <Target className="w-4 h-4 text-crimson-700" />
@@ -114,7 +114,7 @@ export const ResultScreen = ({ summary, onRestart }: Props) => {
         </div>
 
         {/* Accuracy Card */}
-        <div className="bg-surface border border-border rounded-2xl p-6 shadow-card space-y-2">
+        <div className="bg-surface border-[0.5px] border-card-border rounded-2xl p-6 shadow-card space-y-2">
           <div className="flex items-center justify-between text-ink-muted font-sans text-xs font-semibold uppercase tracking-wider">
             <span>Bonnes réponses</span>
             <CheckCircle2 className="w-4 h-4 text-success" />
@@ -133,7 +133,7 @@ export const ResultScreen = ({ summary, onRestart }: Props) => {
         </div>
 
         {/* Time Card */}
-        <div className="bg-surface border border-border rounded-2xl p-6 shadow-elevated space-y-2">
+        <div className="bg-surface border-[0.5px] border-card-border rounded-2xl p-6 shadow-elevated space-y-2">
           <div className="flex items-center justify-between text-ink-muted font-sans text-xs font-semibold uppercase tracking-wider">
             <span>Temps total</span>
             <Clock className="w-4 h-4 text-navy-900" />
@@ -149,7 +149,7 @@ export const ResultScreen = ({ summary, onRestart }: Props) => {
         </div>
 
         {/* Average Pace Card */}
-        <div className="bg-surface border border-border rounded-2xl p-6 shadow-card space-y-2">
+        <div className="bg-surface border-[0.5px] border-card-border rounded-2xl p-6 shadow-card space-y-2">
           <div className="flex items-center justify-between text-ink-muted font-sans text-xs font-semibold uppercase tracking-wider">
             <span>Rythme moyen</span>
             <Gauge className="w-4 h-4 text-navy-900" />
@@ -166,7 +166,7 @@ export const ResultScreen = ({ summary, onRestart }: Props) => {
       </div>
 
       {/* Synthesis Box */}
-      <div className="bg-surface border border-border rounded-2xl p-6 sm:p-7 flex items-start gap-4 shadow-elevated">
+      <div className="bg-surface border-[0.5px] border-card-border rounded-2xl p-6 sm:p-7 flex items-start gap-4 shadow-elevated">
         <div className="p-3 rounded-xl bg-crimson-100 border border-crimson-200 text-crimson-700 flex-shrink-0">
           <Sparkles className="w-5 h-5" />
         </div>
@@ -235,7 +235,7 @@ export const ResultScreen = ({ summary, onRestart }: Props) => {
             return (
               <div
                 key={q.challengeId}
-                className="border border-border rounded-2xl overflow-hidden bg-surface transition-all duration-150 shadow-card"
+                className="border-[0.5px] border-card-border rounded-2xl overflow-hidden bg-surface transition-all duration-150 shadow-card"
               >
                 {/* Accordion Trigger */}
                 <button

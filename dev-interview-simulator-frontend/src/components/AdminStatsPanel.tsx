@@ -15,7 +15,7 @@ export const AdminStatsPanel = () => {
 
   if (error) {
     return (
-      <div className={`bg-surface rounded-2xl border border-border ${emptyState}`}>
+      <div className={`bg-surface rounded-2xl border-[0.5px] border-card-border ${emptyState}`}>
         Impossible de charger les statistiques.
       </div>
     );
@@ -23,7 +23,7 @@ export const AdminStatsPanel = () => {
 
   if (!stats) {
     return (
-      <div className={`bg-surface rounded-2xl border border-border ${emptyState}`}>
+      <div className={`bg-surface rounded-2xl border-[0.5px] border-card-border ${emptyState}`}>
         Chargement...
       </div>
     );
@@ -42,7 +42,7 @@ export const AdminStatsPanel = () => {
         {cards.map(card => (
           <div
             key={card.label}
-            className="bg-surface rounded-2xl border border-border shadow-panel p-5 space-y-1"
+            className="bg-surface rounded-2xl border-[0.5px] border-card-border shadow-panel p-5 space-y-1"
           >
             <p className="text-xs uppercase tracking-wider text-ink-muted font-semibold">{card.label}</p>
             <p className="font-serif text-3xl font-bold text-navy-900">{card.value}</p>
