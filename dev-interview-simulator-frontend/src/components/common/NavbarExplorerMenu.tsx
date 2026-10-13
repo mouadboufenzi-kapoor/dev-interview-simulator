@@ -10,7 +10,7 @@ interface ModuleItem {
 }
 
 const MODULES: ModuleItem[] = [
-  { icon: Radio, title: 'Veille technique', subtitle: 'Radar & actualités dev', iconClassName: 'text-navy-900' },
+  { icon: Radio, title: 'Veille technique', subtitle: 'Radar & actualités IT', iconClassName: 'text-navy-900' },
   { icon: Trophy, title: 'Classement', subtitle: 'Top scores de la promo', iconClassName: 'text-crimson-700' },
 ];
 
