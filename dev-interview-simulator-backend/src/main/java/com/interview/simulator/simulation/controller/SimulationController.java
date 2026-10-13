@@ -26,6 +26,11 @@ public class SimulationController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @PostMapping("/{id}/abandon")
+    public ResponseEntity<SimulationSummaryResponse> abandonSimulation(@PathVariable @Positive Long id) {
+        return ResponseEntity.ok(simulationService.abandonSimulation(id));
+    }
+
     @PostMapping("/{id}/complete")
     public ResponseEntity<SimulationSummaryResponse> completeSimulation(@PathVariable @Positive Long id) {
         SimulationSummaryResponse response = simulationService.completeSimulation(id);

@@ -11,6 +11,8 @@ public record UserStatsResponse(
         Double recentSuccessRate,
         Double previousSuccessRate,
         String trend,
+        Double averageSuccessRate,
+        Double bestSuccessRate,
         List<StatEntry> byCategory,
         List<TypeStat> byType,
         List<StatEntry> weakPoints,
@@ -38,6 +40,7 @@ public record UserStatsResponse(
             int totalQuestions,
             int correctAnswers,
             int totalScore,
+            String status,
             String startedAt
     ) {}
 

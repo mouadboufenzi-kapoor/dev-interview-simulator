@@ -332,6 +332,33 @@ public class SimulationService {
     }
 
     @Transactional
+    public SimulationSummaryResponse abandonSimulation(Long simulationId) {
+        Simulation simulation = simulationRepository.findById(simulationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Simulation non trouvée."));
+
+        // Idempotent : seul un en-cours bascule en ABANDONNÉ — une session déjà
+        // terminée (bilan consulté depuis l'historique) n'est jamais rétrogradée.
+        if (simulation.getStatus() == SimulationStatus.IN_PROGRESS) {
+            simulation.setStatus(SimulationStatus.ABANDONED);
+        }
+
+        int totalQuestions = simulation.getSimulationChallenges().size();
+        int correctAnswers = (int) simulation.getSimulationChallenges().stream()
+                .filter(sc -> sc.getAnswer() != null && sc.getAnswer().isCorrect())
+                .count();
+
+        return new SimulationSummaryResponse(
+                simulation.getId(),
+                simulation.getStatus(),
+                simulation.getTotalScore(),
+                totalQuestions,
+                correctAnswers,
+                simulation.getStartedAt(),
+                simulation.getCompletedAt()
+        );
+    }
+
+    @Transactional
     public SimulationSummaryResponse completeSimulation(Long simulationId) {
         Simulation simulation = simulationRepository.findById(simulationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Simulation non trouvée."));

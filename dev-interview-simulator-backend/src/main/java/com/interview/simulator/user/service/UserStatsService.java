@@ -102,6 +102,26 @@ public class UserStatsService {
             }
         }
 
+        // Score de session : moyenne et meilleur taux par session TERMINÉE
+        // (macro par session, contrairement au taux global qui est par réponse).
+        Double averageSuccessRate = null;
+        Double bestSuccessRate = null;
+        if (!completed.isEmpty()) {
+            double sumRates = 0;
+            double bestRate = 0;
+            for (Simulation simulation : completed) {
+                int totalQuestions = simulation.getSimulationChallenges().size();
+                int correctCount = (int) simulation.getSimulationChallenges().stream()
+                        .filter(sc -> sc.getAnswer() != null && sc.getAnswer().isCorrect())
+                        .count();
+                double sessionRate = totalQuestions == 0 ? 0 : (correctCount * 100.0) / totalQuestions;
+                sumRates += sessionRate;
+                bestRate = Math.max(bestRate, sessionRate);
+            }
+            averageSuccessRate = Math.round(sumRates / completed.size() * 10.0) / 10.0;
+            bestSuccessRate = Math.round(bestRate * 10.0) / 10.0;
+        }
+
         // Par catégorie : uniquement les catégories pratiquées,
         // triées du plus faible au plus fort taux (les points faibles d'abord)
         List<UserStatsResponse.StatEntry> byCategoryEntries = new ArrayList<>();
@@ -174,6 +194,8 @@ public class UserStatsService {
                 recentRate,
                 previousRate,
                 trend,
+                averageSuccessRate,
+                bestSuccessRate,
                 byCategoryEntries,
                 byTypeEntries,
                 weakPoints,
@@ -200,6 +222,7 @@ public class UserStatsService {
                 simulation.getSimulationChallenges().size(),
                 correct,
                 simulation.getTotalScore() != null ? simulation.getTotalScore() : 0,
+                simulation.getStatus() != null ? simulation.getStatus().name() : null,
                 simulation.getStartedAt() != null ? simulation.getStartedAt().format(DATE_TIME_FORMAT) : null
         );
     }
@@ -227,7 +250,7 @@ public class UserStatsService {
     private UserStatsResponse emptyStats(int page, int size) {
         return new UserStatsResponse(
                 0, 0, 0, 0,
-                null, null, null, null,
+                null, null, null, null, null, null,
                 List.of(), List.of(), List.of(),
                 new UserStatsResponse.PagedSimulations(List.of(), 0, size, 0, 0)
         );
