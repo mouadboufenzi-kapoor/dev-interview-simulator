@@ -9,9 +9,6 @@ interface Props {
   iconChipClassName: string;
   tone: 'success' | 'crimson';
   items: AnalyzedCompetency[];
-  /** Affiché à la place de la liste quand aucun item (ex. tout est à 100 %). */
-  emptyMessage?: string;
-  footerNote?: ReactNode;
 }
 
 const TONE_STYLES = {
@@ -25,8 +22,6 @@ export const ResultCompetencies = ({
   iconChipClassName,
   tone,
   items,
-  emptyMessage,
-  footerNote,
 }: Props) => {
   const styles = TONE_STYLES[tone];
 
@@ -39,43 +34,29 @@ export const ResultCompetencies = ({
         </PageTitle>
       </div>
 
-      {items.length > 0 ? (
-        <>
-          <ul className="space-y-3.5">
-            {items.map((c) => (
-              <li key={c.id} className="space-y-1.5">
-                <div className="flex items-center justify-between gap-3 text-sm">
-                  <span className="font-semibold text-ink truncate">{c.name}</span>
-                  <span
-                    className={`font-mono text-xs font-semibold flex-shrink-0 ${styles.value}`}
-                  >
-                    {c.pct} %
-                  </span>
-                </div>
-                <div className="h-1.5 rounded-full bg-canvas-subtle overflow-hidden">
-                  <div
-                    className={`h-full rounded-full ${styles.bar}`}
-                    style={{ width: `${c.pct}%` }}
-                  />
-                </div>
-                <p className="text-[11px] text-ink-muted">
-                  {c.correct} bonne(s) réponse(s) sur {c.total}
-                </p>
-              </li>
-            ))}
-          </ul>
-
-          {footerNote && (
-            <p className="text-xs text-ink-secondary leading-relaxed border-t border-border pt-3">
-              {footerNote}
+      <ul className="space-y-3.5">
+        {items.map((c) => (
+          <li key={c.id} className="space-y-1.5">
+            <div className="flex items-center justify-between gap-3 text-sm">
+              <span className="font-semibold text-ink truncate">{c.name}</span>
+              <span
+                className={`font-mono text-xs font-semibold flex-shrink-0 ${styles.value}`}
+              >
+                {c.pct} %
+              </span>
+            </div>
+            <div className="h-1.5 rounded-full bg-canvas-subtle overflow-hidden">
+              <div
+                className={`h-full rounded-full ${styles.bar}`}
+                style={{ width: `${c.pct}%` }}
+              />
+            </div>
+            <p className="text-[11px] text-ink-muted">
+              {c.correct} bonne(s) réponse(s) sur {c.total}
             </p>
-          )}
-        </>
-      ) : (
-        emptyMessage && (
-          <p className="text-xs text-ink-secondary leading-relaxed">{emptyMessage}</p>
-        )
-      )}
+          </li>
+        ))}
+      </ul>
     </section>
   );
 };

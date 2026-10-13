@@ -1,10 +1,10 @@
 import type { SimulationResultDTO, StartSimulationRequest } from '../types';
 import { Button } from './common/Button';
-import { Award, AlertTriangle, RotateCcw } from 'lucide-react';
+import { Award, RotateCcw } from 'lucide-react';
 import { ResultHeader } from './ResultHeader';
 import { ResultEvaluation } from './ResultEvaluation';
 import { ResultCompetencies } from './ResultCompetencies';
-import { ResultObjective } from './ResultObjective';
+import { ResultPriority } from './ResultPriority';
 import { ResultGuestCta } from './ResultGuestCta';
 import { ResultQuestions } from './ResultQuestions';
 import { analyzeResult, buildTargetedRequest } from '../utils/resultAnalysis';
@@ -29,13 +29,14 @@ export const ResultScreen = ({
   guestSimulationCount,
   onCreateAccount,
 }: Props) => {
-  const { competencies, strengths, weaknesses, weakest } = analyzeResult(
+  const { strengths, weaknesses, weakest } = analyzeResult(
     summary.competencyResults ?? []
   );
 
   // En Architecture, les filtres skill/catégorie sont ignorés par la requête côté backend :
-  // afficher un bouton « ciblé » serait mensonger → bloc masqué (décision validée).
-  const showObjective = weakest != null && summary.mode !== 'ARCHITECTURE';
+  // afficher un bouton « ciblé » serait mensonger → diagnostic affiché sans CTA
+  // (décision validée).
+  const showTargetedCta = summary.mode !== 'ARCHITECTURE';
 
   const handleTargetedTraining = () => {
     if (!weakest) return;
@@ -51,7 +52,27 @@ export const ResultScreen = ({
     <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8 py-4 sm:py-6">
       <ResultHeader mode={summary.mode} difficulty={summary.difficulty} />
 
-      <ResultEvaluation summary={summary} />
+      {/* Évaluation globale + Votre priorité côte à côte (desktop) —
+          empilement naturel en mobile-first via grid-cols-1.
+          Sans point faible, l'évaluation garde toute la largeur. */}
+      <div
+        className={
+          weakest
+            ? 'grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch'
+            : 'grid grid-cols-1 gap-6'
+        }
+      >
+        <ResultEvaluation summary={summary} />
+
+        {weakest && (
+          <ResultPriority
+            weaknesses={weaknesses}
+            loading={loading}
+            onStart={handleTargetedTraining}
+            showCta={showTargetedCta}
+          />
+        )}
+      </div>
 
       {/* Points forts */}
       {strengths.length > 0 && (
@@ -61,40 +82,16 @@ export const ResultScreen = ({
           iconChipClassName="bg-success-soft border-success-border text-success"
           tone="success"
           items={strengths}
-          footerNote={
-            <>
-              Ton point fort sur cette simulation :{' '}
-              <span className="font-semibold text-ink">{strengths[0].name}</span> —{' '}
-              {strengths[0].pct} % de réussite.
-            </>
-          }
         />
-      )}
-
-      {/* Points à améliorer */}
-      {competencies.length > 0 && (
-        <ResultCompetencies
-          title="À améliorer"
-          icon={<AlertTriangle className="w-4 h-4" />}
-          iconChipClassName="bg-warning-soft border-warning-border text-warning"
-          tone="crimson"
-          items={weaknesses}
-          emptyMessage="Aucun axe à améliorer identifié : toutes les compétences évaluées sont à 100 % dans cette simulation."
-          footerNote="Les explications des questions en échec sont détaillées plus bas — reprenez-les avant de relancer une session ciblée sur ces sujets."
-        />
-      )}
-
-      {/* Prochain objectif — entraînement ciblé (pas la page de configuration) */}
-      {showObjective && weakest && (
-        <ResultObjective target={weakest} loading={loading} onStart={handleTargetedTraining} />
-      )}
-
-      {/* CTA invité — montre la valeur du compte, sans bloquer */}
-      {isGuest && (
-        <ResultGuestCta count={guestSimulationCount} onCreateAccount={onCreateAccount} />
       )}
 
       <ResultQuestions summary={summary} />
+
+      {/* CTA invité — après le détail des questions (hiérarchie : diagnostic →
+          preuve → conversion), montre la valeur du compte sans bloquer */}
+      {isGuest && (
+        <ResultGuestCta count={guestSimulationCount} onCreateAccount={onCreateAccount} />
+      )}
 
       {/* Restart CTA */}
       <div className="pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">

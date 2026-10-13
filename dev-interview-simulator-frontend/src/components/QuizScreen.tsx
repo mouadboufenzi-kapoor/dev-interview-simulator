@@ -53,7 +53,7 @@ export const QuizScreen = ({ simulation, onFinish, onError }: Props) => {
 
   if (!currentChallenge) {
     return (
-      <div className="max-w-3xl mx-auto py-12 text-center">
+      <div className="w-full max-w-3xl mx-auto py-12 text-center">
         <div className="bg-surface border border-danger-border rounded-2xl p-8">
           <p className="text-danger font-medium text-sm">
             Impossible de charger la question courante.
@@ -112,7 +112,7 @@ export const QuizScreen = ({ simulation, onFinish, onError }: Props) => {
   const isMultiChoice = currentChallenge.selectionType === 'MULTIPLE_CHOICE';
 
   return (
-    <div className="max-w-4xl min-w-0 mx-auto space-y-8 py-2 sm:py-4">
+    <div className="w-full max-w-4xl min-w-0 mx-auto space-y-8 py-2 sm:py-4">
       {/* Editorial Progress Header */}
       <QuizProgressHeader
         challenge={currentChallenge}

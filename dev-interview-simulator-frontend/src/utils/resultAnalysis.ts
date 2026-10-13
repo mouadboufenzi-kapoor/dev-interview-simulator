@@ -78,8 +78,11 @@ export interface ResultAnalysis {
 }
 
 /**
- * Découpe les compétences du bilan : max 3 points forts / 2 axes à améliorer,
- * sans doublon entre les deux blocs (priorité aux axes à améliorer).
+ * Découpe les compétences du bilan :
+ * - weaknesses : TOUS les axes < 100 %, triés du plus fragile au moins fragile
+ *   (la troncature d'affichage vit dans ResultPriority — pas ici, pour ne jamais
+ *   perdre d'information) ;
+ * - strengths : compétences à 100 % (aucun doublon possible avec les axes), max 3.
  */
 export const analyzeResult = (results: CompetencyResult[]): ResultAnalysis => {
   const competencies = results.map((c) => ({
@@ -87,8 +90,9 @@ export const analyzeResult = (results: CompetencyResult[]): ResultAnalysis => {
     pct: c.total > 0 ? Math.round((c.correct / c.total) * 100) : 0,
   }));
 
-  const ascending = [...competencies].sort((a, b) => a.pct - b.pct || a.total - b.total);
-  const weaknesses = ascending.filter((c) => c.pct < 100).slice(0, 2);
+  const weaknesses = [...competencies]
+    .filter((c) => c.pct < 100)
+    .sort((a, b) => a.pct - b.pct || a.total - b.total);
   const weaknessIds = new Set(weaknesses.map((c) => c.id));
   const strengths = [...competencies]
     .sort((a, b) => b.pct - a.pct || b.total - a.total)

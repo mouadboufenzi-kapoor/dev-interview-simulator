@@ -7,7 +7,9 @@ interface Props {
 }
 
 export const ResultGuestCta = ({ count, onCreateAccount }: Props) => {
-  const reinforced = count >= 3;
+  // Seuil 5 : en deçà on affiche le nombre réel ; au-delà on reste vague
+  // (« plusieurs simulations ») — message plus professionnel, moins mécanique.
+  const reinforced = count >= 5;
 
   return (
     <section className="bg-surface border-[0.5px] border-card-border rounded-2xl p-6 shadow-card flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -18,12 +20,12 @@ export const ResultGuestCta = ({ count, onCreateAccount }: Props) => {
         <div className="space-y-1">
           <p className="font-semibold text-sm text-ink">
             {reinforced
-              ? `Vous avez déjà réalisé ${count} simulations.`
-              : 'Suivre votre progression'}
+              ? 'Vous avez déjà réalisé plusieurs simulations.'
+              : `Vous avez déjà réalisé ${count} simulation${count > 1 ? 's' : ''}.`}
           </p>
           <p className="text-xs text-ink-secondary leading-relaxed">
             {reinforced
-              ? 'Vous commencez à construire votre profil technique. Créez un compte gratuit pour suivre votre progression, conserver votre historique et voir vos forces et axes d’amélioration évoluer dans le temps.'
+              ? 'Créez un compte pour conserver votre progression et suivre vos performances dans le temps.'
               : 'Créez un compte gratuit pour conserver vos résultats et suivre votre évolution au fil des simulations.'}
           </p>
         </div>
