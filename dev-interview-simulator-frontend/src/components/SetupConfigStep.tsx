@@ -56,7 +56,7 @@ export const SetupConfigStep = ({
       <button
         type="button"
         onClick={onBack}
-        className="mx-auto flex items-center gap-2 text-xs font-medium text-ink-muted hover:text-navy-900 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas"
+        className="mx-auto flex items-center gap-2 text-xs font-medium text-muted hover:text-text transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
         Changer de profil
@@ -64,14 +64,14 @@ export const SetupConfigStep = ({
 
       {/* Brand & Main Headline */}
       <div className="space-y-4">
-        <p className="font-sans text-xs uppercase tracking-[0.2em] text-ink-muted font-semibold">
-          Dev Interview Simulator
+        <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted font-semibold">
+          InterviewLab
         </p>
         <PageTitle size="hero-compact">
           Préparez votre prochain <br className="hidden sm:inline" />
           entretien technique.
         </PageTitle>
-        <p className="text-sm sm:text-base text-ink-secondary font-sans max-w-md mx-auto leading-relaxed">
+        <p className="text-sm sm:text-base text-muted font-sans max-w-md mx-auto leading-relaxed">
           {selectedProfileLabel
             ? `Configurez votre entraînement ${selectedProfileLabel.toLowerCase()} en conditions réelles.`
             : "Choisissez un mode d'évaluation pour vous entraîner en conditions réelles."}
@@ -82,10 +82,12 @@ export const SetupConfigStep = ({
         <SetupModeCards selectedMode={selectedMode} onSelect={onSelectMode} />
 
         {/* Minimalist Configuration Bar (Level + Options) */}
-        <div className="flex flex-col items-center justify-center gap-6 pt-2">
+        <div className="flex flex-col items-center justify-between gap-6 pt-2">
           <div className="flex flex-wrap items-center justify-center gap-2 text-xs font-sans">
-            <span className="text-ink-muted font-medium mr-2">Niveau attendu :</span>
-            <div className="inline-flex p-1 rounded-xl bg-surface border border-border shadow-card">
+            <span className="text-muted font-mono uppercase tracking-[0.06em] mr-2">Niveau attendu :</span>
+            {/* Sélecteur de niveau Contraste (spec §11) : boutons bordés,
+                gap 8px, actif = fond brand + texte cta-text + ombre 2px. */}
+            <div className="inline-flex gap-2">
               {DIFFICULTIES.map((diff) => {
                 const isDiffSelected = selectedDifficulty === diff.id;
                 return (
@@ -93,10 +95,10 @@ export const SetupConfigStep = ({
                     key={diff.id}
                     type="button"
                     onClick={() => onSelectDifficulty(diff.id)}
-                    className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas ${
+                    className={`px-3.5 py-2 min-h-11 rounded border-2 text-xs font-semibold transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-bg ${
                       isDiffSelected
-                        ? 'bg-navy-900 dark:bg-navy-800 text-white shadow-sm'
-                        : 'text-ink-secondary hover:text-ink hover:bg-canvas-subtle'
+                        ? 'bg-brand text-cta-text border-border shadow-[2px_2px_0_var(--color-shadow)]'
+                        : 'bg-card text-text border-border hover:border-brand'
                     }`}
                   >
                     {diff.label}
@@ -110,7 +112,7 @@ export const SetupConfigStep = ({
 
           {/* Architecture step options (discreetly visible if ARCHITECTURE) */}
           {selectedMode === 'ARCHITECTURE' && (
-            <div className="inline-flex items-center gap-3 text-xs font-sans text-ink-warm bg-surface border border-border px-4 py-2 rounded-xl">
+            <div className="inline-flex items-center gap-3 text-xs font-sans text-muted bg-card border-2 border-border px-4 py-2 rounded">
               <span>Scénario :</span>
               <div className="flex items-center gap-1">
                 {[3, 4, 5].map((count) => (
@@ -118,16 +120,16 @@ export const SetupConfigStep = ({
                     key={count}
                     type="button"
                     onClick={() => onQuestionCountChange(count)}
-                    className={`w-6 h-6 rounded text-xs font-mono font-semibold transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas ${
+                    className={`w-8 h-8 rounded-sm text-xs font-mono font-bold transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-bg ${
                       questionCount === count
-                        ? 'bg-navy-900 dark:bg-navy-800 text-white'
-                        : 'text-ink-warm hover:bg-canvas-subtle'
+                        ? 'bg-brand text-cta-text'
+                        : 'text-muted hover:bg-selected'
                     }`}
                   >
                     {count}
                   </button>
                 ))}
-                <span className="text-[11px] text-ink-muted ml-1">étapes</span>
+                <span className="text-[11px] font-mono uppercase tracking-[0.06em] text-muted ml-1">étapes</span>
               </div>
             </div>
           )}

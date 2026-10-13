@@ -7,11 +7,12 @@ interface LogoMarkProps {
 }
 
 /**
- * Logo « bulle de dialogue + curseur de terminal » — flat, sans ombre ni dégradé.
- * - Corps : navy-900 (#123C69 en jour), navy-700 en nuit pour rester lisible
- *   sur la navbar sombre (tokens existants, bascule dark: classique).
- * - Chevron (#E8E2D8) et trait terracotta (#D9694B) : couleurs de marque fixes
- *   identiques dans les deux thèmes (elles vivent SUR le corps navy).
+ * Logo « bulle de dialogue + curseur de terminal » — flat, sans ombre ni
+ * dégradé. Couleurs pilotées par tokens (spec §8) :
+ *   - corps de la bulle + queue : var(--color-brand)
+ *   - chevron « > » du terminal  : var(--color-nav)
+ *   - trait du curseur           : var(--color-accent)
+ * Les var() suivent automatiquement la palette (soleil/menthe) et le mode.
  */
 export const LogoMark: React.FC<LogoMarkProps> = ({ size = 30, className = '' }) => (
   <svg
@@ -20,7 +21,7 @@ export const LogoMark: React.FC<LogoMarkProps> = ({ size = 30, className = '' })
     height={size}
     className={`flex-shrink-0 select-none ${className}`}
     role="img"
-    aria-label="Dev Interview Simulator"
+    aria-label="InterviewLab"
   >
     {/* Corps de la bulle */}
     <rect
@@ -29,20 +30,25 @@ export const LogoMark: React.FC<LogoMarkProps> = ({ size = 30, className = '' })
       width="52"
       height="38"
       rx="12"
-      className="fill-navy-900 dark:fill-navy-700"
+      style={{ fill: 'var(--color-brand)' }}
     />
-    {/* Chevron de la bulle */}
-    <path d="M16 44 L14 58 L30 46 Z" className="fill-navy-900 dark:fill-navy-700" />
+    {/* Queue de la bulle */}
+    <path d="M16 44 L14 58 L30 46 Z" style={{ fill: 'var(--color-brand)' }} />
     {/* Chevron « > » du terminal */}
     <path
       d="M22 19 L32 27 L22 35"
       fill="none"
-      stroke="#E8E2D8"
+      style={{ stroke: 'var(--color-nav)' }}
       strokeWidth="4"
       strokeLinecap="round"
       strokeLinejoin="round"
     />
-    {/* Trait du curseur (accent terracotta) */}
-    <path d="M36 35 H46" stroke="#D9694B" strokeWidth="4" strokeLinecap="round" />
+    {/* Trait du curseur (accent) */}
+    <path
+      d="M36 35 H46"
+      style={{ stroke: 'var(--color-accent)' }}
+      strokeWidth="4"
+      strokeLinecap="round"
+    />
   </svg>
 );

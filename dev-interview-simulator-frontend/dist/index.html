@@ -6,12 +6,34 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dev Interview Simulator — Préparation Technique de Haut Niveau</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script type="module" crossorigin src="/assets/index-COjc-wY-.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-Db5jEPpr.css">
+    <title>InterviewLab — Préparation d'entretiens techniques</title>
+    <!-- Thème anti-flash : s'exécute AVANT le premier rendu, lit les préférences
+         (theme = soleil|menthe, mode = light|dark|system), résout « system » via
+         prefers-color-scheme, puis pose data-theme + data-mode sur <html>.
+         Valeurs par défaut : theme = soleil, mode = system. (spec §20) -->
+    <script>
+      (function () {
+        try {
+          var palette = localStorage.getItem('theme');
+          if (palette !== 'soleil' && palette !== 'menthe') palette = 'soleil';
+          var mode = localStorage.getItem('mode');
+          if (mode !== 'light' && mode !== 'dark' && mode !== 'system') mode = 'system';
+          var resolved =
+            mode === 'system'
+              ? window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light'
+              : mode;
+          var root = document.documentElement;
+          root.setAttribute('data-theme', palette);
+          root.setAttribute('data-mode', resolved);
+        } catch (e) {
+          /* stockage indisponible : défaut soleil/system déjà en place */
+        }
+      })();
+    </script>
+    <script type="module" crossorigin src="/assets/index-Bsy7sEmK.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-CkSbjdY5.css">
   </head>
   <body class="antialiased">
     <div id="root"></div>

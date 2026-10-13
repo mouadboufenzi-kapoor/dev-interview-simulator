@@ -81,7 +81,9 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <>
-      <header className="sticky top-0 z-30 w-full border-b border-border bg-sand-100/75 backdrop-blur-md navbar-dots">
+      {/* Navbar Contraste : fond --color-nav, bordure basse --bw, texte --color-text.
+          Pas de blur ni de transparence (flat, spec §7). */}
+      <header className="sticky top-0 z-30 w-full border-b-2 border-border bg-nav">
         <div className="max-w-6xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-6">
           {/* Left: Brand */}
           <div className="flex items-center gap-6">
@@ -93,12 +95,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                   onQuit();
                 }
               }}
-              className="flex items-center gap-2 text-left focus:outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas"
-              title="Accueil Dev Interview Simulator"
+              className="flex items-center gap-2 text-left focus:outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-nav"
+              title="Accueil InterviewLab"
             >
               <LogoMark size={30} />
-              <span className="text-sm sm:text-base font-semibold tracking-tight text-navy-900 whitespace-nowrap">
-                InterviewLab
+              {/* Wordmark : Interview (texte) + Lab (accent) — spec §8. */}
+              <span className="text-sm sm:text-base font-bold tracking-tight text-text whitespace-nowrap">
+                Interview<span style={{ color: 'var(--color-wordmark-accent)' }}>Lab</span>
               </span>
             </button>
           </div>
@@ -106,7 +109,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Center Context (When Quiz in progress) — compact on mobile */}
           {currentScreen === 'QUIZ' && mode && (
             <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-              <span className="hidden sm:inline text-xs font-semibold text-navy-900 whitespace-nowrap">
+              <span className="hidden sm:inline text-xs font-semibold text-text whitespace-nowrap">
                 {getModeLabel(mode)}
               </span>
               {difficulty && (

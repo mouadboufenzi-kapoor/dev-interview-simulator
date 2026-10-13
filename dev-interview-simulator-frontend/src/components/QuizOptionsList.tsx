@@ -12,6 +12,10 @@ const getOptionLetter = (idx: number) => {
   return String.fromCharCode(65 + idx);
 };
 
+// QCM Contraste : avant validation, cartes standard (bordure 2px, ombre
+// décalée). Sélection = fond --color-selected, la bordure ne change PAS de
+// couleur (spec §10). Après validation : success/error tokens + indicateurs
+// icônes (spec §12 — jamais la couleur seule).
 export const QuizOptionsList = ({ challenge, selectedOptionIds, feedback, onSelect }: Props) => (
   <div className="space-y-3 pt-2">
     {challenge.options.map((option, idx) => {
@@ -20,55 +24,57 @@ export const QuizOptionsList = ({ challenge, selectedOptionIds, feedback, onSele
         (item) => item.optionId === option.id
       );
 
-      // Dynamic styling
+      // États Contraste (tokens, jamais de hex en dur)
       let cardStyle =
-        'border-border bg-surface hover:border-border-strong hover:bg-canvas-subtle text-ink shadow-card';
+        'border-border bg-card hover:border-brand text-text shadow-card';
       let indicatorStyle =
-        'border-border bg-canvas-subtle text-ink-secondary';
+        'border-border bg-bg text-muted';
 
       if (feedback) {
         if (correction?.isCorrect && correction.wasSelected) {
-          // Correct & Selected
+          // Correcte & sélectionnée
           cardStyle =
-            'border-success-border bg-success-soft text-success ring-1 ring-success-border';
+            'border-success bg-success-bg text-text shadow-card';
           indicatorStyle =
-            'border-success bg-success text-white font-bold';
+            'border-success bg-success text-card font-bold';
         } else if (correction?.isCorrect) {
-          // Correct but missed
+          // Correcte mais manquée
           cardStyle =
-            'border-success-border bg-success-soft/50 text-success';
+            'border-success bg-success-bg text-text';
           indicatorStyle =
-            'border-success-border bg-surface text-success';
+            'border-success bg-card text-success';
         } else if (correction?.wasSelected) {
-          // Incorrectly chosen
+          // Incorrecte choisie
           cardStyle =
-            'border-danger-border bg-danger-soft text-danger ring-1 ring-danger-border';
+            'border-error bg-error-bg text-text shadow-card';
           indicatorStyle =
-            'border-danger bg-danger text-white font-bold';
+            'border-error bg-error text-card font-bold';
         } else {
-          // Unselected incorrect
+          // Incorrecte non choisie
           cardStyle =
-            'border-border bg-surface opacity-50 text-ink-muted';
+            'border-border bg-card opacity-60 text-muted';
         }
       } else if (isSelected) {
-        // User selected -> Rosewood / Crimson active state (crimson-700)
+        // Sélection : fond selected, bordure identique (inchangée — spec §10)
         cardStyle =
-          'border-crimson-700 bg-crimson-100 text-ink ring-1 ring-crimson-700 shadow-[0_2px_6px_rgba(172,59,97,0.06)]';
+          'border-border bg-selected text-text shadow-elevated';
         indicatorStyle =
-          'border-crimson-700 bg-crimson-700 dark:border-crimson-900 dark:bg-crimson-900 text-white font-bold';
+          'border-border bg-text text-card font-bold';
       }
 
       return (
         <div
           key={option.id}
           onClick={() => onSelect(option.id)}
-          className={`relative flex items-start gap-4 p-4 sm:p-5 rounded-xl border transition-all duration-150 select-none ${
-            feedback ? 'cursor-default' : 'cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas active:scale-[0.998]'
+          className={`relative flex items-start gap-4 p-4 sm:p-5 rounded border-2 transition-all duration-150 select-none min-h-11 ${
+            feedback
+              ? 'cursor-default'
+              : 'cursor-pointer active:scale-[0.995]'
           } ${cardStyle}`}
         >
           {/* Index / Checkbox indicator */}
           <div
-            className={`w-6 h-6 rounded-md border flex items-center justify-center text-xs font-mono flex-shrink-0 mt-0.5 transition-colors ${indicatorStyle}`}
+            className={`w-6 h-6 rounded-sm border-2 flex items-center justify-center text-xs font-mono flex-shrink-0 mt-0.5 transition-colors ${indicatorStyle}`}
           >
             {feedback ? (
               correction?.isCorrect ? (
@@ -85,8 +91,7 @@ export const QuizOptionsList = ({ challenge, selectedOptionIds, feedback, onSele
             )}
           </div>
 
-          {/* Option text — break-words : un mot long (nom de classe, URL) se
-              coupe proprement au lieu de faire déborder la carte. */}
+          {/* Option text */}
           <div className="flex-1 min-w-0 text-sm sm:text-base leading-relaxed font-sans break-words">
             {option.content}
           </div>

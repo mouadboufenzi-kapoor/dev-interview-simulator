@@ -16,8 +16,7 @@ export const ResultHeader = ({ mode, difficulty }: Props) => (
       </Badge>
       <PageTitle size="hero-compact">Bilan de votre évaluation</PageTitle>
       <p className="text-base text-ink-secondary">
-        Votre niveau, vos forces et votre prochain axe de travail — puis le détail complet de vos
-        réponses.
+        Votre niveau, vos forces et votre prochain axe de travail.
       </p>
     </div>
 

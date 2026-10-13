@@ -1,5 +1,5 @@
 import type { ChallengeType } from '../types';
-import { HelpCircle, Code2, Layers, ListOrdered, Check } from 'lucide-react';
+import { HelpCircle, Code2, Layers, ListOrdered } from 'lucide-react';
 
 interface ModeCardConfig {
   id: ChallengeType;
@@ -42,7 +42,7 @@ interface Props {
 
 export const SetupModeCards = ({ selectedMode, onSelect }: Props) => (
   <div className="grid grid-cols-1 gap-4 sm:gap-5 text-left md:grid-cols-2 lg:grid-cols-4">
-    {MODES.map((mode) => {
+    {MODES.map((mode, index) => {
       const isSelected = selectedMode === mode.id;
       const Icon = mode.icon;
 
@@ -50,45 +50,35 @@ export const SetupModeCards = ({ selectedMode, onSelect }: Props) => (
         <div
           key={mode.id}
           onClick={() => onSelect(mode.id)}
-          className={`group relative rounded-2xl border-[0.5px] p-6 transition-all duration-200 cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas flex flex-col justify-between select-none ${
+          className={`group relative rounded border-2 p-6 transition-all duration-150 cursor-pointer focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-bg flex flex-col justify-between select-none min-h-11 ${
             isSelected
-              ? 'bg-surface border-navy-900 shadow-elevated ring-1 ring-navy-900'
-              : 'bg-surface border-card-border hover:border-border-strong hover:shadow-panel'
+              ? 'bg-selected border-border shadow-elevated'
+              : 'bg-card border-border hover:border-brand hover:shadow-card'
           }`}
         >
           <div className="space-y-4">
-            {/* Header with minimal monochrome icon */}
+            {/* Icône monochrome + numéro de carte (mono, spec §10) */}
             <div className="flex items-center justify-between">
               <div
-                className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-colors ${
+                className={`w-9 h-9 rounded flex items-center justify-center border-2 transition-colors ${
                   isSelected
-                    ? 'bg-navy-100 border-navy-200 text-navy-900'
-                    : 'bg-canvas-subtle border-border text-ink-muted group-hover:text-navy-900'
+                    ? 'bg-card border-border text-text'
+                    : 'bg-bg border-border text-muted group-hover:text-text'
                 }`}
               >
                 <Icon className="w-4 h-4 stroke-[2]" />
               </div>
 
-              <div
-                className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
-                  isSelected
-                    ? 'border-navy-900 bg-navy-900 dark:bg-navy-800 text-white'
-                    : 'border-border bg-surface'
-                }`}
-              >
-                {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
-              </div>
+              <span className="font-mono text-[11px] uppercase tracking-[0.06em] text-muted">
+                {String(index + 1).padStart(2, '0')}
+              </span>
             </div>
 
             <div className="space-y-1.5">
-              <h3
-                className={`font-serif text-xl font-bold transition-colors ${
-                  isSelected ? 'text-navy-900' : 'text-ink'
-                }`}
-              >
+              <h3 className="font-serif text-xl font-bold text-text">
                 {mode.title}
               </h3>
-              <p className="text-xs text-ink-warm leading-relaxed">
+              <p className="text-xs text-muted leading-relaxed">
                 {mode.description}
               </p>
             </div>

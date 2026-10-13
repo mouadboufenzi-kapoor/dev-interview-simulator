@@ -48,24 +48,25 @@ export const QuizProgressHeader = ({
           </Badge>
         </div>
 
-        {/* Timer & Live Score */}
+        {/* Timer & Live Score — minuteur en Space Mono (spec §6) */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 font-mono text-xs bg-surface px-2.5 py-1 rounded-md border border-border text-navy-900 shadow-card">
-            <Clock className="w-3.5 h-3.5 text-navy-900" />
+          <div className="flex items-center gap-1.5 font-mono text-xs uppercase tracking-[0.06em] bg-card px-2.5 py-1 rounded border-2 border-border text-text">
+            <Clock className="w-3.5 h-3.5 text-text" />
             <span>{formatTime(secondsElapsed)}</span>
           </div>
 
-          <div className="flex items-center gap-1.5 font-mono text-xs bg-surface px-2.5 py-1 rounded-md border border-border text-crimson-700 font-semibold shadow-card">
-            <Award className="w-3.5 h-3.5 text-crimson-700" />
+          <div className="flex items-center gap-1.5 font-mono text-xs uppercase tracking-[0.06em] bg-card px-2.5 py-1 rounded border-2 border-border text-accent font-bold">
+            <Award className="w-3.5 h-3.5 text-accent" />
             <span>{score} pts</span>
           </div>
         </div>
       </div>
 
-      {/* Minimal Progress Bar in Accent Rosewood (crimson-700) */}
-      <div className="w-full h-1 bg-border rounded-full overflow-hidden">
+      {/* Barre de progression Contraste (spec §15) : hauteur 12px, bordure
+          --bw, remplissage --color-brand. */}
+      <div className="w-full h-3 border-2 border-border rounded bg-card overflow-hidden">
         <div
-          className="h-full bg-crimson-700 transition-all duration-300 ease-out"
+          className="h-full bg-brand transition-all duration-300 ease-out"
           style={{ width: `${progressPercent}%` }}
         />
       </div>
