@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ProfileRepository extends JpaRepository<Profile, Long> {
@@ -13,6 +14,8 @@ public interface ProfileRepository extends JpaRepository<Profile, Long> {
     List<Profile> findAllByOrderByNameAsc();
 
     boolean existsByCode(String code);
+
+    Optional<Profile> findByCode(String code);
 
     boolean existsByCodeAndIdNot(String code, Long id);
 

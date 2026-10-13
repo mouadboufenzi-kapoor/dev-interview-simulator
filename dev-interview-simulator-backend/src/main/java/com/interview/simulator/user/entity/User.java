@@ -1,10 +1,13 @@
 package com.interview.simulator.user.entity;
 
+import com.interview.simulator.profile.entity.Profile;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
 @Entity
 @Table(name = "users")
@@ -32,6 +35,24 @@ public class User {
 
     @Column(nullable = false)
     private boolean enabled = true;
+
+    /**
+     * Profils rattachés à l'utilisateur — squelette multiprofil (V10).
+     * Aujourd'hui : un seul profil (DEVELOPER). Plus tard : plusieurs profils
+     * métier avec un profil actif. Lazy : aucun impact sur les usages actuels.
+     */
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "user_profiles",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "profile_id")
+    )
+    private Set<Profile> profiles = new HashSet<>();
+
+    /** Profil actif de l'utilisateur (nullable = aucun profil actif). */
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "active_profile_id")
+    private Profile activeProfile;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -71,6 +92,10 @@ public class User {
     public void setEnabled(boolean enabled) { this.enabled = enabled; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public Set<Profile> getProfiles() { return profiles; }
+    public void setProfiles(Set<Profile> profiles) { this.profiles = profiles; }
+    public Profile getActiveProfile() { return activeProfile; }
+    public void setActiveProfile(Profile activeProfile) { this.activeProfile = activeProfile; }
 
     @Override
     public boolean equals(Object o) {

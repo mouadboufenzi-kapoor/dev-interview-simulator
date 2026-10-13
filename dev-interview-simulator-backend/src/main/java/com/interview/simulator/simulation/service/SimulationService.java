@@ -24,6 +24,7 @@ import com.interview.simulator.simulation.entity.SimulationAnswer;
 import com.interview.simulator.simulation.entity.SimulationChallenge;
 import com.interview.simulator.simulation.entity.SimulationStatus;
 import com.interview.simulator.simulation.repository.SimulationChallengeRepository;
+import com.interview.simulator.simulation.repository.SimulationAnswerRepository;
 import com.interview.simulator.simulation.repository.SimulationRepository;
 import com.interview.simulator.user.entity.User;
 import com.interview.simulator.user.service.UserResolver;
@@ -58,6 +59,8 @@ public class SimulationService {
     private final ScoringService scoringService;
     private final ProfileRepository profileRepository;
 
+    private final SimulationAnswerRepository simulationAnswerRepository;
+
     public SimulationService(
             SimulationRepository simulationRepository,
             ChallengeRepository challengeRepository,
@@ -66,7 +69,8 @@ public class SimulationService {
             ChallengeOptionRepository challengeOptionRepository,
             InterviewScenarioRepository interviewScenarioRepository,
             ScoringService scoringService,
-            ProfileRepository profileRepository) {
+            ProfileRepository profileRepository,
+            SimulationAnswerRepository simulationAnswerRepository) {
         this.simulationRepository = simulationRepository;
         this.challengeRepository = challengeRepository;
         this.userResolver = userResolver;
@@ -75,6 +79,7 @@ public class SimulationService {
         this.interviewScenarioRepository = interviewScenarioRepository;
         this.scoringService = scoringService;
         this.profileRepository = profileRepository;
+        this.simulationAnswerRepository = simulationAnswerRepository;
     }
 
     @Transactional
@@ -180,6 +185,27 @@ public class SimulationService {
         return mapToResponse(saved);
     }
 
+    // Raisonnement séquentiel : le DTO de démarrage ne doit jamais contenir
+    // l'ordre attendu (displayOrder = la réponse). On mélange et on renumérote
+    // en position de présentation. La correction serveur relit l'entité en base.
+    private List<SimulationChallengeResponse.OptionResponse> presentationOptions(Challenge challenge) {
+        if (challenge.getType() != ChallengeType.SEQUENTIAL_REASONING) {
+            return challenge.getOptions().stream()
+                    .map(o -> new SimulationChallengeResponse.OptionResponse(
+                            o.getId(), o.getContent(), o.getDisplayOrder()))
+                    .toList();
+        }
+        List<ChallengeOption> shuffled = new ArrayList<>(challenge.getOptions());
+        Collections.shuffle(shuffled);
+        List<SimulationChallengeResponse.OptionResponse> options = new ArrayList<>();
+        int presentationPosition = 1;
+        for (ChallengeOption option : shuffled) {
+            options.add(new SimulationChallengeResponse.OptionResponse(
+                    option.getId(), option.getContent(), presentationPosition++));
+        }
+        return options;
+    }
+
     private SimulationResponse mapToResponse(Simulation simulation) {
         List<SimulationChallengeResponse> challengeResponses = simulation.getSimulationChallenges().stream()
                 .map(sc -> new SimulationChallengeResponse(
@@ -205,13 +231,7 @@ public class SimulationService {
                                 : null,
                         null,
                         null,
-                        sc.getChallenge().getOptions().stream()
-                                .map(o -> new SimulationChallengeResponse.OptionResponse(
-                                        o.getId(),
-                                        o.getContent(),
-                                        o.getDisplayOrder()
-                                ))
-                                .toList()
+                        presentationOptions(sc.getChallenge())
                 ))
                 .toList();
 
@@ -254,6 +274,12 @@ public class SimulationService {
                     HttpStatus.CONFLICT,
                     "Une réponse a déjà été enregistrée pour cette question."
             );
+        }
+
+        // Raisonnement séquentiel : la réponse est une permutation complète des
+        // étapes — traitement dédié (notation par position, ordre attendu).
+        if (simChallenge.getChallenge().getType() == ChallengeType.SEQUENTIAL_REASONING) {
+            return submitSequentialAnswer(simChallenge, request);
         }
 
         if (simulation.getMode() == ChallengeType.ARCHITECTURE) {
@@ -327,8 +353,90 @@ public class SimulationService {
                 simChallenge.getChallenge().getTradeoff(),
                 ChallengeCorrectionDTO.forOptions(
                         simChallenge.getChallenge().getOptions(),
-                        selectedOptionIds)
+                        selectedOptionIds),
+                null // expectedOrder : réservé au raisonnement séquentiel
         );
+    }
+
+    // ===== Raisonnement séquentiel =====
+    // La réponse est une PERMUTATION des étapes du challenge. Le DTO de
+    // démarrage ne contenait jamais l'ordre attendu (mélange + renumérotation
+    // dans presentationOptions) ; ici on compare l'ordre soumis à displayOrder
+    // relu en base. Score partiel : points × (positions correctes / total).
+    private SubmitAnswerResponse submitSequentialAnswer(SimulationChallenge simChallenge, SubmitAnswerRequest request) {
+        Challenge challenge = simChallenge.getChallenge();
+        Simulation simulation = simChallenge.getSimulation();
+        List<Long> submittedOrder = request.selectedOptionIds();
+
+        List<ChallengeOption> expectedOptions = challenge.getOptions().stream()
+                .sorted(Comparator.comparingInt(ChallengeOption::getDisplayOrder))
+                .toList();
+
+        // Permutation exacte : mêmes étapes, aucune doublon, aucun manquant.
+        boolean permutation = submittedOrder.size() == expectedOptions.size()
+                && new java.util.HashSet<>(submittedOrder).size() == submittedOrder.size()
+                && submittedOrder.containsAll(
+                        expectedOptions.stream().map(ChallengeOption::getId).toList());
+        if (!permutation) {
+            throw new ApiException(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "La réponse doit être une permutation complète des étapes.");
+        }
+
+        boolean isCorrect = java.util.Objects.equals(submittedOrder,
+                expectedOptions.stream().map(ChallengeOption::getId).toList());
+        int scoreAwarded = scoringService.calculateSequenceScore(challenge, submittedOrder);
+
+        SimulationAnswer answer = new SimulationAnswer();
+        answer.setSimulationChallenge(simChallenge);
+        // LinkedHashSet : conserve l'ordre de soumission côté entité.
+        Set<ChallengeOption> submittedOptions = new LinkedHashSet<>();
+        for (Long optionId : submittedOrder) {
+            submittedOptions.add(challenge.getOptions().stream()
+                    .filter(option -> option.getId().equals(optionId))
+                    .findFirst()
+                    .orElseThrow());
+        }
+        answer.setSelectedOptions(submittedOptions);
+        answer.setCorrect(isCorrect);
+        answer.setScore(scoreAwarded);
+        answer.setResponseTimeMs(request.responseTimeMs());
+        simChallenge.setAnswer(answer);
+        simulation.setTotalScore(simulation.getTotalScore() + scoreAwarded);
+
+        // Position de chaque étape de la réponse sur la jointure (V11) — colonne
+        // nullable, écrite uniquement pour ce type : les QCM restent NULL.
+        simulationAnswerRepository.save(answer);
+        simulationAnswerRepository.flush();
+        int position = 1;
+        for (Long optionId : submittedOrder) {
+            simulationAnswerRepository.updateAnswerOptionPosition(answer.getId(), optionId, position++);
+        }
+
+        // Corrections : isCorrect = « l'étape est à sa bonne position ».
+        List<ChallengeCorrectionDTO> corrections = new ArrayList<>();
+        for (int i = 0; i < expectedOptions.size(); i++) {
+            ChallengeOption option = expectedOptions.get(i);
+            corrections.add(new ChallengeCorrectionDTO(
+                    option.getId(),
+                    option.getContent(),
+                    option.getId().equals(submittedOrder.get(i)),
+                    true,
+                    null,
+                    option.getExplanation()));
+        }
+
+        return new SubmitAnswerResponse(
+                answer.getId(),
+                isCorrect,
+                scoreAwarded,
+                simulation.getTotalScore(),
+                challenge.getExplanation(),
+                null,
+                null,
+                null,
+                corrections,
+                expectedOptions.stream().map(ChallengeOption::getId).toList());
     }
 
     @Transactional

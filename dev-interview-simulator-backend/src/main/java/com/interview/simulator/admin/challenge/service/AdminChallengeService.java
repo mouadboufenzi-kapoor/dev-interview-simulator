@@ -152,6 +152,16 @@ public class AdminChallengeService {
                 challenge.getOptions().add(option);
             }
         }
+
+        // Raisonnement séquentiel : chaque option est une étape — minimum 2,
+        // et toutes les étapes font partie de la réponse (is_correct = true).
+        if (challenge.getType() == ChallengeType.SEQUENTIAL_REASONING) {
+            if (challenge.getOptions().size() < 2) {
+                throw new ApiException(HttpStatus.BAD_REQUEST,
+                        "Un défi de raisonnement séquentiel nécessite au moins 2 étapes.");
+            }
+            challenge.getOptions().forEach(option -> option.setCorrect(true));
+        }
     }
 
     private void applyScenario(Challenge challenge, AdminChallengeRequest request) {
