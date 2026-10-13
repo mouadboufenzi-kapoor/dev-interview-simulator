@@ -9,7 +9,6 @@ import { UserDashboardProgress } from './UserDashboardProgress';
 import { UserDashboardSkills } from './UserDashboardSkills';
 import { UserDashboardWeakPoints } from './UserDashboardWeakPoints';
 import { UserDashboardSimulations } from './UserDashboardSimulations';
-import { AppAppearance } from './AppAppearance';
 
 interface Props {
   user: AuthUser;
@@ -81,10 +80,6 @@ export const UserDashboard = ({ user, onStartSimulation, onRevise, onOpenResult 
         page={simPage}
         onPageChange={setSimPage}
       />
-
-      {/* Apparence : sélecteur de thème (palette + mode) — spec §18.
-          Changement immédiat, persisté localStorage. */}
-      <AppAppearance />
     </div>
   );
 };

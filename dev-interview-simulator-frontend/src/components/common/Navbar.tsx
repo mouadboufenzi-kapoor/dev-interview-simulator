@@ -11,7 +11,7 @@ import { NavbarUserMenu } from './NavbarUserMenu';
 import { NavbarQuitModal } from './NavbarQuitModal';
 
 interface NavbarProps {
-  currentScreen: 'SETUP' | 'QUIZ' | 'RESULT' | 'DASHBOARD' | 'ADMIN';
+  currentScreen: 'SETUP' | 'QUIZ' | 'RESULT' | 'DASHBOARD' | 'ADMIN' | 'SETTINGS';
   mode?: ChallengeType;
   difficulty?: DifficultyLevel;
   onQuit?: () => void;
@@ -20,6 +20,7 @@ interface NavbarProps {
   onAuthenticated?: (user: AuthUser) => void;
   onLogout?: () => void;
   onOpenDashboard?: () => void;
+  onOpenSettings?: () => void;
   onOpenAdmin?: () => void;
 }
 
@@ -32,6 +33,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onAuthenticated,
   onLogout,
   onOpenDashboard,
+  onOpenSettings,
   onOpenAdmin,
 }) => {
   const [showQuitModal, setShowQuitModal] = useState(false);
@@ -153,6 +155,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   requestAccess={() => setShowAccessModal(true)}
                   menuRef={userMenuRef}
                   onOpenDashboard={onOpenDashboard}
+                  onOpenSettings={onOpenSettings}
                   onOpenAdmin={onOpenAdmin}
                   onLogout={onLogout}
                 />

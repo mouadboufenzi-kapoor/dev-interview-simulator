@@ -11,6 +11,7 @@ interface Props {
   requestAccess: () => void;
   menuRef: RefObject<HTMLDivElement | null>;
   onOpenDashboard?: () => void;
+  onOpenSettings?: () => void;
   onOpenAdmin?: () => void;
   onLogout?: () => void;
 }
@@ -23,6 +24,7 @@ export const NavbarUserMenu = ({
   requestAccess,
   menuRef,
   onOpenDashboard,
+  onOpenSettings,
   onOpenAdmin,
   onLogout,
 }: Props) => (
@@ -71,6 +73,16 @@ export const NavbarUserMenu = ({
           className="w-full rounded-xl px-3 py-2.5 text-left text-xs font-semibold text-ink transition hover:bg-canvas-subtle"
         >
           Mon tableau de bord
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            onClose();
+            onOpenSettings?.();
+          }}
+          className="w-full rounded-xl px-3 py-2.5 text-left text-xs font-semibold text-ink transition hover:bg-canvas-subtle"
+        >
+          Profil
         </button>
         <button
           type="button"

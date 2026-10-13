@@ -17,8 +17,9 @@ import { AlertCircle, X } from 'lucide-react';
 import { UserDashboard } from './components/UserDashboard';
 import { UserAccessModal, type AuthUser } from './components/UserAccessModal';
 import { AdminDashboard } from './components/AdminDashboard';
+import { SettingsScreen } from './components/SettingsScreen';
 
-type ScreenState = 'SETUP' | 'QUIZ' | 'RESULT' | 'DASHBOARD' | 'ADMIN';
+type ScreenState = 'SETUP' | 'QUIZ' | 'RESULT' | 'DASHBOARD' | 'ADMIN' | 'SETTINGS';
 
 export default function App() {
   const [screen, setScreen] = useState<ScreenState>('SETUP');
@@ -174,6 +175,12 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Page Paramètres (profil + apparence) — accessible depuis le menu utilisateur.
+  const handleOpenSettings = () => {
+    setScreen('SETTINGS');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   // Réviser depuis le dashboard : lance directement une simulation CIBLÉE sur
   // la compétence — même moteur de création que l'écran Setup (mode QCM par
   // défaut, toutes difficultés pour maximiser le pool). Repli : écran de
@@ -247,6 +254,7 @@ export default function App() {
         onAuthenticated={handleAuthenticated}
         onLogout={handleLogout}
         onOpenDashboard={() => setScreen('DASHBOARD')}
+        onOpenSettings={handleOpenSettings}
         onOpenAdmin={() => setScreen('ADMIN')}
       />
 
@@ -299,6 +307,10 @@ export default function App() {
 
           {screen === 'ADMIN' && user?.role === 'ADMIN' && (
             <AdminDashboard />
+          )}
+
+          {screen === 'SETTINGS' && user && (
+            <SettingsScreen user={user} />
           )}
 
           {screen === 'QUIZ' && simulation && (

@@ -1,6 +1,6 @@
 import type { RefObject } from 'react';
 import { Badge } from './Badge';
-import { ChevronDown, Radio, Trophy, TrendingUp } from 'lucide-react';
+import { ChevronDown, Radio, Trophy } from 'lucide-react';
 
 interface ModuleItem {
   icon: typeof Radio;
@@ -12,7 +12,6 @@ interface ModuleItem {
 const MODULES: ModuleItem[] = [
   { icon: Radio, title: 'Veille technique', subtitle: 'Radar & actualités dev', iconClassName: 'text-navy-900' },
   { icon: Trophy, title: 'Classement', subtitle: 'Top scores de la promo', iconClassName: 'text-crimson-700' },
-  { icon: TrendingUp, title: 'Progression', subtitle: 'Historique & analytics', iconClassName: 'text-warning-accent' },
 ];
 
 interface Props {
