@@ -73,6 +73,12 @@
   --shadow-elevated: 0 4px 16px rgba(18, 60, 105, 0.06);
   --shadow-modal: 0 12px 35px rgba(18, 60, 105, 0.12);
 
+  /* ===== Breakpoints ===== */
+  /* xs : mobile étroit (< 400px). Utilisé pour les détails « juste au-dessus
+     du plus petit écran » (pastilles CodeBlock, libellés d'accordéon) sans
+     casser le sm: existant. */
+  --breakpoint-xs: 25rem;
+
   /* ===== Polices ===== */
   --font-serif: 'Newsreader', Georgia, Cambria, serif;
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;

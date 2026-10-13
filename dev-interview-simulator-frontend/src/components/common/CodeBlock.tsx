@@ -42,22 +42,24 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
     <div
       className={`rounded-xl border border-border bg-surface overflow-hidden max-w-full shadow-card text-sm font-mono ${className}`}
     >
-      {/* Editor Top Bar */}
-      <div className="flex items-center justify-between px-3.5 py-2.5 bg-canvas-subtle border-b border-border select-none">
-        <div className="flex items-center gap-2">
-          {/* Subtle dots */}
-          <div className="flex items-center gap-1.5 mr-2">
+      {/* Editor Top Bar — flex-wrap : sur mobile étroit, le nom + badge + indice
+          de scroll peuvent excéder la largeur ; le bouton Copier passe alors sur
+          une seconde ligne au lieu d'être rogné par l'overflow-hidden du cadre. */}
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-3.5 py-2.5 bg-canvas-subtle border-b border-border select-none">
+        <div className="flex items-center gap-2 min-w-0">
+          {/* Subtle dots — masqués sur le plus petit écran (gain de largeur) */}
+          <div className="hidden xs:flex items-center gap-1.5 mr-2">
             <span className="w-2.5 h-2.5 rounded-full bg-border-strong" />
             <span className="w-2.5 h-2.5 rounded-full bg-border-strong" />
             <span className="w-2.5 h-2.5 rounded-full bg-border-strong" />
           </div>
 
-          <Code2 className="w-3.5 h-3.5 text-navy-900" />
-          <span className="text-xs font-semibold text-navy-900">
+          <Code2 className="w-3.5 h-3.5 text-navy-900 flex-shrink-0" />
+          <span className="text-xs font-semibold text-navy-900 truncate">
             {filename}
           </span>
           {language && (
-            <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-md bg-crimson-100 text-crimson-700 border border-crimson-200 font-semibold">
+            <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-md bg-crimson-100 text-crimson-700 border border-crimson-200 font-semibold flex-shrink-0">
               {language}
             </span>
           )}

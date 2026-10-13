@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { Button } from './common/Button';
-import { PageTitle } from './common/PageTitle';
 import type { AuthUser } from './UserAccessModal';
 import { userStatsApi } from '../api/userStatsApi';
 import type { UserStats } from '../api/userStatsApi';
 import { UserDashboardProfile } from './UserDashboardProfile';
 import { UserDashboardProgress } from './UserDashboardProgress';
+import { UserDashboardSkills } from './UserDashboardSkills';
 import { UserDashboardWeakPoints } from './UserDashboardWeakPoints';
 import { UserDashboardSimulations } from './UserDashboardSimulations';
 
@@ -17,6 +17,8 @@ interface Props {
   onOpenResult?: (simulationId: number) => void;
 }
 
+// Dashboard utilisateur — ordre mobile-first :
+// accueil (profil) → progression → compétences → priorités → dernières simulations.
 export const UserDashboard = ({ user, onStartSimulation, onRevise, onOpenResult }: Props) => {
   const [stats, setStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,37 +45,33 @@ export const UserDashboard = ({ user, onStartSimulation, onRevise, onOpenResult 
   }, [simPage]);
 
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-8 py-8 sm:py-12">
-      <div className="flex flex-col items-start justify-between gap-5 sm:flex-row sm:items-end">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-ink-muted">
-            Tableau de bord
-          </p>
-          <PageTitle size="xl" className="mt-2">
-            Bonjour, {user.username}
-          </PageTitle>
-          <p className="mt-2 max-w-lg text-sm leading-relaxed text-ink-secondary">
-            Retrouvez votre progression et reprenez votre préparation là où vous l'avez laissée.
-          </p>
-        </div>
+    <div className="w-full max-w-5xl mx-auto space-y-5 py-8 sm:space-y-6 sm:py-12">
+      {/* Accueil : profil actif + CTA principal */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <UserDashboardProfile user={user} onChangeProfile={onStartSimulation} />
         <Button
           type="button"
           variant="primary"
           onClick={onStartSimulation}
           rightIcon={<ArrowRight className="h-4 w-4" />}
+          className="w-full justify-center sm:w-auto"
         >
           Nouvelle simulation
         </Button>
       </div>
 
-      <section className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
-        <UserDashboardProfile user={user} />
-        <UserDashboardProgress stats={stats} loading={loading} error={error} />
-      </section>
+      <UserDashboardProgress stats={stats} loading={loading} error={error} />
 
-      {stats && !loading && !error && stats.totalAnswers > 0 && (
-        <UserDashboardWeakPoints weakPoints={stats.weakPoints} onRevise={onRevise} />
-      )}
+      {/* Desktop : Compétences + À travailler côte à côte ; mobile : empilés */}
+      <div className="grid gap-5 lg:grid-cols-2 lg:items-start lg:gap-6">
+        {stats && !loading && !error && stats.byCategory.length > 0 && (
+          <UserDashboardSkills byCategory={stats.byCategory} />
+        )}
+
+        {stats && !loading && !error && stats.totalAnswers > 0 && (
+          <UserDashboardWeakPoints weakPoints={stats.weakPoints} onRevise={onRevise} />
+        )}
+      </div>
 
       <UserDashboardSimulations
         stats={stats}

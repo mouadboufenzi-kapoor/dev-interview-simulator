@@ -41,6 +41,7 @@ export const UserAccessModal = ({ onClose, onAuthenticated }: Props) => {
           username: response.username,
           email: response.email,
           role: response.role,
+          profile: response.profile ?? undefined,
         });
       } else {
         const response = await authApi.register({ username: usernameOrEmail, email, password });
@@ -49,6 +50,7 @@ export const UserAccessModal = ({ onClose, onAuthenticated }: Props) => {
           username: response.username,
           email: response.email,
           role: response.role,
+          profile: response.profile ?? undefined,
         });
       }
     } catch (err: any) {

@@ -7,6 +7,7 @@ import type {
   SubmitAnswerRequest,
   SubmitAnswerResponse,
   SimulationResultDTO,
+  SimulationSummaryResponse,
 } from '../types';
 
 export const simulationApi = {
@@ -43,5 +44,22 @@ export const simulationApi = {
     getSimulationResult: async (simulationId: number): Promise<SimulationResultDTO> => {
         const response = await apiClient.get<SimulationResultDTO>(`/simulations/${simulationId}/result`);
         return response.data;
+  },
+
+  // Clore une session (statut COMPLETED) — indispensable pour que les
+  // compteurs « simulations terminées » du dashboard soient cohérents.
+  completeSimulation: async (simulationId: number): Promise<SimulationSummaryResponse> => {
+    const response = await apiClient.post<SimulationSummaryResponse>(
+      `/simulations/${simulationId}/complete`
+    );
+    return response.data;
+  },
+
+  // Marquer une session quittée en cours de route comme ABANDONNÉE.
+  abandonSimulation: async (simulationId: number): Promise<SimulationSummaryResponse> => {
+    const response = await apiClient.post<SimulationSummaryResponse>(
+      `/simulations/${simulationId}/abandon`
+    );
+    return response.data;
   },
 };

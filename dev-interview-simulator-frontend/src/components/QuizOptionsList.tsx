@@ -85,8 +85,9 @@ export const QuizOptionsList = ({ challenge, selectedOptionIds, feedback, onSele
             )}
           </div>
 
-          {/* Option text */}
-          <div className="flex-1 text-sm sm:text-base leading-relaxed font-sans">
+          {/* Option text — break-words : un mot long (nom de classe, URL) se
+              coupe proprement au lieu de faire déborder la carte. */}
+          <div className="flex-1 min-w-0 text-sm sm:text-base leading-relaxed font-sans break-words">
             {option.content}
           </div>
         </div>

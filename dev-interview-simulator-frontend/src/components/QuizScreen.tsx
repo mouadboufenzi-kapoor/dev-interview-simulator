@@ -4,6 +4,7 @@ import { simulationApi } from '../api/simulationApi';
 import { QuizProgressHeader } from './QuizProgressHeader';
 import { QuizChallengeBody } from './QuizChallengeBody';
 import { QuizOptionsList } from './QuizOptionsList';
+import { QuizSequenceList } from './QuizSequenceList';
 import { QuizFeedbackPanel } from './QuizFeedbackPanel';
 import { QuizActionsFooter } from './QuizActionsFooter';
 
@@ -35,6 +36,20 @@ export const QuizScreen = ({ simulation, onFinish, onError }: Props) => {
 
     return () => clearInterval(timer);
   }, [currentIndex]);
+
+  // Raisonnement séquentiel : l'ordre initial = l'ordre de présentation reçu
+  // (displayOrder renuméroté côté serveur — jamais l'ordre attendu).
+  const isSequentialChallenge = currentChallenge?.type === 'SEQUENTIAL_REASONING';
+  useEffect(() => {
+    const challenge = simulation.challenges?.[currentIndex];
+    if (challenge?.type === 'SEQUENTIAL_REASONING') {
+      setSelectedOptionIds(
+        [...challenge.options]
+          .sort((a, b) => a.displayOrder - b.displayOrder)
+          .map((option) => option.id)
+      );
+    }
+  }, [currentIndex, simulation]);
 
   if (!currentChallenge) {
     return (
@@ -107,19 +122,30 @@ export const QuizScreen = ({ simulation, onFinish, onError }: Props) => {
         score={feedback ? feedback.totalSimulationScore : simulation.totalScore}
       />
 
-      {/* Main Challenge Surface */}
-      <div className="bg-surface border-[0.5px] border-card-border rounded-2xl p-6 sm:p-9 shadow-elevated space-y-7">
+      {/* Main Challenge Surface — p-5 sur mobile (p-6 gagnait trop de largeur
+          utile sur écran étroit), identique à partir de sm. */}
+      <div className="bg-surface border-[0.5px] border-card-border rounded-2xl p-5 sm:p-9 shadow-elevated space-y-7">
         <QuizChallengeBody
           challenge={currentChallenge}
           showMultiChoiceHint={isMultiChoice && !feedback}
         />
 
-        <QuizOptionsList
-          challenge={currentChallenge}
-          selectedOptionIds={selectedOptionIds}
-          feedback={feedback}
-          onSelect={handleSelectOption}
-        />
+        {isSequentialChallenge ? (
+          <QuizSequenceList
+            challenge={currentChallenge}
+            orderedOptionIds={selectedOptionIds}
+            onChange={setSelectedOptionIds}
+            disabled={!!feedback}
+            feedback={feedback}
+          />
+        ) : (
+          <QuizOptionsList
+            challenge={currentChallenge}
+            selectedOptionIds={selectedOptionIds}
+            feedback={feedback}
+            onSelect={handleSelectOption}
+          />
+        )}
 
         {feedback && <QuizFeedbackPanel feedback={feedback} />}
 

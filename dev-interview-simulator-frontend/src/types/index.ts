@@ -2,7 +2,8 @@ export type ChallengeType =
   | 'SITUATIONAL_QCM'
   | 'PROBLEM_SOLVING'
   | 'CODE_REVIEW'
-  | 'ARCHITECTURE';
+  | 'ARCHITECTURE'
+  | 'SEQUENTIAL_REASONING';
 export type SelectionType = 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE';
 export type DifficultyLevel = 'JUNIOR' | 'INTERMEDIATE' | 'ADVANCED';
 export type SimulationStatus = 'IN_PROGRESS' | 'COMPLETED' | 'ABANDONED';
@@ -90,6 +91,8 @@ export interface SubmitAnswerResponse {
   revealedInformation: string | null;
   tradeoff: string | null;
   corrections: ChallengeCorrection[];
+  /** Raisonnement séquentiel uniquement : ids des étapes dans l'ordre attendu. */
+  expectedOrder?: number[] | null;
 }
 
 export interface SimulationSummaryResponse {

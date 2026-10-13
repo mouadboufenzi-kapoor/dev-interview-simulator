@@ -27,19 +27,23 @@ export const QuizProgressHeader = ({
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
-        <div className="flex items-center gap-2">
-          <span className="font-mono uppercase tracking-wider text-ink-muted font-semibold">
+      <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 text-xs">
+        {/* flex-wrap + gap-y : sur mobile étroit, le badge long (ex. « Raisonnement
+            séquentiel ») passe sous le compteur au lieu de déborder du viewport. */}
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="font-mono uppercase tracking-wider text-ink-muted font-semibold whitespace-nowrap">
             {challenge.type === 'ARCHITECTURE'
               ? `ÉTAPE ${(challenge.stepOrder ?? currentIndex + 1).toString().padStart(2, '0')} / ${(challenge.totalSteps ?? totalChallenges).toString().padStart(2, '0')}`
               : `QUESTION ${(currentIndex + 1).toString().padStart(2, '0')} / ${totalChallenges.toString().padStart(2, '0')}`}
           </span>
-          <span className="text-border-strong">•</span>
+          <span className="text-border-strong hidden xs:inline">•</span>
           <Badge variant="navy" size="sm">
             {challenge.type === 'CODE_REVIEW'
               ? 'Code Review'
               : challenge.type === 'ARCHITECTURE'
               ? 'Architecture Système'
+              : challenge.type === 'SEQUENTIAL_REASONING'
+              ? 'Raisonnement séquentiel'
               : 'QCM de situation'}
           </Badge>
         </div>

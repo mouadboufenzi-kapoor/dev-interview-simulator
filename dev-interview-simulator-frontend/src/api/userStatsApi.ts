@@ -22,6 +22,7 @@ export interface UserRecentSimulation {
   totalQuestions: number;
   correctAnswers: number;
   totalScore: number;
+  status?: string;
   startedAt?: string;
 }
 
@@ -42,6 +43,8 @@ export interface UserStats {
   recentSuccessRate?: number | null;
   previousSuccessRate?: number | null;
   trend?: string | null;
+  averageSuccessRate?: number | null;
+  bestSuccessRate?: number | null;
   byCategory: UserStatEntry[];
   byType: UserTypeStat[];
   weakPoints: UserStatEntry[];

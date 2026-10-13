@@ -12,6 +12,7 @@ export const MODE_LABELS: Record<ChallengeType, string> = {
   CODE_REVIEW: 'Code Review',
   ARCHITECTURE: 'Architecture',
   PROBLEM_SOLVING: 'Problem Solving',
+  SEQUENTIAL_REASONING: 'Raisonnement séquentiel',
 };
 
 export const DIFFICULTY_LABELS: Record<DifficultyLevel, string> = {

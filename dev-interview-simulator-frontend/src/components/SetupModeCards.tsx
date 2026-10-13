@@ -1,5 +1,5 @@
 import type { ChallengeType } from '../types';
-import { HelpCircle, Code2, Layers, Check } from 'lucide-react';
+import { HelpCircle, Code2, Layers, ListOrdered, Check } from 'lucide-react';
 
 interface ModeCardConfig {
   id: ChallengeType;
@@ -27,6 +27,12 @@ const MODES: ModeCardConfig[] = [
     description: 'Résolvez des problèmes de conception de systèmes.',
     icon: Layers,
   },
+  {
+    id: 'SEQUENTIAL_REASONING',
+    title: 'Raisonnement séquentiel',
+    description: "Remettez des étapes dans l'ordre logique (debug, test, pipeline...).",
+    icon: ListOrdered,
+  },
 ];
 
 interface Props {
@@ -35,7 +41,7 @@ interface Props {
 }
 
 export const SetupModeCards = ({ selectedMode, onSelect }: Props) => (
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5 text-left">
+  <div className="grid grid-cols-1 gap-4 sm:gap-5 text-left md:grid-cols-2 lg:grid-cols-4">
     {MODES.map((mode) => {
       const isSelected = selectedMode === mode.id;
       const Icon = mode.icon;

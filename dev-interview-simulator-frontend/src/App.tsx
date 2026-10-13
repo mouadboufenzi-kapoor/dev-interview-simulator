@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import type {
   StartSimulationRequest,
   SimulationResponse,
@@ -30,6 +30,8 @@ export default function App() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [reviseCategoryIds, setReviseCategoryIds] = useState<number[] | null>(null);
   const [showAccessModal, setShowAccessModal] = useState(false);
+  // Garde anti double-clic sur « Réviser » : évite deux démarrages simultanés.
+  const reviseInFlight = useRef(false);
   // Nombre de simulations terminées par l'invité dans SA session (sessionStorage).
   // Côté backend, tous les invités partagent default_user : un compteur serveur
   // serait faussé — donc zéro architecture ajoutée, compteur local uniquement.
@@ -63,7 +65,14 @@ export default function App() {
     return () => window.removeEventListener('auth:logout', handleAuthLogout);
   }, []);
 
-  const handleStartSimulation = async (request: StartSimulationRequest) => {
+  // Lancement unique de session (Setup, « Nouvelle simulation », Réviser).
+  // Retourne true si le quiz a démarré : permet aux appelsants de basculer
+  // vers l'écran de configuration en cas d'échec (repli).
+  const handleStartSimulation = async (
+    request: StartSimulationRequest,
+    failureMessage =
+      'Impossible de lancer la session. Veuillez vérifier que le serveur backend Spring Boot est actif sur le port 8080.'
+  ): Promise<boolean> => {
     setLoading(true);
     setError(null);
     try {
@@ -76,11 +85,15 @@ export default function App() {
       setSimulation(data);
       setScreen('QUIZ');
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      return true;
     } catch (err) {
       console.error(err);
-      setError(
-        'Impossible de lancer la session. Veuillez vérifier que le serveur backend Spring Boot est actif sur le port 8080.'
-      );
+      // Message serveur réel si disponible (le backend renvoie désormais de
+      // vrais codes HTTP, donc Axios rejette) — plus fiable que le générique.
+      const serverMessage = (err as { response?: { data?: { message?: string } } })
+        ?.response?.data?.message;
+      setError(serverMessage || failureMessage);
+      return false;
     } finally {
       setLoading(false);
     }
@@ -91,6 +104,16 @@ export default function App() {
     setLoading(true);
     setError(null);
     try {
+      // Clore la session côté serveur (statut COMPLETED) AVANT le bilan :
+      // sans cet appel la simulation resterait IN_PROGRESS en base et les
+      // compteurs du dashboard afficheraient « 0 terminée ». Best-effort :
+      // si la clôture échoue, le bilan reste affichable (/result ne dépend
+      // pas du statut).
+      try {
+        await simulationApi.completeSimulation(simulation.id);
+      } catch (completeErr) {
+        console.error('Clôture de la simulation impossible', completeErr);
+      }
       const data = await simulationApi.getSimulationResult(simulation.id);
       setSummary(data);
       setScreen('RESULT');
@@ -112,6 +135,18 @@ export default function App() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Quitter en cours de quiz : marque la session ABANDONNÉE (best-effort)
+  // pour que les compteurs du dashboard reflètent la réalité. Seules les
+  // sessions encore IN_PROGRESS basculent (jamais un bilan déjà consulté).
+  const handleQuit = () => {
+    if (screen === 'QUIZ' && simulation?.status === 'IN_PROGRESS') {
+      simulationApi.abandonSimulation(simulation.id).catch((err) => {
+        console.error('Abandon de la simulation impossible', err);
+      });
+    }
+    handleRestart();
   };
 
   const handleRestart = () => {
@@ -139,13 +174,30 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleRevise = (categoryIds: number[]) => {
-    setReviseCategoryIds(categoryIds);
-    setSimulation(null);
-    setSummary(null);
-    setError(null);
-    setScreen('SETUP');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  // Réviser depuis le dashboard : lance directement une simulation CIBLÉE sur
+  // la compétence — même moteur de création que l'écran Setup (mode QCM par
+  // défaut, toutes difficultés pour maximiser le pool). Repli : écran de
+  // configuration pré-pré-sélectionné si aucune question n'est disponible.
+  const handleRevise = async (categoryIds: number[]) => {
+    if (reviseInFlight.current) return;
+    reviseInFlight.current = true;
+    try {
+      const started = await handleStartSimulation(
+        { mode: 'SITUATIONAL_QCM', categoryIds },
+        'Aucune question ciblée disponible pour cette compétence pour le moment. Vous pouvez préparer votre session manuellement.'
+      );
+      if (started) {
+        setReviseCategoryIds(null);
+      } else {
+        setReviseCategoryIds(categoryIds);
+        setSimulation(null);
+        setSummary(null);
+        setScreen('SETUP');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    } finally {
+      reviseInFlight.current = false;
+    }
   };
 
   const handleOpenResult = async (simulationId: number) => {
@@ -189,7 +241,7 @@ export default function App() {
         currentScreen={screen}
         mode={simulation?.mode}
         difficulty={simulation?.difficulty}
-        onQuit={handleRestart}
+        onQuit={handleQuit}
         onSelectMode={handleSelectNavbarMode}
         user={user}
         onAuthenticated={handleAuthenticated}

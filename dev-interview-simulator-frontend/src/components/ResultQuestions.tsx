@@ -34,8 +34,9 @@ export const ResultQuestions = ({ summary }: Props) => {
           </p>
         </div>
 
-        {/* Filter Tabs */}
-        <div className="flex items-center gap-1.5 bg-surface border border-border p-1 rounded-xl text-xs font-sans shadow-card">
+        {/* Filter Tabs — flex-wrap : les trois onglets tiennent mal sur mobile
+            étroit ; ils passent sur deux lignes au lieu de forcer un overflow-x. */}
+        <div className="flex flex-wrap items-center gap-1.5 bg-surface border border-border p-1 rounded-xl text-xs font-sans shadow-card self-start sm:self-auto">
           <button
             onClick={() => setFilter('ALL')}
             className={`px-3 py-1 rounded-lg transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas ${
@@ -100,11 +101,14 @@ export const ResultQuestions = ({ summary }: Props) => {
                     )}
                   </span>
 
-                  <div className="truncate">
-                    <span className="font-serif font-bold text-ink text-base">
-                      {index + 1}. {q.title}
-                    </span>
-                  </div>
+                {/* break-words + min-w-0 : le titre s'enroule sur plusieurs lignes
+                    (mots longs cassés proprement) — jamais tronqué en plein milieu,
+                    aucune perte de contenu. */}
+                <div className="min-w-0 flex-1 pr-2">
+                  <span className="font-serif font-bold text-ink text-base break-words">
+                    {index + 1}. {q.title}
+                  </span>
+                </div>
                 </div>
 
                 <div className="flex items-center gap-3 flex-shrink-0">
@@ -114,12 +118,12 @@ export const ResultQuestions = ({ summary }: Props) => {
                   <span className="text-xs text-ink-muted flex items-center gap-1 font-sans">
                     {isOpen ? (
                       <>
-                        <span className="hidden xs:inline">Masquer</span>
+                        <span className="hidden sm:inline">Masquer</span>
                         <ChevronUp className="w-4 h-4" />
                       </>
                     ) : (
                       <>
-                        <span className="hidden xs:inline">Détails</span>
+                        <span className="hidden sm:inline">Détails</span>
                         <ChevronDown className="w-4 h-4" />
                       </>
                     )}

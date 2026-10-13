@@ -18,6 +18,8 @@ export interface AuthResponse {
   username: string;
   email: string;
   role: string;
+  /** Nom du profil actif (squelette multiprofil) — null/absent = aucun profil. */
+  profile?: string | null;
 }
 
 const persistAuth = (authResponse: AuthResponse) => {
@@ -46,12 +48,20 @@ const normalizeAuthResponse = (response: unknown): AuthResponse => {
     throw new Error('Réponse d’authentification invalide.');
   }
 
+  // Squelette multiprofil : le backend renvoie activeProfile (nom affiché du
+  // profil actif) — null tant qu'aucun profil n'est rattaché. Optionnel : son
+  // absence ne doit jamais casser la normalisation.
+  const activeProfile = typeof data.activeProfile === 'string' && data.activeProfile.trim() !== ''
+    ? data.activeProfile.trim()
+    : null;
+
   return {
     token,
     userId: Number.isFinite(userId) && userId > 0 ? userId : 0,
     username,
     email,
     role,
+    profile: activeProfile,
   };
 };
 
