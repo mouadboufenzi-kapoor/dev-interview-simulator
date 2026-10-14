@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -81,6 +82,25 @@ public class GlobalExceptionHandler {
             HttpServletRequest request) {
         log.warn("Data integrity violation on {} {}", request.getMethod(), request.getRequestURI(), exception);
         return error(HttpStatus.CONFLICT, "L'opération ne peut pas être effectuée avec ces données.", request);
+    }
+
+    /**
+     * Les ResponseStatusException levees par les services (register 409,
+     * login/introuvable 401, connexion Google invalide 401…) doivent conserver
+     * leur STATUT : sans ce handler, le catch-all Exception.class ci-dessous les
+     * interceptait et transformait tout 409/401 en 500 "erreur interne".
+     */
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ApiErrorResponse> handleResponseStatusException(
+            ResponseStatusException exception, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.resolve(exception.getStatusCode().value());
+        if (status == null) {
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+        }
+        String message = exception.getReason() != null
+                ? exception.getReason()
+                : status.getReasonPhrase();
+        return error(status, message, request);
     }
 
     @ExceptionHandler(Exception.class)

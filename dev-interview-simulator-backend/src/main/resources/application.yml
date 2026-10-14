@@ -25,10 +25,17 @@ server:
   port: 8080
 
 app:
+  cors:
+    # Origines du frontend autorisees (virgules) — a surcharger en prod via CORS_ORIGINS.
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:3000}
+
   security:
     jwt:
       secret: ${JWT_SECRET:change-this-development-secret-with-at-least-32-characters}
       expiration: ${JWT_EXPIRATION:PT8H}
+    # Client ID OAuth Web (Google Cloud Console) — requis pour /api/auth/google.
+    google:
+      client-id: ${GOOGLE_CLIENT_ID:}
 
   admin:
     username: ${ADMIN_USERNAME:admin}

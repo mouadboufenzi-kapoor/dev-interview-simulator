@@ -3,6 +3,7 @@ package com.interview.simulator.auth.service;
 import com.interview.simulator.auth.dto.AuthResponse;
 import com.interview.simulator.auth.dto.LoginRequest;
 import com.interview.simulator.auth.dto.RegisterRequest;
+import com.interview.simulator.profile.repository.ProfileRepository;
 import com.interview.simulator.user.entity.User;
 import com.interview.simulator.user.entity.UserRole;
 import com.interview.simulator.user.repository.UserRepository;
@@ -39,6 +40,12 @@ class AuthServiceTest {
 
     @Mock
     private JwtService jwtService;
+
+    @Mock
+    private ProfileRepository profileRepository;
+
+    @Mock
+    private GoogleIdTokenVerifier googleIdTokenVerifier;
 
     @InjectMocks
     private AuthService authService;
@@ -98,5 +105,79 @@ class AuthServiceTest {
         assertNotNull(response);
         assertEquals("mock_token", response.token());
         assertEquals("testuser", response.username());
+    }
+
+    // ---------------------------------------------------------------------
+    // Google OAuth — find-or-create (3 cas du guide)
+    // ---------------------------------------------------------------------
+
+    private GoogleIdTokenVerifier.GoogleProfile googleProfile(String sub, String email) {
+        return new GoogleIdTokenVerifier.GoogleProfile(sub, email, "Prénom", "Nom", null);
+    }
+
+    /** Cas 1 : déjà connecté par Google auparavant → simple émission de JWT. */
+    @Test
+    void googleLogin_ShouldReuseExistingUserWhenGoogleSubKnown() {
+        when(googleIdTokenVerifier.verify("id-token")).thenReturn(googleProfile("sub-123", "test@example.com"));
+        when(userRepository.findByGoogleSub("sub-123")).thenReturn(Optional.of(mockUser));
+        when(jwtService.generateToken(mockUser)).thenReturn("mock_token");
+
+        AuthResponse response = authService.googleLogin("id-token");
+
+        assertEquals("mock_token", response.token());
+        assertEquals("testuser", response.username());
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    /** Cas 2 : même email qu'un compte email/mot de passe → ON LIE google_sub (linking). */
+    @Test
+    void googleLogin_ShouldLinkGoogleSubToExistingLocalAccount() {
+        when(googleIdTokenVerifier.verify("id-token")).thenReturn(googleProfile("sub-123", "test@example.com"));
+        when(userRepository.findByGoogleSub("sub-123")).thenReturn(Optional.empty());
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(mockUser));
+        when(jwtService.generateToken(mockUser)).thenReturn("mock_token");
+
+        AuthResponse response = authService.googleLogin("id-token");
+
+        assertEquals("mock_token", response.token());
+        // Le compte local existant est lié, pas recréé : historique/role/profil conserves.
+        assertEquals("sub-123", mockUser.getGoogleSub());
+        verify(userRepository, times(1)).save(mockUser);
+    }
+
+    /** Cas 3 : email inconnu → création du compte Google-only (password_hash null). */
+    @Test
+    void googleLogin_ShouldCreateGoogleOnlyUserWhenEmailUnknown() {
+        when(googleIdTokenVerifier.verify("id-token"))
+                .thenReturn(googleProfile("sub-123", "new.user@example.com"));
+        when(userRepository.findByGoogleSub("sub-123")).thenReturn(Optional.empty());
+        when(userRepository.findByEmail("new.user@example.com")).thenReturn(Optional.empty());
+        when(userRepository.existsByUsername("new.user")).thenReturn(false);
+        when(jwtService.generateToken(any(User.class))).thenReturn("mock_token");
+
+        AuthResponse response = authService.googleLogin("id-token");
+
+        assertEquals("mock_token", response.token());
+        assertEquals("new.user", response.username());
+        verify(userRepository).save(argThat(user ->
+                "sub-123".equals(user.getGoogleSub())
+                        && user.getPasswordHash() == null
+                        && user.getRole() == UserRole.USER));
+    }
+
+    /** Collision de username (UNIQUE NOT NULL) → suffixe numerique, jamais d'ecrasement. */
+    @Test
+    void googleLogin_ShouldUniquifyUsernameOnCollision() {
+        when(googleIdTokenVerifier.verify("id-token"))
+                .thenReturn(googleProfile("sub-123", "taken@example.com"));
+        when(userRepository.findByGoogleSub("sub-123")).thenReturn(Optional.empty());
+        when(userRepository.findByEmail("taken@example.com")).thenReturn(Optional.empty());
+        when(userRepository.existsByUsername("taken")).thenReturn(true);
+        when(userRepository.existsByUsername("taken2")).thenReturn(false);
+        when(jwtService.generateToken(any(User.class))).thenReturn("mock_token");
+
+        AuthResponse response = authService.googleLogin("id-token");
+
+        assertEquals("taken2", response.username());
     }
 }

@@ -29,6 +29,20 @@ public class User {
     @Column(name = "password_hash")
     private String passwordHash;
 
+    /**
+     * Identifiant stable du compte Google (claim "sub"), nullable.
+     * - null   : compte classique (email/mot de passe) ou invité.
+     * - renseigné : compte lié à Google (linking) — peut coexister avec
+     *   password_hash (les deux méthodes de connexion restent ouvertes).
+     * UNIQUE en base : un compte Google ne correspond qu'à un seul User.
+     */
+    @Column(name = "google_sub", unique = true)
+    private String googleSub;
+
+    /** URL de l'avatar Google (optionnel, nullable). */
+    @Column(name = "picture_url")
+    private String pictureUrl;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private UserRole role = UserRole.USER;
@@ -86,6 +100,10 @@ public class User {
     public void setEmail(String email) { this.email = email; }
     public String getPasswordHash() { return passwordHash; }
     public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
+    public String getGoogleSub() { return googleSub; }
+    public void setGoogleSub(String googleSub) { this.googleSub = googleSub; }
+    public String getPictureUrl() { return pictureUrl; }
+    public void setPictureUrl(String pictureUrl) { this.pictureUrl = pictureUrl; }
     public UserRole getRole() { return role; }
     public void setRole(UserRole role) { this.role = role; }
     public boolean isEnabled() { return enabled; }
