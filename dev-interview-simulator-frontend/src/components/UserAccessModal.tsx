@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from './common/Button';
 import { PageTitle } from './common/PageTitle';
 import { Mail, UserRound, X } from 'lucide-react';
@@ -20,6 +20,37 @@ interface Props {
 
 type AccessMode = 'login' | 'register';
 
+/**
+ * Client ID OAuth Google (console Google Cloud → identifiants Web).
+ * Absent en dev tant que VITE_GOOGLE_CLIENT_ID n'est pas défini : le bouton
+ * Google est alors simplement masqué et le formulaire classique reste
+ * pleinement fonctionnel (aucun écran d'erreur).
+ */
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
+
+/** Chargement unique (partagé entre ouvertures) du script Google Identity Services. */
+let googleScriptPromise: Promise<void> | null = null;
+const loadGoogleScript = (): Promise<void> => {
+  if (googleScriptPromise) return googleScriptPromise;
+  googleScriptPromise = new Promise<void>((resolve, reject) => {
+    if ((window as any).google?.accounts?.id) {
+      resolve();
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = () => resolve();
+    script.onerror = () => {
+      googleScriptPromise = null;
+      reject(new Error('Script Google Identity Services indisponible.'));
+    };
+    document.head.appendChild(script);
+  });
+  return googleScriptPromise;
+};
+
 export const UserAccessModal = ({ onClose, onAuthenticated }: Props) => {
   const [mode, setMode] = useState<AccessMode>('login');
   const [usernameOrEmail, setUsernameOrEmail] = useState('');
@@ -27,6 +58,67 @@ export const UserAccessModal = ({ onClose, onAuthenticated }: Props) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Bouton « Continuer avec Google » (GIS) — conteneur rendu par le script Google.
+  const googleButtonRef = useRef<HTMLDivElement>(null);
+  // Dernier callback reçu : le script GIS capture une référence, pas l'état courant.
+  const authCallbackRef = useRef(onAuthenticated);
+  useEffect(() => {
+    authCallbackRef.current = onAuthenticated;
+  }, [onAuthenticated]);
+
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID || !googleButtonRef.current) return;
+    let cancelled = false;
+
+    const handleCredential = async (response: { credential?: string }) => {
+      if (!response.credential) return;
+      setError(null);
+      setLoading(true);
+      try {
+        // ID token Google → POST /api/auth/google → MÊME AuthResponse qu'un login.
+        const auth = await authApi.google(response.credential);
+        authCallbackRef.current({
+          id: auth.userId,
+          username: auth.username,
+          email: auth.email,
+          role: auth.role,
+          profile: auth.profile ?? undefined,
+        });
+      } catch (err: any) {
+        console.error(err);
+        clearStoredAuth();
+        setError(err.response?.data?.message || 'Connexion Google impossible. Réessayez.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadGoogleScript()
+      .then(() => {
+        const google = (window as any).google;
+        if (cancelled || !google?.accounts?.id || !googleButtonRef.current) return;
+        googleButtonRef.current.innerHTML = '';
+        google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: handleCredential,
+        });
+        google.accounts.id.renderButton(googleButtonRef.current, {
+          theme: 'outline',
+          size: 'large',
+          text: 'continue_with',
+          shape: 'rectangular',
+          width: 300,
+        });
+      })
+      .catch(() => {
+        // GPS script bloqué/indisponible : on ne montre rien, le formulaire reste.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -165,6 +257,18 @@ export const UserAccessModal = ({ onClose, onAuthenticated }: Props) => {
             {mode === 'login' ? 'Se connecter' : 'Créer mon compte'}
           </Button>
         </form>
+
+        {GOOGLE_CLIENT_ID && (
+          <div className="mt-5 border-t border-border-subtle pt-5">
+            <div className="mb-3 flex items-center gap-3 text-[11px] uppercase tracking-[0.14em] text-ink-muted">
+              <span className="h-px flex-1 bg-border-subtle" />
+              ou
+              <span className="h-px flex-1 bg-border-subtle" />
+            </div>
+            {/* Rendu par Google Identity Services (data-callback ci-dessus). */}
+            <div ref={googleButtonRef} className="flex justify-center" />
+          </div>
+        )}
       </div>
     </div>
   );

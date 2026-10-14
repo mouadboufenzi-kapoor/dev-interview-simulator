@@ -29,7 +29,7 @@ const MODES: ModeCardConfig[] = [
   },
   {
     id: 'SEQUENTIAL_REASONING',
-    title: 'Raisonnement séquentiel',
+    title: 'Raisonnement',
     description: "Remettez des étapes dans l'ordre logique (debug, test, pipeline...).",
     icon: ListOrdered,
   },

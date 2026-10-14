@@ -1,8 +1,12 @@
 import axios from 'axios';
 import { clearStoredAuth } from './authStorage';
 
+// URL de l'API : surchargeable par VITE_API_URL (prod). Le chemin /api est
+// toujours requis — le backend mappe toutes les routes sous /api/**.
+const rawApiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api';
+
 export const apiClient = axios.create({
-  baseURL: 'http://localhost:8080/api',
+  baseURL: rawApiUrl.replace(/\/$/, ''),
   headers: {
     'Content-Type': 'application/json',
   },

@@ -94,6 +94,24 @@ export const authApi = {
     return authResponse;
   },
   
+  /**
+   * Connexion/inscription via Google : le ID token GIS est envoyé au backend
+   * qui le vérifie puis renvoie le même AuthResponse qu'un login classique.
+   */
+  google: async (idToken: string): Promise<AuthResponse> => {
+    clearStoredAuth();
+    const response = await apiClient.post<AuthResponse>('/auth/google', { idToken });
+    let authResponse: AuthResponse;
+    try {
+      authResponse = normalizeAuthResponse(response.data);
+    } catch (error) {
+      clearStoredAuth();
+      throw error;
+    }
+    persistAuth(authResponse);
+    return authResponse;
+  },
+
   logout: () => {
     clearStoredAuth();
   }
