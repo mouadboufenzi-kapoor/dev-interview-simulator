@@ -12,11 +12,33 @@ import java.util.Set;
 @Service
 public class ScoringService {
 
+    /**
+     * Sélection exacte : toutes les options choisies sont correctes ET leur
+     * nombre correspond au nombre de bonnes réponses. C'est LE critère unique
+     * du verdict « correct » — le score en découle pour garantir l'invariants
+     * « points pleins ⇔ réponse correcte » (aucun écran ne peut contredire les
+     * réponses données).
+     */
+    public boolean isExactSelection(Challenge challenge, Set<ChallengeOption> selectedOptions) {
+        if (selectedOptions.isEmpty()) {
+            return false;
+        }
+        long correctCount = challenge.getOptions().stream()
+                .filter(ChallengeOption::isCorrect)
+                .count();
+        return selectedOptions.stream().allMatch(ChallengeOption::isCorrect)
+                && selectedOptions.size() == correctCount;
+    }
+
     public int calculateScore(Challenge challenge, Set<ChallengeOption> selectedOptions) {
+        boolean exact = isExactSelection(challenge, selectedOptions);
+
+        // Sélection unique (QCM, Code Review, Architecture…) : points pleins si
+        // et seulement si la sélection est exacte, sinon 0. (Ancienne règle
+        // « anyMatch » : donnait des points pleins à une réponse marquée
+        // incorrecte dès qu'une question SINGLE avait plusieurs bonnes réponses.)
         if (challenge.getSelectionType() != SelectionType.MULTIPLE_CHOICE) {
-            return selectedOptions.stream().anyMatch(ChallengeOption::isCorrect)
-                    ? challenge.getPoints()
-                    : 0;
+            return exact ? challenge.getPoints() : 0;
         }
 
         long correctCount = challenge.getOptions().stream()
@@ -25,7 +47,13 @@ public class ScoringService {
         if (correctCount == 0) {
             return 0;
         }
+        if (exact) {
+            return challenge.getPoints();
+        }
 
+        // Crédit partiel MULTIPLE : (bons − 0,5 × faux) × points/bons, plancher 0.
+        // Jamais de points pleins sans sélection exacte (bornage à points − 1)
+        // pour que « score = maximum » implique toujours « réponse correcte ».
         long selectedCorrectCount = selectedOptions.stream()
                 .filter(ChallengeOption::isCorrect)
                 .count();
@@ -36,7 +64,8 @@ public class ScoringService {
         double score = (selectedCorrectCount - (0.5 * selectedIncorrectCount))
                 * pointsPerCorrectOption;
 
-        return (int) Math.max(0, Math.round(score));
+        int rounded = (int) Math.max(0, Math.round(score));
+        return Math.min(rounded, Math.max(challenge.getPoints() - 1, 0));
     }
 
     /**

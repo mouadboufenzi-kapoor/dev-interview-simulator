@@ -162,6 +162,22 @@ public class AdminChallengeService {
             }
             challenge.getOptions().forEach(option -> option.setCorrect(true));
         }
+
+        // Cohérence scoring : un contenu à sélection unique doit avoir
+        // exactement une bonne réponse, sinon le verdict « correct » et les
+        // points pleins divergent (cf. ScoringService.isExactSelection).
+        // Le séquentiel est exclu : toutes ses étapes sont correctes par définition.
+        if (challenge.getType() != ChallengeType.SEQUENTIAL_REASONING
+                && challenge.getSelectionType() == SelectionType.SINGLE_CHOICE
+                && !challenge.getOptions().isEmpty()) {
+            long singleCorrectCount = challenge.getOptions().stream()
+                    .filter(ChallengeOption::isCorrect)
+                    .count();
+            if (singleCorrectCount != 1) {
+                throw new ApiException(HttpStatus.BAD_REQUEST,
+                        "Un contenu à sélection unique doit avoir exactement une bonne réponse.");
+            }
+        }
     }
 
     private void applyScenario(Challenge challenge, AdminChallengeRequest request) {

@@ -316,10 +316,10 @@ public class SimulationService {
         }
 
         Set<ChallengeOption> selectedOptionSet = new LinkedHashSet<>(selectedOptions);
-        boolean isCorrect = selectedOptionSet.stream().allMatch(ChallengeOption::isCorrect)
-                && selectedOptionSet.size() == simChallenge.getChallenge().getOptions().stream()
-                .filter(ChallengeOption::isCorrect)
-                .count();
+        // Verdict et score partagent le même critère (ScoringService) :
+        // points pleins ⇔ réponse correcte, jamais l'un sans l'autre.
+        boolean isCorrect = scoringService.isExactSelection(
+                simChallenge.getChallenge(), selectedOptionSet);
         int scoreAwarded = scoringService.calculateScore(simChallenge.getChallenge(), selectedOptionSet);
 
         SimulationAnswer answer = new SimulationAnswer();
@@ -512,10 +512,14 @@ public class SimulationService {
                 .map(answer -> {
                     Challenge challenge = answer.getSimulationChallenge().getChallenge();
 
-                    ChallengeOption correctOption = challenge.getOptions().stream()
+                    // Toutes les bonnes options (et non plus la première seule) :
+                    // un QCM multiple doit afficher l'intégralité de la bonne réponse.
+                    // En séquentiel, l'ordre des options = l'ordre attendu.
+                    String correctContent = challenge.getOptions().stream()
                             .filter(ChallengeOption::isCorrect)
-                            .findFirst()
-                            .orElse(null);
+                            .sorted(Comparator.comparingInt(ChallengeOption::getDisplayOrder))
+                            .map(ChallengeOption::getContent)
+                            .collect(java.util.stream.Collectors.joining(", "));
 
                     return new SimulationResultDTO.QuestionSummaryDTO(
                             challenge.getId(),
@@ -525,7 +529,7 @@ public class SimulationService {
                             answer.getSelectedOptions().stream()
                                     .map(ChallengeOption::getContent)
                                     .collect(java.util.stream.Collectors.joining(", ")),
-                            correctOption != null ? correctOption.getContent() : "Inconnue",
+                            !correctContent.isBlank() ? correctContent : "Inconnue",
                             answer.isCorrect(),
                             challenge.getExplanation(),
                             answer.getScore(),
@@ -552,9 +556,12 @@ public class SimulationService {
                         : 0L)
                 .sum() / 1000;
 
-        double successPercentage = maxScore > 0
-                ? ((double) totalScore / maxScore) * 100
-                : 0.0;
+        // Taux de réussite = bonnes réponses / nombre total de questions
+        // (invariant métier). Le ratio points/points reste affiché
+        // séparément via totalScore / maxPossibleScore.
+        double successPercentage = answers.isEmpty()
+                ? 0.0
+                : ((double) correctAnswersCount / answers.size()) * 100;
 
         // Breakdown par compétence, fondé sur les données existantes
         // (Challenge.skills / Challenge.categories × réponse) : aucun nouveau calcul de scoring.
