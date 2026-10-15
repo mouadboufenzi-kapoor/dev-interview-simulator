@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { LogoMark } from './LogoMark';
 import { ThemeToggle } from './ThemeToggle';
 import { Badge } from './Badge';
@@ -36,31 +36,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenAdmin,
 }) => {
   const [showQuitModal, setShowQuitModal] = useState(false);
-  const [showPlusMenu, setShowPlusMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showAccessModal, setShowAccessModal] = useState(false);
-  const plusMenuRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown on click outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        plusMenuRef.current &&
-        !plusMenuRef.current.contains(event.target as Node)
-      ) {
-        setShowPlusMenu(false);
-      }
-      if (
-        userMenuRef.current &&
-        !userMenuRef.current.contains(event.target as Node)
-      ) {
-        setShowUserMenu(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   const getModeLabel = (m?: ChallengeType) => {
     switch (m) {
