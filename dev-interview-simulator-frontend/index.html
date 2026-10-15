@@ -1,12 +1,39 @@
 <!doctype html>
-<html lang="en">
+<!-- Point de bascule i18n (étape 12) : lang et title sont en FR.
+     Pour une version EN : basculer lang="en" et traduire <title>. -->
+<html lang="fr">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>dev-interview-simulator-frontend</title>
+    <title>InterviewLab — Préparation d'entretiens techniques</title>
+    <!-- Thème anti-flash : s'exécute AVANT le premier rendu, lit les préférences
+         (theme = soleil|menthe, mode = light|dark|system), résout « system » via
+         prefers-color-scheme, puis pose data-theme + data-mode sur <html>.
+         Valeurs par défaut : theme = soleil, mode = system. (spec §20) -->
+    <script>
+      (function () {
+        try {
+          var palette = localStorage.getItem('theme');
+          if (palette !== 'soleil' && palette !== 'menthe') palette = 'soleil';
+          var mode = localStorage.getItem('mode');
+          if (mode !== 'light' && mode !== 'dark' && mode !== 'system') mode = 'system';
+          var resolved =
+            mode === 'system'
+              ? window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light'
+              : mode;
+          var root = document.documentElement;
+          root.setAttribute('data-theme', palette);
+          root.setAttribute('data-mode', resolved);
+        } catch (e) {
+          /* stockage indisponible : défaut soleil/system déjà en place */
+        }
+      })();
+    </script>
   </head>
-  <body>
+  <body class="antialiased">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

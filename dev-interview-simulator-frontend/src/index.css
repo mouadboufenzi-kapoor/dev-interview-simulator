@@ -1,1 +1,382 @@
 @import "tailwindcss";
+
+/* Variante « dark » repointée : au lieu de la classe .dark, on lit
+   l'attribut data-mode="dark" posé sur <html> par le sélecteur de thème.
+   Les utilitaires dark: existants continuent donc de fonctionner à l'identique. */
+@custom-variant dark (&:where([data-mode="dark"], [data-mode="dark"] *));
+
+@theme {
+  /* ===== Polices (auto-hébergées via @fontsource, pas de Google Fonts) ===== */
+  --font-sans: "Space Grotesk", system-ui, -apple-system, sans-serif;
+  --font-mono: "Space Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-serif: "Space Grotesk", system-ui, sans-serif;
+
+  /* ===== Tokens structurels « Contraste » ===== */
+  --bw: 2px;
+  --radius: 4px;
+  --radius-lg: 6px;
+  --shadow-offset: 3px 3px 0;
+
+  /* Échelle de rayons : plat / brutaliste (les cartes ne sont plus « pill »).
+     rounded-full (pastilles, avatars) reste circular — non défini ici. */
+  --radius-xs: 2px;
+  --radius-sm: 3px;
+  --radius-md: var(--radius);
+  --radius-lg: var(--radius);
+  --radius-xl: var(--radius-lg);
+  --radius-2xl: var(--radius-lg);
+  --radius-3xl: var(--radius-lg);
+
+  /* Ombres décalées pleines (aucun blur) — pilotées par --color-shadow. */
+  --shadow-card: 2px 2px 0 var(--color-shadow);
+  --shadow-panel: var(--shadow-offset) var(--color-shadow);
+  --shadow-elevated: 4px 4px 0 var(--color-shadow);
+  --shadow-modal: 6px 6px 0 var(--color-shadow);
+
+  /* ===== Tokens couleurs — palette par défaut : Soleil / Clair ===== */
+  --color-bg: #F2F2EC;
+  --color-nav: #FFD23F;
+  --color-card: #FFFFFF;
+  --color-border: #111111;
+  --color-text: #111111;
+  --color-muted: #555555;
+  --color-brand: #123C69;
+  --color-accent: #FF5A36;
+  --color-selected: #FFE88A;
+  --color-cta-bg: #123C69;
+  --color-cta-text: #FFFFFF;
+  --color-cta-border: #111111;
+  --color-shadow: #111111;
+  --color-wordmark-accent: #123C69;
+  --color-success: #1F9D55;
+  --color-success-bg: #D6F5E3;
+  --color-error: #D93025;
+  --color-error-bg: #FDE0DC;
+
+  /* ===== Anciens tokens (génèrent les utilitaires existants) =====
+     Valeurs par défaut = Soleil/Clair. Re-teintés par les blocs [data-theme]
+     ci-dessous : chaque ancien nom pointe vers un token canonique via var(). */
+  --color-canvas: #F2F2EC;
+  --color-canvas-subtle: #F2F2EC;
+  --color-surface: #FFFFFF;
+  --color-surface-elevated: #FFFFFF;
+  --color-border-subtle: #111111;
+  --color-border-strong: #555555;
+  --color-card-border: #111111;
+  --color-ink: #111111;
+  --color-ink-secondary: #555555;
+  --color-ink-muted: #555555;
+  --color-ink-warm: #555555;
+  --color-navy-950: #123C69;
+  --color-navy-900: #123C69;
+  --color-navy-800: #123C69;
+  --color-navy-700: #123C69;
+  --color-navy-200: #111111;
+  --color-navy-100: #FFE88A;
+  --color-navy-50: #F2F2EC;
+  --color-crimson-900: #FF5A36;
+  --color-crimson-800: #FF5A36;
+  --color-crimson-700: #FF5A36;
+  --color-crimson-600: #FF5A36;
+  --color-crimson-200: #111111;
+  --color-crimson-100: #FFE88A;
+  --color-crimson-50: #F2F2EC;
+  --color-peach-500: #FFD23F;
+  --color-peach-400: #FFD23F;
+  --color-peach-300: #FFD23F;
+  --color-peach-100: #FFE88A;
+  --color-peach-50: #F2F2EC;
+  --color-peach-ink: #111111;
+  --color-sand-100: #FFD23F;
+  --color-sand-300: #FFD23F;
+  --color-success-strong: #1F9D55;
+  --color-success-surface: #D6F5E3;
+  --color-success-soft: #D6F5E3;
+  --color-success-border: #1F9D55;
+  --color-danger: #D93025;
+  --color-danger-soft: #FDE0DC;
+  --color-danger-soft-hover: #FDE0DC;
+  --color-danger-border: #D93025;
+  --color-warning: #FF5A36;
+  --color-warning-soft: #FFE88A;
+  --color-warning-border: #111111;
+  --color-warning-accent: #FF5A36;
+}
+
+/* =====================================================================
+   COMBINAISONS DE THÈME — posées sur <html data-theme data-mode>.
+   data-theme = soleil | menthe ; data-mode = light | dark.
+   Le mode « system » est résolu côté JS en light/dark avant d'être écrit
+   sur l'attribut : il n'existe AUCUN mode CSS « system ».
+   Chaque bloc définit les tokens canoniques ; les anciens noms sont
+   re-teintés une seule fois plus bas via var() (non listés ici).
+   ===================================================================== */
+[data-theme="soleil"][data-mode="light"] {
+  --color-bg: #F2F2EC;
+  --color-nav: #FFD23F;
+  --color-card: #FFFFFF;
+  --color-border: #111111;
+  --color-text: #111111;
+  --color-muted: #555555;
+  --color-brand: #123C69;
+  --color-accent: #FF5A36;
+  --color-selected: #FFE88A;
+  --color-cta-bg: #123C69;
+  --color-cta-text: #FFFFFF;
+  --color-cta-border: #111111;
+  --color-shadow: #111111;
+  --color-wordmark-accent: #123C69;
+  --color-success: #1F9D55;
+  --color-success-bg: #D6F5E3;
+  --color-error: #D93025;
+  --color-error-bg: #FDE0DC;
+}
+
+[data-theme="soleil"][data-mode="dark"] {
+  --color-bg: #121212;
+  --color-nav: #1A1A1A;
+  --color-card: #1A1A1A;
+  --color-border: #F5F5F0;
+  --color-text: #F5F5F0;
+  --color-muted: #A8A8A0;
+  --color-brand: #7FA8D6;
+  --color-accent: #FF7A59;
+  --color-selected: #2A2610;
+  --color-cta-bg: #FFD23F;
+  --color-cta-text: #111111;
+  --color-cta-border: #F5F5F0;
+  --color-shadow: #FFD23F;
+  --color-wordmark-accent: #FFD23F;
+  --color-success: #4ADE80;
+  --color-success-bg: #12301F;
+  --color-error: #FF6B5E;
+  --color-error-bg: #3A1714;
+}
+
+[data-theme="menthe"][data-mode="light"] {
+  --color-bg: #F6F4EE;
+  --color-nav: #8FE3C0;
+  --color-card: #FFFFFF;
+  --color-border: #111111;
+  --color-text: #111111;
+  --color-muted: #555555;
+  --color-brand: #123C69;
+  --color-accent: #FF5A36;
+  --color-selected: #D3F5E5;
+  --color-cta-bg: #123C69;
+  --color-cta-text: #FFFFFF;
+  --color-cta-border: #111111;
+  --color-shadow: #111111;
+  --color-wordmark-accent: #123C69;
+  --color-success: #1F9D55;
+  --color-success-bg: #D6F5E3;
+  --color-error: #D93025;
+  --color-error-bg: #FDE0DC;
+}
+
+[data-theme="menthe"][data-mode="dark"] {
+  --color-bg: #101A17;
+  --color-nav: #14241F;
+  --color-card: #15221E;
+  --color-border: #E6F5EE;
+  --color-text: #E6F5EE;
+  --color-muted: #8FB0A2;
+  --color-brand: #8FE3C0;
+  --color-accent: #FF7A59;
+  --color-selected: #1B3A2E;
+  --color-cta-bg: #8FE3C0;
+  --color-cta-text: #0E1A16;
+  --color-cta-border: #E6F5EE;
+  --color-shadow: #8FE3C0;
+  --color-wordmark-accent: #8FE3C0;
+  --color-success: #4ADE80;
+  --color-success-bg: #12301F;
+  --color-error: #FF6B5E;
+  --color-error-bg: #3A1714;
+}
+
+/* ===== Re-teintage des anciens tokens → palette canonique =====
+   Règle unique, valable pour les 4 combinaisons : la résolution var() se
+   fait sur l'élément <html> qui porte déjà les tokens canoniques actifs.
+   Les ~30 composants non réécrits suivent donc la nouvelle palette sans
+   changer une seule classe. CSS non-layeré : écrase les valeurs @theme. */
+:root,
+[data-theme] {
+  --color-canvas: var(--color-bg);
+  --color-canvas-subtle: var(--color-bg);
+
+  --color-surface: var(--color-card);
+  --color-surface-elevated: var(--color-card);
+
+  --color-border-subtle: var(--color-border);
+  --color-border-strong: var(--color-muted);
+  --color-card-border: var(--color-border);
+
+  --color-ink: var(--color-text);
+  --color-ink-secondary: var(--color-muted);
+  --color-ink-muted: var(--color-muted);
+  --color-ink-warm: var(--color-muted);
+
+  --color-navy-950: var(--color-brand);
+  --color-navy-900: var(--color-brand);
+  --color-navy-800: var(--color-brand);
+  --color-navy-700: var(--color-brand);
+  --color-navy-200: var(--color-border);
+  --color-navy-100: var(--color-selected);
+  --color-navy-50: var(--color-bg);
+
+  --color-crimson-900: var(--color-accent);
+  --color-crimson-800: var(--color-accent);
+  --color-crimson-700: var(--color-accent);
+  --color-crimson-600: var(--color-accent);
+  --color-crimson-200: var(--color-border);
+  --color-crimson-100: var(--color-selected);
+  --color-crimson-50: var(--color-bg);
+
+  --color-peach-500: var(--color-nav);
+  --color-peach-400: var(--color-nav);
+  --color-peach-300: var(--color-nav);
+  --color-peach-100: var(--color-selected);
+  --color-peach-50: var(--color-bg);
+  --color-peach-ink: var(--color-text);
+  --color-sand-100: var(--color-nav);
+  --color-sand-300: var(--color-nav);
+
+  --color-success-strong: var(--color-success);
+  --color-success-surface: var(--color-success-bg);
+  --color-success-soft: var(--color-success-bg);
+  --color-success-border: var(--color-success);
+
+  --color-danger: var(--color-error);
+  --color-danger-soft: var(--color-error-bg);
+  --color-danger-soft-hover: var(--color-error-bg);
+  --color-danger-border: var(--color-error);
+
+  --color-warning: var(--color-accent);
+  --color-warning-soft: var(--color-selected);
+  --color-warning-border: var(--color-border);
+  --color-warning-accent: var(--color-accent);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    min-height: 100vh;
+  }
+
+  /* Titres : Space Grotesk 700, interlettrage serré (spec §6). */
+  h1, h2, h3, h4, h5, h6 {
+    letter-spacing: -0.02em;
+  }
+
+  /* Labels / numéros / badges / minuteur : Space Mono, capitales, `.06em`. */
+  .font-mono,
+  code, pre, kbd {
+    font-family: var(--font-mono);
+  }
+
+  /* Selection de marque. */
+  ::selection {
+    background-color: var(--color-selected);
+    color: var(--color-text);
+  }
+
+  /* Accessibilité : focus visible cohérent, brutaliste, sur tous les
+     éléments interactifs (spec §13 / §17). */
+  a, button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"]) {
+    outline-color: var(--color-brand);
+  }
+  :focus-visible {
+    outline: 3px solid var(--color-brand);
+    outline-offset: 2px;
+  }
+}
+
+/* Custom subtle scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-muted);
+}
+
+/* ===== Transition d'écran (navigation) =====
+   Fade + glissement latéral très subtil, court et discret (260 ms).
+   Centralisée ici, appliquée UNIQUEMENT aux points de navigation. */
+.screen-transition {
+  animation: screen-enter 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes screen-enter {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+}
+
+/* Accessibilité : mouvement réduit (spec §17 / §9).
+   Désactive les translates (boutons) et les animations non nécessaires. */
+@media (prefers-reduced-motion: reduce) {
+  .screen-transition {
+    animation: none;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  /* Aucun translate sous mouvement réduit : les boutons restent plats. */
+  button, a, .translate-cta {
+    transform: none !important;
+  }
+}
+
+/* ===== Boutons principaux « Contraste » (spec §9) =====
+   Variante CTA utilitaire : bordure --bw, rayon --radius, ombre décalée
+   pleine. Le hover translate(-1px,-1px) + ombre augmentée, active translate
+   (3px,3px) + ombre nulle, transition 80ms, disabled opacity .5 sans ombre.
+   Le translate est neutralisé par prefers-reduced-motion ci-dessus. */
+.cta-brutal {
+  background: var(--color-cta-bg);
+  color: var(--color-cta-text);
+  border: var(--bw) solid var(--color-cta-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-offset) var(--color-shadow);
+  transition: transform 80ms ease, box-shadow 80ms ease, background-color 80ms ease;
+}
+.cta-brutal:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 var(--color-shadow);
+}
+.cta-brutal:active:not(:disabled) {
+  transform: translate(3px, 3px);
+  box-shadow: none;
+}
+.cta-brutal:disabled {
+  opacity: 0.5;
+  box-shadow: none;
+}

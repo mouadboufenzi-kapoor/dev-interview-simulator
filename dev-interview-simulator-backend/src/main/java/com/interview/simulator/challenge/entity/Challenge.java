@@ -1,0 +1,176 @@
+package com.interview.simulator.challenge.entity;
+
+import com.interview.simulator.category.entity.Category;
+import com.interview.simulator.skill.entity.Skill;
+import com.interview.simulator.profile.entity.Profile;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+@Entity
+@Table(name = "challenges")
+public class Challenge {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @NotBlank
+    @Column(nullable = false)
+    private String title;
+
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ChallengeType type;
+
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private DifficultyLevel difficulty;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "selection_type", nullable = false, length = 20)
+    private SelectionType selectionType = SelectionType.SINGLE_CHOICE;
+
+    @Column(columnDefinition = "TEXT")
+    private String context;
+
+    @NotBlank
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String question;
+
+    @Column(name = "code_snippet", columnDefinition = "TEXT")
+    private String codeSnippet;
+
+    @Column(name = "code_language", length = 30)
+    private String codeLanguage;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "scenario_id")
+    private InterviewScenario scenario;
+
+    @Column(name = "step_order")
+    private Integer stepOrder;
+
+    @Column(name = "revealed_information", columnDefinition = "TEXT")
+    private String revealedInformation;
+
+    @Column(columnDefinition = "TEXT")
+    private String tradeoff;
+
+    @Column(columnDefinition = "TEXT")
+    private String explanation;
+
+    @Column(name = "estimated_time_seconds")
+    private Integer estimatedTimeSeconds;
+
+    @Column(nullable = false)
+    private boolean active = true;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private ContentStatus status = ContentStatus.VALIDATED;
+
+    @Column(nullable = false)
+    private Integer points = 10;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @OneToMany(mappedBy = "challenge", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ChallengeOption> options = new ArrayList<>();
+
+    @ManyToMany
+    @JoinTable(
+        name = "challenge_categories",
+        joinColumns = @JoinColumn(name = "challenge_id"),
+        inverseJoinColumns = @JoinColumn(name = "category_id")
+    )
+    private Set<Category> categories = new HashSet<>();
+
+    @ManyToMany
+    @JoinTable(
+        name = "challenge_skills",
+        joinColumns = @JoinColumn(name = "challenge_id"),
+        inverseJoinColumns = @JoinColumn(name = "skill_id")
+    )
+    private Set<Skill> skills = new HashSet<>();
+
+    @ManyToMany
+    @JoinTable(
+        name = "challenge_profiles",
+        joinColumns = @JoinColumn(name = "challenge_id"),
+        inverseJoinColumns = @JoinColumn(name = "profile_id")
+    )
+    private Set<Profile> profiles = new HashSet<>();
+
+    public Challenge() {
+    }
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public Long getId() { return id; }
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
+    public ChallengeType getType() { return type; }
+    public void setType(ChallengeType type) { this.type = type; }
+    public DifficultyLevel getDifficulty() { return difficulty; }
+    public void setDifficulty(DifficultyLevel difficulty) { this.difficulty = difficulty; }
+    public SelectionType getSelectionType() { return selectionType; }
+    public void setSelectionType(SelectionType selectionType) { this.selectionType = selectionType; }
+    public String getContext() { return context; }
+    public void setContext(String context) { this.context = context; }
+    public String getQuestion() { return question; }
+    public void setQuestion(String question) { this.question = question; }
+    public String getCodeSnippet() { return codeSnippet; }
+    public void setCodeSnippet(String codeSnippet) { this.codeSnippet = codeSnippet; }
+    public String getCodeLanguage() { return codeLanguage; }
+    public void setCodeLanguage(String codeLanguage) { this.codeLanguage = codeLanguage; }
+    public InterviewScenario getScenario() { return scenario; }
+    public void setScenario(InterviewScenario scenario) { this.scenario = scenario; }
+    public Integer getStepOrder() { return stepOrder; }
+    public void setStepOrder(Integer stepOrder) { this.stepOrder = stepOrder; }
+    public String getRevealedInformation() { return revealedInformation; }
+    public void setRevealedInformation(String revealedInformation) { this.revealedInformation = revealedInformation; }
+    public String getTradeoff() { return tradeoff; }
+    public void setTradeoff(String tradeoff) { this.tradeoff = tradeoff; }
+    public String getExplanation() { return explanation; }
+    public void setExplanation(String explanation) { this.explanation = explanation; }
+    public Integer getEstimatedTimeSeconds() { return estimatedTimeSeconds; }
+    public void setEstimatedTimeSeconds(Integer estimatedTimeSeconds) { this.estimatedTimeSeconds = estimatedTimeSeconds; }
+    public boolean isActive() { return active; }
+    public void setActive(boolean active) { this.active = active; }
+    public ContentStatus getStatus() { return status; }
+    public void setStatus(ContentStatus status) { this.status = status; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public List<ChallengeOption> getOptions() { return options; }
+    public Set<Category> getCategories() { return categories; }
+    public Set<Skill> getSkills() { return skills; }
+    public Set<Profile> getProfiles() { return profiles; }
+    public Integer getPoints() { 
+        return points; 
+    }
+    public void setPoints(Integer points) { 
+        this.points = points; 
+    }
+}

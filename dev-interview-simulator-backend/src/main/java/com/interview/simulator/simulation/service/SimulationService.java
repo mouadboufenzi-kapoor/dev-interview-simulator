@@ -1,0 +1,634 @@
+package com.interview.simulator.simulation.service;
+
+import com.interview.simulator.challenge.entity.Challenge;
+import com.interview.simulator.challenge.entity.ChallengeOption;
+import com.interview.simulator.challenge.entity.ChallengeType;
+import com.interview.simulator.challenge.entity.ContentStatus;
+import com.interview.simulator.challenge.entity.InterviewScenario;
+import com.interview.simulator.challenge.entity.SelectionType;
+import com.interview.simulator.challenge.repository.ChallengeOptionRepository;
+import com.interview.simulator.challenge.repository.ChallengeRepository;
+import com.interview.simulator.challenge.repository.InterviewScenarioRepository;
+import com.interview.simulator.category.entity.Category;
+import com.interview.simulator.skill.entity.Skill;
+import com.interview.simulator.simulation.dto.SimulationChallengeResponse;
+import com.interview.simulator.simulation.dto.ChallengeCorrectionDTO;
+import com.interview.simulator.simulation.dto.SimulationResponse;
+import com.interview.simulator.simulation.dto.SimulationResultDTO;
+import com.interview.simulator.simulation.dto.SimulationSummaryResponse;
+import com.interview.simulator.simulation.dto.StartSimulationRequest;
+import com.interview.simulator.simulation.dto.SubmitAnswerRequest;
+import com.interview.simulator.simulation.dto.SubmitAnswerResponse;
+import com.interview.simulator.simulation.entity.Simulation;
+import com.interview.simulator.simulation.entity.SimulationAnswer;
+import com.interview.simulator.simulation.entity.SimulationChallenge;
+import com.interview.simulator.simulation.entity.SimulationStatus;
+import com.interview.simulator.simulation.repository.SimulationChallengeRepository;
+import com.interview.simulator.simulation.repository.SimulationAnswerRepository;
+import com.interview.simulator.simulation.repository.SimulationRepository;
+import com.interview.simulator.user.entity.User;
+import com.interview.simulator.user.service.UserResolver;
+import com.interview.simulator.profile.entity.Profile;
+import com.interview.simulator.profile.repository.ProfileRepository;
+import com.interview.simulator.exception.ApiException;
+import com.interview.simulator.exception.ResourceNotFoundException;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
+
+@Service
+public class SimulationService {
+
+    private final SimulationRepository simulationRepository;
+    private final ChallengeRepository challengeRepository;
+    private final UserResolver userResolver;
+    private final SimulationChallengeRepository simulationChallengeRepository;
+    private final ChallengeOptionRepository challengeOptionRepository;
+    private final InterviewScenarioRepository interviewScenarioRepository;
+    private final ScoringService scoringService;
+    private final ProfileRepository profileRepository;
+
+    private final SimulationAnswerRepository simulationAnswerRepository;
+
+    public SimulationService(
+            SimulationRepository simulationRepository,
+            ChallengeRepository challengeRepository,
+            UserResolver userResolver,
+            SimulationChallengeRepository simulationChallengeRepository,
+            ChallengeOptionRepository challengeOptionRepository,
+            InterviewScenarioRepository interviewScenarioRepository,
+            ScoringService scoringService,
+            ProfileRepository profileRepository,
+            SimulationAnswerRepository simulationAnswerRepository) {
+        this.simulationRepository = simulationRepository;
+        this.challengeRepository = challengeRepository;
+        this.userResolver = userResolver;
+        this.simulationChallengeRepository = simulationChallengeRepository;
+        this.challengeOptionRepository = challengeOptionRepository;
+        this.interviewScenarioRepository = interviewScenarioRepository;
+        this.scoringService = scoringService;
+        this.profileRepository = profileRepository;
+        this.simulationAnswerRepository = simulationAnswerRepository;
+    }
+
+    @Transactional
+    public SimulationResponse startSimulation(StartSimulationRequest request) {
+        // 1. Résolution de l'utilisateur : connecté → son compte ; invité → default_user (trial sans historique)
+        User user = userResolver.resolveOrCreate();
+
+        // 2. Trouver les challenges correspondants au mode
+        List<Challenge> matchingChallenges;
+        InterviewScenario scenario = null;
+        Profile profile = request.profileId() != null
+                ? profileRepository.findById(request.profileId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Profil non trouvé."))
+                : null;
+
+        if (request.mode() == ChallengeType.ARCHITECTURE) {
+            // Tirage au hasard d'un scénario actif disposant d'au moins une étape VALIDATED compatible
+            List<InterviewScenario> availableScenarios = interviewScenarioRepository
+                    .findByModeAndActiveTrue(request.mode());
+            Collections.shuffle(availableScenarios);
+            List<Challenge> scenarioSteps = null;
+            for (InterviewScenario candidate : availableScenarios) {
+                List<Challenge> steps = challengeRepository.findScenarioChallenges(
+                        request.mode(),
+                        request.difficulty(),
+                        profile,
+                        ContentStatus.VALIDATED,
+                        candidate
+                );
+                if (!steps.isEmpty()) {
+                    scenario = candidate;
+                    scenarioSteps = steps;
+                    break;
+                }
+            }
+            if (scenarioSteps == null) {
+                throw new ApiException(
+                        HttpStatus.UNPROCESSABLE_ENTITY,
+                        "Aucun scénario Architecture disponible."
+                );
+            }
+            matchingChallenges = scenarioSteps;
+        } else {
+            matchingChallenges = challengeRepository.findMatchingChallenges(
+                    request.mode(),
+                    request.difficulty(),
+                    profile,
+                    ContentStatus.VALIDATED,
+                    request.categoryIds(),
+                    request.skillIds()
+            );
+        }
+
+        if (matchingChallenges.isEmpty()) {
+            throw new ApiException(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Aucune question trouvée pour les critères sélectionnés."
+            );
+        }
+
+        // Exclusion optionnelle (ciblage depuis le bilan) : ne repropose pas les questions
+        // déjà répondues. Si tout serait exclu, on garde le pool complet (repli sûr).
+        if (request.excludeChallengeIds() != null && !request.excludeChallengeIds().isEmpty()) {
+            List<Challenge> freshChallenges = matchingChallenges.stream()
+                    .filter(challenge -> !request.excludeChallengeIds().contains(challenge.getId()))
+                    .toList();
+            if (!freshChallenges.isEmpty()) {
+                matchingChallenges = freshChallenges;
+            }
+        }
+
+        // 3. Architecture conserve l'ordre des étapes ; les autres modes restent aléatoires
+        List<Challenge> selectedChallenges = new ArrayList<>(matchingChallenges);
+        if (request.mode() != ChallengeType.ARCHITECTURE) {
+            Collections.shuffle(selectedChallenges);
+            if (selectedChallenges.size() > 10) {
+                selectedChallenges = selectedChallenges.subList(0, 10);
+            }
+        } else if (request.questionCount() != null
+                && request.questionCount() < selectedChallenges.size()) {
+            selectedChallenges = selectedChallenges.subList(0, request.questionCount());
+        }
+
+        // 4. Créer la simulation
+        Simulation simulation = new Simulation();
+        simulation.setUser(user);
+        simulation.setMode(request.mode());
+        simulation.setDifficulty(request.difficulty());
+        simulation.setProfile(profile);
+
+        // 5. Associer les questions avec leur ordre d'affichage
+        int order = 1;
+        for (Challenge challenge : selectedChallenges) {
+            SimulationChallenge sc = new SimulationChallenge();
+            sc.setSimulation(simulation);
+            sc.setChallenge(challenge);
+            sc.setDisplayOrder(order++);
+            simulation.getSimulationChallenges().add(sc);
+        }
+
+        Simulation saved = simulationRepository.save(simulation);
+
+        return mapToResponse(saved);
+    }
+
+    // Raisonnement séquentiel : le DTO de démarrage ne doit jamais contenir
+    // l'ordre attendu (displayOrder = la réponse). On mélange et on renumérote
+    // en position de présentation. La correction serveur relit l'entité en base.
+    private List<SimulationChallengeResponse.OptionResponse> presentationOptions(Challenge challenge) {
+        if (challenge.getType() != ChallengeType.SEQUENTIAL_REASONING) {
+            return challenge.getOptions().stream()
+                    .map(o -> new SimulationChallengeResponse.OptionResponse(
+                            o.getId(), o.getContent(), o.getDisplayOrder()))
+                    .toList();
+        }
+        List<ChallengeOption> shuffled = new ArrayList<>(challenge.getOptions());
+        Collections.shuffle(shuffled);
+        List<SimulationChallengeResponse.OptionResponse> options = new ArrayList<>();
+        int presentationPosition = 1;
+        for (ChallengeOption option : shuffled) {
+            options.add(new SimulationChallengeResponse.OptionResponse(
+                    option.getId(), option.getContent(), presentationPosition++));
+        }
+        return options;
+    }
+
+    private SimulationResponse mapToResponse(Simulation simulation) {
+        List<SimulationChallengeResponse> challengeResponses = simulation.getSimulationChallenges().stream()
+                .map(sc -> new SimulationChallengeResponse(
+                        sc.getId(),
+                        sc.getDisplayOrder(),
+                        sc.getChallenge().getId(),
+                        sc.getChallenge().getTitle(),
+                        sc.getChallenge().getContext(),
+                        sc.getChallenge().getQuestion(),
+                        sc.getChallenge().getType(),
+                        sc.getChallenge().getSelectionType(),
+                        sc.getChallenge().getCodeSnippet(),
+                        sc.getChallenge().getCodeLanguage(),
+                        sc.getChallenge().getScenario() != null
+                                ? sc.getChallenge().getScenario().getTitle()
+                                : null,
+                        sc.getChallenge().getScenario() != null
+                                ? sc.getChallenge().getScenario().getDescription()
+                                : null,
+                        sc.getDisplayOrder(),
+                        sc.getChallenge().getScenario() != null
+                                ? simulation.getSimulationChallenges().size()
+                                : null,
+                        null,
+                        null,
+                        presentationOptions(sc.getChallenge())
+                ))
+                .toList();
+
+        return new SimulationResponse(
+                simulation.getId(),
+                simulation.getMode(),
+                simulation.getDifficulty(),
+                simulation.getProfile() != null ? simulation.getProfile().getId() : null,
+                simulation.getStatus(),
+                simulation.getTotalScore(),
+                simulation.getStartedAt(),
+                challengeResponses
+        );
+    }
+
+    @Transactional
+    public SubmitAnswerResponse submitAnswer(Long simulationId, SubmitAnswerRequest request) {
+        Simulation simulation = simulationRepository.findById(simulationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Simulation non trouvée."));
+
+        if (simulation.getStatus() != SimulationStatus.IN_PROGRESS) {
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    "Cette simulation n'est plus en cours."
+            );
+        }
+
+        SimulationChallenge simChallenge = simulationChallengeRepository.findById(request.simulationChallengeId())
+                .orElseThrow(() -> new ResourceNotFoundException("Question de simulation non trouvée."));
+
+        if (!simulationId.equals(simChallenge.getSimulation().getId())) {
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "La question n'appartient pas à cette simulation."
+            );
+        }
+
+        if (simChallenge.getAnswer() != null) {
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    "Une réponse a déjà été enregistrée pour cette question."
+            );
+        }
+
+        // Raisonnement séquentiel : la réponse est une permutation complète des
+        // étapes — traitement dédié (notation par position, ordre attendu).
+        if (simChallenge.getChallenge().getType() == ChallengeType.SEQUENTIAL_REASONING) {
+            return submitSequentialAnswer(simChallenge, request);
+        }
+
+        if (simulation.getMode() == ChallengeType.ARCHITECTURE) {
+            SimulationChallenge expectedChallenge = simulation.getSimulationChallenges().stream()
+                    .filter(challenge -> challenge.getAnswer() == null)
+                    .min(java.util.Comparator.comparingInt(SimulationChallenge::getDisplayOrder))
+                    .orElse(null);
+
+            if (expectedChallenge == null || !expectedChallenge.getId().equals(simChallenge.getId())) {
+                throw new ApiException(
+                        HttpStatus.CONFLICT,
+                        "Les étapes Architecture doivent être répondues dans l'ordre."
+                );
+            }
+        }
+
+        if (simChallenge.getChallenge().getSelectionType() == SelectionType.SINGLE_CHOICE
+                && request.selectedOptionIds().size() != 1) {
+            throw new ApiException(HttpStatus.BAD_REQUEST,
+                    "Une seule option doit être sélectionnée pour cette question.");
+        }
+
+        Set<Long> selectedOptionIds = new LinkedHashSet<>(request.selectedOptionIds());
+        List<ChallengeOption> selectedOptions = selectedOptionIds.stream()
+                .map(optionId -> challengeOptionRepository.findById(optionId)
+                        .orElseThrow(() -> new ResourceNotFoundException(
+                                "Option sélectionnée non trouvée: " + optionId)))
+                .toList();
+
+        if (selectedOptions.stream().anyMatch(option ->
+                !simChallenge.getChallenge().getId().equals(option.getChallenge().getId()))) {
+            throw new ApiException(HttpStatus.BAD_REQUEST,
+                    "Une option sélectionnée n'appartient pas à cette question.");
+        }
+
+        Set<ChallengeOption> selectedOptionSet = new LinkedHashSet<>(selectedOptions);
+        // Verdict et score partagent le même critère (ScoringService) :
+        // points pleins ⇔ réponse correcte, jamais l'un sans l'autre.
+        boolean isCorrect = scoringService.isExactSelection(
+                simChallenge.getChallenge(), selectedOptionSet);
+        int scoreAwarded = scoringService.calculateScore(simChallenge.getChallenge(), selectedOptionSet);
+
+        SimulationAnswer answer = new SimulationAnswer();
+        answer.setSimulationChallenge(simChallenge);
+        answer.setSelectedOptions(selectedOptionSet);
+        answer.setCorrect(isCorrect);
+        answer.setScore(scoreAwarded);
+        answer.setResponseTimeMs(request.responseTimeMs());
+
+        simChallenge.setAnswer(answer);
+
+        // Mise à jour du score global
+        simulation.setTotalScore(simulation.getTotalScore() + scoreAwarded);
+
+        // Trouver l'option correcte pour le feedback
+        ChallengeOption correctOption = simChallenge.getChallenge().getOptions().stream()
+                .filter(ChallengeOption::isCorrect)
+                .findFirst()
+                .orElse(null);
+
+        Long correctOptionId = correctOption != null ? correctOption.getId() : null;
+
+        return new SubmitAnswerResponse(
+                answer.getId(),
+                isCorrect,
+                scoreAwarded,
+                simulation.getTotalScore(),
+                simChallenge.getChallenge().getExplanation(),
+                correctOptionId,
+                simChallenge.getChallenge().getRevealedInformation(),
+                simChallenge.getChallenge().getTradeoff(),
+                ChallengeCorrectionDTO.forOptions(
+                        simChallenge.getChallenge().getOptions(),
+                        selectedOptionIds),
+                null // expectedOrder : réservé au raisonnement séquentiel
+        );
+    }
+
+    // ===== Raisonnement séquentiel =====
+    // La réponse est une PERMUTATION des étapes du challenge. Le DTO de
+    // démarrage ne contenait jamais l'ordre attendu (mélange + renumérotation
+    // dans presentationOptions) ; ici on compare l'ordre soumis à displayOrder
+    // relu en base. Score partiel : points × (positions correctes / total).
+    private SubmitAnswerResponse submitSequentialAnswer(SimulationChallenge simChallenge, SubmitAnswerRequest request) {
+        Challenge challenge = simChallenge.getChallenge();
+        Simulation simulation = simChallenge.getSimulation();
+        List<Long> submittedOrder = request.selectedOptionIds();
+
+        List<ChallengeOption> expectedOptions = challenge.getOptions().stream()
+                .sorted(Comparator.comparingInt(ChallengeOption::getDisplayOrder))
+                .toList();
+
+        // Permutation exacte : mêmes étapes, aucune doublon, aucun manquant.
+        boolean permutation = submittedOrder.size() == expectedOptions.size()
+                && new java.util.HashSet<>(submittedOrder).size() == submittedOrder.size()
+                && submittedOrder.containsAll(
+                        expectedOptions.stream().map(ChallengeOption::getId).toList());
+        if (!permutation) {
+            throw new ApiException(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "La réponse doit être une permutation complète des étapes.");
+        }
+
+        boolean isCorrect = java.util.Objects.equals(submittedOrder,
+                expectedOptions.stream().map(ChallengeOption::getId).toList());
+        int scoreAwarded = scoringService.calculateSequenceScore(challenge, submittedOrder);
+
+        SimulationAnswer answer = new SimulationAnswer();
+        answer.setSimulationChallenge(simChallenge);
+        // LinkedHashSet : conserve l'ordre de soumission côté entité.
+        Set<ChallengeOption> submittedOptions = new LinkedHashSet<>();
+        for (Long optionId : submittedOrder) {
+            submittedOptions.add(challenge.getOptions().stream()
+                    .filter(option -> option.getId().equals(optionId))
+                    .findFirst()
+                    .orElseThrow());
+        }
+        answer.setSelectedOptions(submittedOptions);
+        answer.setCorrect(isCorrect);
+        answer.setScore(scoreAwarded);
+        answer.setResponseTimeMs(request.responseTimeMs());
+        simChallenge.setAnswer(answer);
+        simulation.setTotalScore(simulation.getTotalScore() + scoreAwarded);
+
+        // Position de chaque étape de la réponse sur la jointure (V11) — colonne
+        // nullable, écrite uniquement pour ce type : les QCM restent NULL.
+        simulationAnswerRepository.save(answer);
+        simulationAnswerRepository.flush();
+        int position = 1;
+        for (Long optionId : submittedOrder) {
+            simulationAnswerRepository.updateAnswerOptionPosition(answer.getId(), optionId, position++);
+        }
+
+        // Corrections : isCorrect = « l'étape est à sa bonne position ».
+        List<ChallengeCorrectionDTO> corrections = new ArrayList<>();
+        for (int i = 0; i < expectedOptions.size(); i++) {
+            ChallengeOption option = expectedOptions.get(i);
+            corrections.add(new ChallengeCorrectionDTO(
+                    option.getId(),
+                    option.getContent(),
+                    option.getId().equals(submittedOrder.get(i)),
+                    true,
+                    null,
+                    option.getExplanation()));
+        }
+
+        return new SubmitAnswerResponse(
+                answer.getId(),
+                isCorrect,
+                scoreAwarded,
+                simulation.getTotalScore(),
+                challenge.getExplanation(),
+                null,
+                null,
+                null,
+                corrections,
+                expectedOptions.stream().map(ChallengeOption::getId).toList());
+    }
+
+    @Transactional
+    public SimulationSummaryResponse abandonSimulation(Long simulationId) {
+        Simulation simulation = simulationRepository.findById(simulationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Simulation non trouvée."));
+
+        // Idempotent : seul un en-cours bascule en ABANDONNÉ — une session déjà
+        // terminée (bilan consulté depuis l'historique) n'est jamais rétrogradée.
+        if (simulation.getStatus() == SimulationStatus.IN_PROGRESS) {
+            simulation.setStatus(SimulationStatus.ABANDONED);
+        }
+
+        int totalQuestions = simulation.getSimulationChallenges().size();
+        int correctAnswers = (int) simulation.getSimulationChallenges().stream()
+                .filter(sc -> sc.getAnswer() != null && sc.getAnswer().isCorrect())
+                .count();
+
+        return new SimulationSummaryResponse(
+                simulation.getId(),
+                simulation.getStatus(),
+                simulation.getTotalScore(),
+                totalQuestions,
+                correctAnswers,
+                simulation.getStartedAt(),
+                simulation.getCompletedAt()
+        );
+    }
+
+    @Transactional
+    public SimulationSummaryResponse completeSimulation(Long simulationId) {
+        Simulation simulation = simulationRepository.findById(simulationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Simulation non trouvée."));
+
+        if (simulation.getStatus() != SimulationStatus.IN_PROGRESS) {
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    "Cette simulation est déjà terminée."
+            );
+        }
+
+        simulation.setStatus(SimulationStatus.COMPLETED);
+        simulation.setCompletedAt(LocalDateTime.now());
+
+        int totalQuestions = simulation.getSimulationChallenges().size();
+        int correctAnswers = (int) simulation.getSimulationChallenges().stream()
+                .filter(sc -> sc.getAnswer() != null && sc.getAnswer().isCorrect())
+                .count();
+
+        return new SimulationSummaryResponse(
+                simulation.getId(),
+                simulation.getStatus(),
+                simulation.getTotalScore(),
+                totalQuestions,
+                correctAnswers,
+                simulation.getStartedAt(),
+                simulation.getCompletedAt()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public SimulationResultDTO getSimulationResult(Long simulationId) {
+        Simulation simulation = simulationRepository.findById(simulationId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Simulation introuvable avec l'ID: " + simulationId));
+
+        List<SimulationAnswer> answers = simulation.getSimulationChallenges().stream()
+                .map(SimulationChallenge::getAnswer)
+                .filter(answer -> answer != null)
+                .toList();
+
+        List<SimulationResultDTO.QuestionSummaryDTO> questionSummaries = answers.stream()
+                .map(answer -> {
+                    Challenge challenge = answer.getSimulationChallenge().getChallenge();
+
+                    // Toutes les bonnes options (et non plus la première seule) :
+                    // un QCM multiple doit afficher l'intégralité de la bonne réponse.
+                    // En séquentiel, l'ordre des options = l'ordre attendu.
+                    String correctContent = challenge.getOptions().stream()
+                            .filter(ChallengeOption::isCorrect)
+                            .sorted(Comparator.comparingInt(ChallengeOption::getDisplayOrder))
+                            .map(ChallengeOption::getContent)
+                            .collect(java.util.stream.Collectors.joining(", "));
+
+                    return new SimulationResultDTO.QuestionSummaryDTO(
+                            challenge.getId(),
+                            challenge.getTitle(),
+                            challenge.getContext(),
+                            challenge.getQuestion(),
+                            answer.getSelectedOptions().stream()
+                                    .map(ChallengeOption::getContent)
+                                    .collect(java.util.stream.Collectors.joining(", ")),
+                            !correctContent.isBlank() ? correctContent : "Inconnue",
+                            answer.isCorrect(),
+                            challenge.getExplanation(),
+                            answer.getScore(),
+                            answer.getResponseTimeMs()
+                    );
+                })
+                .toList();
+
+        int totalScore = answers.stream()
+                .mapToInt(answer -> answer.getScore() != null ? answer.getScore() : 0)
+                .sum();
+
+        int maxScore = answers.stream()
+                .mapToInt(answer -> answer.getSimulationChallenge().getChallenge().getPoints())
+                .sum();
+
+        int correctAnswersCount = (int) answers.stream()
+                .filter(SimulationAnswer::isCorrect)
+                .count();
+
+        long totalTimeSpentSeconds = answers.stream()
+                .mapToLong(answer -> answer.getResponseTimeMs() != null
+                        ? answer.getResponseTimeMs()
+                        : 0L)
+                .sum() / 1000;
+
+        // Taux de réussite = bonnes réponses / nombre total de questions
+        // (invariant métier). Le ratio points/points reste affiché
+        // séparément via totalScore / maxPossibleScore.
+        double successPercentage = answers.isEmpty()
+                ? 0.0
+                : ((double) correctAnswersCount / answers.size()) * 100;
+
+        // Breakdown par compétence, fondé sur les données existantes
+        // (Challenge.skills / Challenge.categories × réponse) : aucun nouveau calcul de scoring.
+        Map<Long, int[]> skillAgg = new LinkedHashMap<>();
+        Map<Long, String> skillNames = new HashMap<>();
+        Map<Long, int[]> categoryAgg = new LinkedHashMap<>();
+        Map<Long, String> categoryNames = new HashMap<>();
+        int answeredWithSkills = 0;
+
+        for (SimulationAnswer answer : answers) {
+            Challenge challenge = answer.getSimulationChallenge().getChallenge();
+            boolean correct = answer.isCorrect();
+            if (!challenge.getSkills().isEmpty()) {
+                answeredWithSkills++;
+            }
+            for (Skill skill : challenge.getSkills()) {
+                int[] agg = skillAgg.computeIfAbsent(skill.getId(), k -> new int[2]);
+                agg[1]++;
+                if (correct) {
+                    agg[0]++;
+                }
+                skillNames.put(skill.getId(), skill.getName());
+            }
+            for (Category category : challenge.getCategories()) {
+                int[] agg = categoryAgg.computeIfAbsent(category.getId(), k -> new int[2]);
+                agg[1]++;
+                if (correct) {
+                    agg[0]++;
+                }
+                categoryNames.put(category.getId(), category.getName());
+            }
+        }
+
+        // Axe principal : skills si au moins la moitié des questions en portent,
+        // sinon catégories (couverture complète en base, y compris Architecture).
+        double skillCoverage = answers.isEmpty() ? 0.0 : (double) answeredWithSkills / answers.size();
+        boolean useSkills = skillCoverage >= 0.5 && !skillAgg.isEmpty();
+
+        SimulationResultDTO.CompetencySource competencySource = useSkills
+                ? SimulationResultDTO.CompetencySource.SKILL
+                : SimulationResultDTO.CompetencySource.CATEGORY;
+        Map<Long, int[]> competencyAgg = useSkills ? skillAgg : categoryAgg;
+        Map<Long, String> competencyNames = useSkills ? skillNames : categoryNames;
+
+        List<SimulationResultDTO.CompetencyResult> competencyResults = competencyAgg.entrySet().stream()
+                .map(entry -> new SimulationResultDTO.CompetencyResult(
+                        entry.getKey(), competencyNames.get(entry.getKey()), entry.getValue()[0], entry.getValue()[1]))
+                .sorted(Comparator
+                        .comparingDouble((SimulationResultDTO.CompetencyResult r) -> (double) r.correct() / r.total())
+                        .reversed()
+                        .thenComparing(Comparator.comparingInt(SimulationResultDTO.CompetencyResult::total).reversed()))
+                .toList();
+
+        return new SimulationResultDTO(
+                simulation.getId(),
+                totalScore,
+                maxScore,
+                Math.round(successPercentage * 100.0) / 100.0,
+                totalTimeSpentSeconds,
+                answers.size(),
+                correctAnswersCount,
+                simulation.getMode(),
+                simulation.getDifficulty(),
+                simulation.getProfile() != null ? simulation.getProfile().getId() : null,
+                competencySource,
+                competencyResults,
+                questionSummaries
+        );
+    }
+}

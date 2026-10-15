@@ -1,0 +1,47 @@
+spring:
+  application:
+    name: dev-interview-simulator
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/dev_interview_db}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration,classpath:db/seed
+
+server:
+  port: 8080
+
+app:
+  cors:
+    # Origines du frontend autorisees (virgules) — a surcharger en prod via CORS_ORIGINS.
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:3000}
+
+  security:
+    jwt:
+      # Pas de fallback : le demarrage echoue explicitement si JWT_SECRET est absent
+      # (evite de signer les tokens avec une valeur publique connue en prod).
+      secret: ${JWT_SECRET}
+      expiration: ${JWT_EXPIRATION:PT8H}
+    # Client ID OAuth Web (Google Cloud Console) — requis pour /api/auth/google.
+    google:
+      client-id: ${GOOGLE_CLIENT_ID:}
+
+  admin:
+    # Pas de fallback admin/admin : le demarrage echoue explicitement si ces
+    # variables sont absentes (elles sont fournies par le .env via docker-compose).
+    username: ${ADMIN_USERNAME}
+    email: ${ADMIN_EMAIL}
+    password: ${ADMIN_PASSWORD}
