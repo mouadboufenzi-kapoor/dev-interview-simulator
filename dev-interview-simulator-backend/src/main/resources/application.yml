@@ -31,13 +31,17 @@ app:
 
   security:
     jwt:
-      secret: ${JWT_SECRET:change-this-development-secret-with-at-least-32-characters}
+      # Pas de fallback : le demarrage echoue explicitement si JWT_SECRET est absent
+      # (evite de signer les tokens avec une valeur publique connue en prod).
+      secret: ${JWT_SECRET}
       expiration: ${JWT_EXPIRATION:PT8H}
     # Client ID OAuth Web (Google Cloud Console) — requis pour /api/auth/google.
     google:
       client-id: ${GOOGLE_CLIENT_ID:}
 
   admin:
-    username: ${ADMIN_USERNAME:admin}
-    email: ${ADMIN_EMAIL:admin@example.com}
-    password: ${ADMIN_PASSWORD:admin}
+    # Pas de fallback admin/admin : le demarrage echoue explicitement si ces
+    # variables sont absentes (elles sont fournies par le .env via docker-compose).
+    username: ${ADMIN_USERNAME}
+    email: ${ADMIN_EMAIL}
+    password: ${ADMIN_PASSWORD}
