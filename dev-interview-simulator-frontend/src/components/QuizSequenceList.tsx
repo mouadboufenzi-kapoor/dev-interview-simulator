@@ -50,11 +50,18 @@ const SortableStep = ({
     disabled,
   });
 
-  // Sobre : ligne et numéro neutres — seule l'icône de droite (✓ / ✕) est
-  // colorée. La couleur représente la performance de l'utilisateur, jamais
-  // un bloc décoratif (design actuel, mêmes tokens).
-  const frameStyle = 'border-border bg-surface';
-  const badgeStyle = 'bg-navy-100 text-navy-900';
+  const frameStyle =
+    status === 'correct'
+      ? 'border-success-border bg-success-soft'
+      : status === 'incorrect'
+        ? 'border-danger-border bg-danger-soft'
+        : 'border-border bg-surface';
+  const badgeStyle =
+    status === 'correct'
+      ? 'text-success'
+      : status === 'incorrect'
+        ? 'text-danger'
+        : 'bg-navy-100 text-navy-900';
 
   return (
     <div
@@ -95,7 +102,7 @@ const SortableStep = ({
 // l'absence de TouchSensor parallèle). L'ordre affiché EST la réponse soumise —
 // l'ordre attendu n'est jamais côté client (voir mapToResponse backend).
 // Après validation : « Votre classement » (l'ordre réellement soumis) est le
-// seul à porter la couleur — ✓ vert / ✕ rouge sur une ligne sobre ;
+// seul à porter la couleur — ligne verte si bien placée / rouge si mal placée ;
 // « Ordre attendu » est une référence neutre, sans aucune couleur ni icône.
 export const QuizSequenceList = ({
   challenge,

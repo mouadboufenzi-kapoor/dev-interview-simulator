@@ -22,6 +22,8 @@ export const QuizScreen = ({ simulation, onFinish, onError }: Props) => {
   const [secondsElapsed, setSecondsElapsed] = useState(0);
 
   const startTimeRef = useRef<number>(0);
+  const challengeSurfaceRef = useRef<HTMLDivElement>(null);
+  const isFirstQuestionRef = useRef(true);
   const currentChallenge = simulation.challenges?.[currentIndex];
 
   const totalChallenges = simulation.challenges?.length || 1;
@@ -35,6 +37,17 @@ export const QuizScreen = ({ simulation, onFinish, onError }: Props) => {
     }, 1000);
 
     return () => clearInterval(timer);
+  }, [currentIndex]);
+
+  useEffect(() => {
+    if (isFirstQuestionRef.current) {
+      isFirstQuestionRef.current = false;
+      return;
+    }
+    challengeSurfaceRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
   }, [currentIndex]);
 
   // Raisonnement séquentiel : l'ordre initial = l'ordre de présentation reçu
@@ -103,7 +116,6 @@ export const QuizScreen = ({ simulation, onFinish, onError }: Props) => {
     setSecondsElapsed(0);
     if (currentIndex + 1 < simulation.challenges.length) {
       setCurrentIndex((prev) => prev + 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
       onFinish();
     }
@@ -124,7 +136,10 @@ export const QuizScreen = ({ simulation, onFinish, onError }: Props) => {
 
       {/* Main Challenge Surface — p-5 sur mobile (p-6 gagnait trop de largeur
           utile sur écran étroit), identique à partir de sm. */}
-      <div className="bg-surface border-[0.5px] border-card-border rounded-2xl p-5 sm:p-9 shadow-elevated space-y-7">
+      <div
+        ref={challengeSurfaceRef}
+        className="scroll-mt-14 sm:scroll-mt-16 bg-surface border-[0.5px] border-card-border rounded-2xl p-5 sm:p-9 shadow-elevated space-y-7"
+      >
         <QuizChallengeBody
           challenge={currentChallenge}
           showMultiChoiceHint={isMultiChoice && !feedback}
