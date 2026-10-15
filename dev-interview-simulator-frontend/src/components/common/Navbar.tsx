@@ -6,7 +6,6 @@ import { Button } from './Button';
 import { X } from 'lucide-react';
 import type { ChallengeType, DifficultyLevel } from '../../types';
 import { UserAccessModal, type AuthUser } from '../UserAccessModal';
-import { NavbarExplorerMenu } from './NavbarExplorerMenu';
 import { NavbarUserMenu } from './NavbarUserMenu';
 import { NavbarQuitModal } from './NavbarQuitModal';
 
@@ -138,13 +137,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               <div className="flex items-center gap-1.5 sm:gap-2">
                 {/* Dark mode toggle */}
                 <ThemeToggle />
-
-                {/* Secondary Menu "Plus" */}
-                <NavbarExplorerMenu
-                  open={showPlusMenu}
-                  onToggle={() => setShowPlusMenu(!showPlusMenu)}
-                  menuRef={plusMenuRef}
-                />
 
                 {/* Profile indicator */}
                 <NavbarUserMenu

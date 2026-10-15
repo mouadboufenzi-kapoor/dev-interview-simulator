@@ -5,7 +5,7 @@ import { PageTitle } from './common/PageTitle';
 import type { AnalyzedCompetency } from '../utils/resultAnalysis';
 
 interface Props {
-  /** Axes < 100 % triés du plus fragile au moins fragile (liste complète). */
+  /** Axes sous le seuil de vraie faiblesse, triés du plus fragile au moins fragile. */
   weaknesses: AnalyzedCompetency[];
   loading: boolean;
   /** Démarre la simulation ciblée sur la compétence prioritaire. */

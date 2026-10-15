@@ -8,9 +8,13 @@ interface Props {
   summary: SimulationResultDTO;
 }
 
+/** Questions visibles avant le dépliage « Voir toutes les questions ». */
+const INITIAL_VISIBLE = 4;
+
 export const ResultQuestions = ({ summary }: Props) => {
   const [openQuestionId, setOpenQuestionId] = useState<number | null>(null);
   const [filter, setFilter] = useState<'ALL' | 'CORRECT' | 'INCORRECT'>('ALL');
+  const [showAll, setShowAll] = useState(false);
 
   const toggleAccordion = (id: number) => {
     setOpenQuestionId(openQuestionId === id ? null : id);
@@ -21,6 +25,12 @@ export const ResultQuestions = ({ summary }: Props) => {
     if (filter === 'INCORRECT') return !q.isCorrect;
     return true;
   });
+
+  // Densité visuelle : initialement seulement quelques questions, déploiement
+  // à la demande (le filtre actif s'applique quelle que soit l'étendue).
+  const visibleQuestions = showAll
+    ? filteredQuestions
+    : filteredQuestions.slice(0, INITIAL_VISIBLE);
 
   return (
     <div className="space-y-4">
@@ -72,7 +82,7 @@ export const ResultQuestions = ({ summary }: Props) => {
 
       {/* Questions Accordion List */}
       <div className="space-y-3">
-        {filteredQuestions.map((q, index) => {
+        {visibleQuestions.map((q, index) => {
           const isOpen = openQuestionId === q.challengeId;
 
           return (
@@ -137,6 +147,27 @@ export const ResultQuestions = ({ summary }: Props) => {
           );
         })}
       </div>
+
+      {/* Dépliage : au-delà de INITIAL_VISIBLE questions, un bouton unique
+          étend ou réduit la liste (même pattern que ResultPriority). */}
+      {filteredQuestions.length > INITIAL_VISIBLE && (
+        <button
+          type="button"
+          onClick={() => setShowAll((v) => !v)}
+          className="inline-flex items-center gap-1 text-xs font-semibold text-navy-900 hover:text-navy-950 cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas rounded"
+        >
+          {showAll ? (
+            <>
+              <ChevronUp className="w-3.5 h-3.5" /> Réduire la liste
+            </>
+          ) : (
+            <>
+              <ChevronDown className="w-3.5 h-3.5" /> Voir toutes les questions (
+              {filteredQuestions.length})
+            </>
+          )}
+        </button>
+      )}
     </div>
   );
 };

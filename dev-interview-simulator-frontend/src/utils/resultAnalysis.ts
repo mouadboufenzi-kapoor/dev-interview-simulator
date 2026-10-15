@@ -66,6 +66,14 @@ export const getAssessment = (percent: number): Assessment => {
   };
 };
 
+/**
+ * Seuil de « vraie faiblesse » : un axe n'est présenté en priorité que s'il
+ * descend sous ce taux (aligné sur le palier « Solide » de getAssessment).
+ * Une compétence à 80 % n'est donc jamais déclarée priorité principale
+ * simplement parce qu'elle était sélectionnée à la configuration.
+ */
+export const PRIORITY_THRESHOLD = 65;
+
 export interface AnalyzedCompetency extends CompetencyResult {
   pct: number;
 }
@@ -79,10 +87,12 @@ export interface ResultAnalysis {
 
 /**
  * Découpe les compétences du bilan :
- * - weaknesses : TOUS les axes < 100 %, triés du plus fragile au moins fragile
- *   (la troncature d'affichage vit dans ResultPriority — pas ici, pour ne jamais
- *   perdre d'information) ;
- * - strengths : compétences à 100 % (aucun doublon possible avec les axes), max 3.
+ * - weaknesses (priorités) : uniquement les axes SOUS le seuil de vraie
+ *   faiblesse (PRIORITY_THRESHOLD), triés du plus fragile au moins fragile —
+ *   une performance correcte n'est jamais présentée comme une faiblesse ;
+ * - strengths : compétences à 100 %, max 3.
+ * Les axes intermédiaires (seuil ≤ pct < 100 %) n'apparaissent dans aucune
+ * des deux listes : ni force, ni faiblesse (moins de bruit, pas de mensonge).
  */
 export const analyzeResult = (results: CompetencyResult[]): ResultAnalysis => {
   const competencies = results.map((c) => ({
@@ -91,12 +101,11 @@ export const analyzeResult = (results: CompetencyResult[]): ResultAnalysis => {
   }));
 
   const weaknesses = [...competencies]
-    .filter((c) => c.pct < 100)
+    .filter((c) => c.pct < PRIORITY_THRESHOLD)
     .sort((a, b) => a.pct - b.pct || a.total - b.total);
-  const weaknessIds = new Set(weaknesses.map((c) => c.id));
   const strengths = [...competencies]
-    .sort((a, b) => b.pct - a.pct || b.total - a.total)
-    .filter((c) => !weaknessIds.has(c.id))
+    .filter((c) => c.pct === 100)
+    .sort((a, b) => b.total - a.total)
     .slice(0, 3);
 
   return {

@@ -37,7 +37,7 @@ export const ResultEvaluation = ({ summary }: Props) => {
           {summary.successPercentage}%
         </span>
         <p className="text-xs text-ink-secondary mt-1.5">
-          Taux de réussite · {summary.totalScore} / {summary.maxPossibleScore} points obtenus
+          Bonnes réponses · Score {summary.totalScore} / {summary.maxPossibleScore} points obtenus
         </p>
       </div>
 

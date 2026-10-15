@@ -108,7 +108,11 @@ export const SetupConfigStep = ({
             </div>
           </div>
 
-          <SetupTopics {...topics} />
+          {/* Technologies / sujets : masquées en Architecture — le backend choisit
+              un scénario au hasard et ignore ces filtres (findScenarioChallenges) :
+              les afficher serait trompeur. QCM, Code Review et Raisonnement
+              séquentiel, eux, filtrent réellement le contenu. */}
+          {selectedMode !== 'ARCHITECTURE' && <SetupTopics {...topics} />}
 
           {/* Architecture step options (discreetly visible if ARCHITECTURE) */}
           {selectedMode === 'ARCHITECTURE' && (

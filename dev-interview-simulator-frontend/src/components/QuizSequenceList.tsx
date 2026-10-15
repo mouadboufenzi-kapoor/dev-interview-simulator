@@ -15,7 +15,7 @@ import {
   arrayMove,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Check, CornerDownRight, GripVertical, X } from 'lucide-react';
+import { Check, GripVertical, X } from 'lucide-react';
 import type { SimulationChallengeResponse, SubmitAnswerResponse } from '../types';
 
 interface Props {
@@ -38,35 +38,23 @@ const SortableStep = ({
   content,
   disabled,
   status,
-  expectedContent,
-  stepExplanation,
 }: {
   id: number;
   index: number;
   content: string;
   disabled: boolean;
   status: StepStatus;
-  expectedContent: string | null;
-  stepExplanation: string | null;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: String(id),
     disabled,
   });
 
-  const frameStyle =
-    status === 'correct'
-      ? 'border-success-border bg-success-soft'
-      : status === 'incorrect'
-      ? 'border-danger-border bg-danger-soft'
-      : 'border-border bg-surface';
-
-  const badgeStyle =
-    status === 'correct'
-      ? 'bg-success text-white'
-      : status === 'incorrect'
-      ? 'bg-danger text-white'
-      : 'bg-navy-100 text-navy-900';
+  // Sobre : ligne et numéro neutres — seule l'icône de droite (✓ / ✕) est
+  // colorée. La couleur représente la performance de l'utilisateur, jamais
+  // un bloc décoratif (design actuel, mêmes tokens).
+  const frameStyle = 'border-border bg-surface';
+  const badgeStyle = 'bg-navy-100 text-navy-900';
 
   return (
     <div
@@ -87,17 +75,8 @@ const SortableStep = ({
         {index + 1}
       </span>
 
-      <div className="min-w-0 flex-1 space-y-1">
+      <div className="min-w-0 flex-1">
         <p className="text-sm leading-snug text-ink break-words">{content}</p>
-        {status === 'incorrect' && expectedContent && (
-          <p className="flex items-start gap-1 text-[11px] leading-snug text-ink-muted">
-            <CornerDownRight className="w-3 h-3 mt-0.5 flex-shrink-0" />
-            <span>Position attendue : « {expectedContent} »</span>
-          </p>
-        )}
-        {status === 'incorrect' && stepExplanation && (
-          <p className="text-[11px] leading-snug text-ink-muted italic">{stepExplanation}</p>
-        )}
       </div>
 
       {status === null ? (
@@ -115,8 +94,9 @@ const SortableStep = ({
 // tactile + desktop via @dnd-kit — PointerSensor couvre souris ET doigt, d'où
 // l'absence de TouchSensor parallèle). L'ordre affiché EST la réponse soumise —
 // l'ordre attendu n'est jamais côté client (voir mapToResponse backend).
-// Après validation : chaque position devient verte (à sa bonne place) ou rouge
-// (avec la position attendue + la raison de l'étape sous le libellé).
+// Après validation : « Votre classement » (l'ordre réellement soumis) est le
+// seul à porter la couleur — ✓ vert / ✕ rouge sur une ligne sobre ;
+// « Ordre attendu » est une référence neutre, sans aucune couleur ni icône.
 export const QuizSequenceList = ({
   challenge,
   orderedOptionIds,
@@ -164,6 +144,12 @@ export const QuizSequenceList = ({
         </p>
       )}
 
+      {isCorrection && (
+        <p className="text-xs font-sans font-semibold uppercase tracking-wider text-ink-muted">
+          Votre classement
+        </p>
+      )}
+
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext
           items={orderedOptionIds.map(String)}
@@ -181,23 +167,38 @@ export const QuizSequenceList = ({
                   content={optionById.get(optionId)?.content ?? ''}
                   disabled={disabled}
                   status={isCorrection ? (misplaced ? 'incorrect' : 'correct') : null}
-                  expectedContent={
-                    misplaced && expectedId != null
-                      ? (optionById.get(expectedId)?.content ?? null)
-                      : null
-                  }
-                  stepExplanation={
-                    misplaced
-                      ? (feedback?.corrections.find((c) => c.optionId === optionId)?.explanation ??
-                        null)
-                      : null
-                  }
                 />
               );
             })}
           </div>
         </SortableContext>
       </DndContext>
+
+      {/* Ordre attendu : référence purement neutre — liste numérotée, sans
+          fond/bordure colorés et sans icône de correction : le rouge/vert
+          ne sert qu'à la performance de l'utilisateur, dans son classement. */}
+      {isCorrection && expectedOrder && (
+        <div className="space-y-2 pt-1">
+          <p className="text-xs font-sans font-semibold uppercase tracking-wider text-ink-muted">
+            Ordre attendu
+          </p>
+          <ol className="space-y-2">
+            {expectedOrder.map((expectedId, position) => (
+              <li
+                key={expectedId}
+                className="flex items-center gap-3 rounded-xl border border-border bg-surface p-3.5"
+              >
+                <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg font-mono text-xs font-bold bg-navy-100 text-navy-900">
+                  {position + 1}
+                </span>
+                <p className="min-w-0 flex-1 text-sm leading-snug text-ink break-words">
+                  {optionById.get(expectedId)?.content ?? ''}
+                </p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
 
       {!disabled && (
         <p className="text-[11px] text-ink-muted">
