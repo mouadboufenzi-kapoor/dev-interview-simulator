@@ -2,6 +2,7 @@ package com.interview.simulator.admin.challenge.controller;
 
 import com.interview.simulator.admin.challenge.dto.AdminChallengeRequest;
 import com.interview.simulator.admin.challenge.dto.AdminChallengeResponse;
+import com.interview.simulator.admin.challenge.dto.BackfillIdentityReport;
 import com.interview.simulator.admin.challenge.service.AdminChallengeService;
 import com.interview.simulator.challenge.entity.ChallengeType;
 import com.interview.simulator.challenge.entity.ContentStatus;
@@ -60,5 +61,10 @@ public class AdminChallengeController {
             @PathVariable @Positive Long id,
             @RequestParam ContentStatus status) {
         return adminChallengeService.changeStatus(id, status);
+    }
+
+    @PostMapping("/backfill-identity")
+    public BackfillIdentityReport backfillIdentity() {
+        return adminChallengeService.backfillIdentity();
     }
 }
