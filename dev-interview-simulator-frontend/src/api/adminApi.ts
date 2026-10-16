@@ -1,6 +1,40 @@
 import { apiClient  } from './client'; 
 import type { ChallengeType } from '../types';
 
+export type GenerationDifficulty = 'JUNIOR' | 'INTERMEDIATE' | 'ADVANCED';
+
+export interface GenerationRequest {
+  profileIds?: number[];
+  categoryIds?: number[];
+  skillIds?: number[];
+  difficulty: GenerationDifficulty;
+  type: ChallengeType;
+  count: number;
+  instructions?: string;
+}
+
+export interface GenerationReport {
+  dryRun: boolean;
+  planned: { created: number; updated: number };
+  executed: { created: number; updated: number };
+  duplicates: Array<{
+    index: number;
+    externalIdOrTitle: string;
+    existingId: number;
+    existingTitle: string;
+  }>;
+  errors: Array<{
+    index: number;
+    externalIdOrTitle: string;
+    reason: string;
+  }>;
+  warnings: Array<{
+    index: number;
+    externalIdOrTitle: string;
+    message: string;
+  }>;
+}
+
 export interface AdminChallengeOptionRequest {
   id?: number;
   content: string;
@@ -188,5 +222,31 @@ export const adminApi = {
   changeStatus: async (id: number, status: string): Promise<AdminChallengeResponse> => {
     const { data } = await apiClient.patch(`/admin/challenges/${id}/status`, null, { params: { status } });
     return data;
+  }
+};
+
+const readableHttpMessage = (status: number, fallback: string): string => {
+  return (
+    status === 400 ? 'Requête ou sélection invalide.'
+      : status === 429 ? 'Quota de génération épuisé : réessayez plus tard.'
+      : status === 502 ? 'Fournisseur inaccessible ou réponse invalide.'
+      : status === 503 ? 'La génération automatique n’est pas configurée.'
+      : status === 504 ? 'Délai d’attente de la génération dépassé.'
+      : fallback
+  );
+};
+
+export const generationApi = {
+  generate: async (request: GenerationRequest): Promise<GenerationReport> => {
+    const { data } = await apiClient.post('/admin/challenges/generate', request);
+    return data;
+  },
+  mapError: (err: unknown): { status: number; message: string } => {
+    const response = (err as { response?: { status?: number; data?: { message?: string } } }).response;
+    if (!response) {
+      return { status: 0, message: 'Impossible de contacter le service de génération.' };
+    }
+    const message = response.data?.message ?? readableHttpMessage(response.status ?? 0, 'Erreur lors de la génération.');
+    return { status: response.status ?? 0, message };
   }
 };
