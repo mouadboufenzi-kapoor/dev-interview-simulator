@@ -3,28 +3,41 @@ package com.interview.simulator.admin.challenge.controller;
 import com.interview.simulator.admin.challenge.dto.AdminChallengeRequest;
 import com.interview.simulator.admin.challenge.dto.AdminChallengeResponse;
 import com.interview.simulator.admin.challenge.dto.BackfillIdentityReport;
+import com.interview.simulator.admin.challenge.dto.ChallengeImportReport;
 import com.interview.simulator.admin.challenge.service.AdminChallengeService;
+import com.interview.simulator.admin.challenge.service.ChallengeImportService;
 import com.interview.simulator.challenge.entity.ChallengeType;
 import com.interview.simulator.challenge.entity.ContentStatus;
 import com.interview.simulator.challenge.entity.DifficultyLevel;
+import com.interview.simulator.exception.ApiException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.Arrays;
 
 @RestController
 @Validated
 @RequestMapping("/api/admin/challenges")
 public class AdminChallengeController {
 
-    private final AdminChallengeService adminChallengeService;
+    private static final ContentStatus[] IMPORT_STATUSES = {ContentStatus.DRAFT, ContentStatus.VALIDATED};
 
-    public AdminChallengeController(AdminChallengeService adminChallengeService) {
+    private final AdminChallengeService adminChallengeService;
+    private final ChallengeImportService challengeImportService;
+
+    public AdminChallengeController(
+            AdminChallengeService adminChallengeService,
+            ChallengeImportService challengeImportService) {
         this.adminChallengeService = adminChallengeService;
+        this.challengeImportService = challengeImportService;
     }
 
     @GetMapping
@@ -66,5 +79,16 @@ public class AdminChallengeController {
     @PostMapping("/backfill-identity")
     public BackfillIdentityReport backfillIdentity() {
         return adminChallengeService.backfillIdentity();
+    }
+
+    @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ChallengeImportReport importQuestions(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(name = "status", defaultValue = "DRAFT") ContentStatus status,
+            @RequestParam(name = "dryRun", defaultValue = "true") boolean dryRun) {
+        if (Arrays.stream(IMPORT_STATUSES).noneMatch(allowed -> allowed == status)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Le statut doit être DRAFT ou VALIDATED.");
+        }
+        return challengeImportService.importQuestions(file, status, dryRun);
     }
 }

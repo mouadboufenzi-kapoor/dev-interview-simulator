@@ -6,6 +6,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 public interface ProfileRepository extends JpaRepository<Profile, Long> {
@@ -16,6 +17,8 @@ public interface ProfileRepository extends JpaRepository<Profile, Long> {
     boolean existsByCode(String code);
 
     Optional<Profile> findByCode(String code);
+
+    Set<Profile> findByCodeIn(Set<String> codes);
 
     boolean existsByCodeAndIdNot(String code, Long id);
 

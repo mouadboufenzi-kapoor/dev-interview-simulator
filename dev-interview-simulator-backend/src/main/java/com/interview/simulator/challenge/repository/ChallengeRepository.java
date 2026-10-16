@@ -14,12 +14,19 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 @Repository
 public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
 
     boolean existsByScenarioIdAndStepOrderAndIdNot(Long scenarioId, Integer stepOrder, Long id);
+
+    boolean existsByScenarioIdAndStepOrder(Long scenarioId, Integer stepOrder);
+
+    Optional<Challenge> findByExternalId(String externalId);
+
+    List<Challenge> findByContentHash(String contentHash);
 
     long countByStatus(ContentStatus status);
 
