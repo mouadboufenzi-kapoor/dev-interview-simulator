@@ -88,7 +88,10 @@ public class ChallengeImportService {
     }
 
     public ChallengeImportReport importQuestions(MultipartFile file, ContentStatus status, boolean dryRun) {
-        List<ImportedQuestion> questions = parseQuestions(file);
+        return importQuestions(parseQuestions(file), status, dryRun);
+    }
+
+    public ChallengeImportReport importQuestions(List<ImportedQuestion> questions, ContentStatus status, boolean dryRun) {
         if (questions.size() > MAX_QUESTIONS_PER_FILE) {
             throw new ApiException(HttpStatus.BAD_REQUEST,
                     "Le fichier dépasse la limite de " + MAX_QUESTIONS_PER_FILE + " questions.");

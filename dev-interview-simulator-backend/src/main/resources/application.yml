@@ -45,3 +45,14 @@ app:
     username: ${ADMIN_USERNAME}
     email: ${ADMIN_EMAIL}
     password: ${ADMIN_PASSWORD}
+
+  generation:
+    # Generation LLM des questions (admin). Sans cle, la fonctionnalite repond
+    # 503 sans appel au fournisseur ; l'application demarre normalement.
+    enabled: ${GENERATION_ENABLED:true}
+    gemini:
+      api-key: ${GEMINI_API_KEY:}
+      # Modele surchargeable sans rebuild via GEMINI_MODEL (son existence dans
+      # le compte du fournisseur est a verifier au moment de l'usage).
+      model: ${GEMINI_MODEL:gemini-3.8-flash}
+      base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com/v1beta}
