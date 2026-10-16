@@ -238,7 +238,17 @@ public class AdminChallengeService {
         if (challenge.getExternalId() == null) {
             challenge.setExternalId(challengeIdentityService.generateExternalId());
         }
-        challenge.setContentHash(challengeIdentityService.contentHash(challenge));
+        String contentHash = challengeIdentityService.contentHash(challenge);
+        List<Challenge> duplicates = challengeRepository.findByContentHash(contentHash).stream()
+                .filter(other -> !other.getId().equals(challenge.getId()))
+                .toList();
+        if (!duplicates.isEmpty()) {
+            Challenge duplicate = duplicates.get(0);
+            throw new ApiException(HttpStatus.CONFLICT,
+                    "Le contenu est identique à la question " + duplicate.getId()
+                            + " (« " + duplicate.getTitle() + " »).");
+        }
+        challenge.setContentHash(contentHash);
     }
 
     private void applyScenario(Challenge challenge, AdminChallengeRequest request) {
