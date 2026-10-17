@@ -53,6 +53,8 @@ app:
     # Fournisseur LLM actif (defaut : gemini). Une valeur inconnue fait echouer
     # le demarrage avec un message clair ; aucun basculement automatique.
     provider: ${GENERATION_PROVIDER:gemini}
+    assist:
+      max-batch: ${ASSIST_MAX_BATCH:20}
     gemini:
       api-key: ${GEMINI_API_KEY:}
       # Modele surchargeable sans rebuild via GEMINI_MODEL (son existence dans
