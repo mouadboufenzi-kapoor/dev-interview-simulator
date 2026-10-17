@@ -3,29 +3,31 @@
  * Aucune lib : localStorage + prefers-color-scheme uniquement.
  *
  * Deux axes indépendants, portés par deux attributs sur <html> :
- *   - palette : 'soleil' | 'menthe'          → data-theme="..."
+ *   - palette : 'encre' | 'soleil' | 'menthe'  → data-theme="..."
  *   - mode    : 'light' | 'dark' | 'system'  → data-mode="light|dark"
  *
  * Le mode « system » est une préférence utilisateur, mais il est RÉSOLU ici
  * en light/dark (via prefers-color-scheme) avant d'être écrit sur l'attribut :
  * il n'existe AUCUN mode CSS « system » (spec §2).
  */
-export type Palette = 'soleil' | 'menthe';
+export type Palette = 'encre' | 'soleil' | 'menthe';
 export type Mode = 'light' | 'dark' | 'system';
 /** Mode réellement appliqué sur data-mode (jamais « system »). */
 export type ResolvedMode = 'light' | 'dark';
 
-const PALETTE_KEY = 'theme'; // 'soleil' | 'menthe'
+const PALETTE_KEY = 'theme'; // 'encre' | 'soleil' | 'menthe'
 const MODE_KEY = 'mode'; // 'light' | 'dark' | 'system'
 
-export const DEFAULT_PALETTE: Palette = 'soleil';
+export const DEFAULT_PALETTE: Palette = 'encre';
 export const DEFAULT_MODE: Mode = 'system';
 
 /** Palette enregistrée, ou défaut si absente/valeur inconnue. */
 export const getStoredPalette = (): Palette => {
   try {
     const stored = localStorage.getItem(PALETTE_KEY);
-    return stored === 'soleil' || stored === 'menthe' ? stored : DEFAULT_PALETTE;
+    return stored === 'encre' || stored === 'soleil' || stored === 'menthe'
+      ? stored
+      : DEFAULT_PALETTE;
   } catch {
     return DEFAULT_PALETTE;
   }

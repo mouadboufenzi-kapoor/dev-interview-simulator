@@ -9,11 +9,15 @@ import {
   type Mode,
 } from '../utils/theme';
 
-// Aperçu miniature d'une palette (carte) — sert à distinguer Soleil / Menthe.
+// Aperçu miniature d'une palette (carte) — sert à distinguer Encre / Soleil / Menthe.
+const PREVIEWS: Record<Palette, { bg: string; nav: string }> = {
+  encre: { bg: '#EDF0F3', nav: '#123C69' },
+  soleil: { bg: '#F2F2EC', nav: '#FFD23F' },
+  menthe: { bg: '#F6F4EE', nav: '#8FE3C0' },
+};
+
 const PalettePreview = ({ palette }: { palette: Palette }) => {
-  const isSoleil = palette === 'soleil';
-  const bg = isSoleil ? '#F2F2EC' : '#F6F4EE';
-  const nav = isSoleil ? '#FFD23F' : '#8FE3C0';
+  const { bg, nav } = PREVIEWS[palette];
   const brand = '#123C69';
   const accent = '#FF5A36';
 
@@ -39,7 +43,7 @@ const MODE_OPTIONS: { id: Mode; label: string; icon: typeof Sun }[] = [
 ];
 
 /**
- * Section « Apparence » (spec §18) : choix de la palette (Soleil / Menthe) et
+ * Section « Apparence » (spec §18) : choix de la palette (Encre / Soleil / Menthe) et
  * du mode (Clair / Nuit / Système). Le changement est immédiat (attributs
  * data-theme / data-mode sur <html>), persisté dans localStorage, et le mode
  * « system » suit les changements de préférence système en direct.
@@ -75,8 +79,8 @@ export const AppAppearance = () => {
         <span className="font-mono text-[11px] uppercase tracking-[0.06em] text-muted font-medium">
           Palette
         </span>
-        <div className="grid grid-cols-2 gap-3">
-          {(['soleil', 'menthe'] as Palette[]).map((p) => {
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {(['encre', 'soleil', 'menthe'] as Palette[]).map((p) => {
             const isSelected = palette === p;
             return (
               <button
