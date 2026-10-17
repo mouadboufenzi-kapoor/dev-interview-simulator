@@ -28,6 +28,40 @@ export interface GenerationOptions {
   providers: GenerationProviderOption[];
 }
 
+export interface AssistedPromptRequest {
+  profileIds?: number[];
+  categoryIds?: number[];
+  skillIds?: number[];
+  difficulty: GenerationDifficulty;
+  type: ChallengeType;
+  count: number;
+  instructions?: string;
+}
+
+export interface AssistedQuestionPreview {
+  index: number;
+  title: string | null;
+  status: 'VALID' | 'DUPLICATE' | 'ERROR';
+  reason?: string;
+  type?: string;
+  difficulty?: string;
+  profiles: string[];
+  categories: string[];
+}
+
+export interface AssistedAnalysis {
+  total: number;
+  valid: number;
+  duplicates: number;
+  errors: number;
+  warnings: string[];
+  byType: Record<string, number>;
+  byDifficulty: Record<string, number>;
+  byProfile: Record<string, number>;
+  byCategory: Record<string, number>;
+  questions: AssistedQuestionPreview[];
+}
+
 export interface GenerationReport {
   dryRun: boolean;
   planned: { created: number; updated: number };
@@ -249,6 +283,21 @@ const readableHttpMessage = (status: number, fallback: string): string => {
       : status === 504 ? 'Délai d’attente de la génération dépassé.'
       : fallback
   );
+};
+
+export const assistApi = {
+  prompt: async (request: AssistedPromptRequest): Promise<{ prompt: string }> => {
+    const { data } = await apiClient.post('/admin/generation/assist/prompt', request);
+    return data;
+  },
+  analyze: async (json: string): Promise<AssistedAnalysis> => {
+    const { data } = await apiClient.post('/admin/generation/assist/analyze', { json });
+    return data;
+  },
+  importJson: async (json: string): Promise<GenerationReport> => {
+    const { data } = await apiClient.post('/admin/generation/assist/import', { json });
+    return data;
+  },
 };
 
 export const generationApi = {

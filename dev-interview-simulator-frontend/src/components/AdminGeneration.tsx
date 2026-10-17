@@ -10,6 +10,7 @@ import { Badge } from './common/Badge';
 import { Field } from './common/Field';
 import { fieldInput } from '../styles/ui';
 import { AlertCircle } from 'lucide-react';
+import { AdminAssistedGeneration } from './AdminAssistedGeneration';
 
 const ALL_CHALLENGE_TYPES: ChallengeType[] = [
   'SITUATIONAL_QCM',
@@ -51,6 +52,7 @@ export const AdminGeneration = () => {
   const [optionsLoading, setOptionsLoading] = useState(true);
   const [providerId, setProviderId] = useState('');
   const [modelId, setModelId] = useState('');
+  const [mode, setMode] = useState<'api' | 'assist'>('api');
 
   const [form, setForm] = useState<GenerationRequest>({
     profileIds: [],
@@ -184,6 +186,33 @@ export const AdminGeneration = () => {
         </div>
       </div>
 
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => setMode('api')}
+          className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${
+            mode === 'api'
+              ? 'bg-navy-900 dark:bg-navy-800 text-white'
+              : 'bg-surface border border-border text-ink-secondary hover:bg-canvas-subtle'
+          }`}
+        >
+          Génération par API
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode('assist')}
+          className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${
+            mode === 'assist'
+              ? 'bg-navy-900 dark:bg-navy-800 text-white'
+              : 'bg-surface border border-border text-ink-secondary hover:bg-canvas-subtle'
+          }`}
+        >
+          Génération assistée (LLM externe)
+        </button>
+      </div>
+
+      {mode === 'api' && (
+        <>
       <div className="bg-surface rounded-2xl p-6 border border-border shadow-panel space-y-4">
         <div>
           <h3 className="font-serif font-bold text-lg text-navy-900">Fournisseur et modèle</h3>
@@ -342,8 +371,12 @@ export const AdminGeneration = () => {
           </div>
         </div>
       )}
+        </>
+      )}
 
-      {result.kind === 'done' && (
+      {mode === 'assist' && <AdminAssistedGeneration />}
+
+      {mode === 'api' && result.kind === 'done' && (
         <div className="bg-card rounded border-2 border-border shadow-panel p-6 space-y-5">
           <div className="flex items-start gap-3">
             <Badge variant="success" size="md" dot>
@@ -413,7 +446,7 @@ export const AdminGeneration = () => {
         </div>
       )}
 
-      {result.kind === 'error' && (
+      {mode === 'api' && result.kind === 'error' && (
         <div className="bg-danger-soft border-2 border-danger-border rounded-2xl p-5 text-sm space-y-3 shadow-[0_2px_10px_rgba(172,59,97,0.08)]">
           <div className="flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-danger shrink-0 mt-0.5" />
