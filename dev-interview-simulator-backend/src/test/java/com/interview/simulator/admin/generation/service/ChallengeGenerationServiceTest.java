@@ -8,6 +8,7 @@ import com.interview.simulator.admin.challenge.dto.ChallengeImportReport.Planned
 import com.interview.simulator.admin.challenge.dto.ChallengeImportRequest.ImportedQuestion;
 import com.interview.simulator.admin.challenge.service.ChallengeImportService;
 import com.interview.simulator.admin.generation.dto.ChallengeGenerationRequest;
+import com.interview.simulator.admin.generation.provider.LLMGenerationProvider;
 import com.interview.simulator.category.entity.Category;
 import com.interview.simulator.category.repository.CategoryRepository;
 import com.interview.simulator.challenge.entity.ChallengeType;
@@ -64,7 +65,7 @@ class ChallengeGenerationServiceTest {
     private ArgumentCaptor<List<ImportedQuestion>> questionsCaptor;
 
     @Mock
-    private GeminiGenerationClient geminiGenerationClient;
+    private LLMGenerationProvider geminiGenerationClient;
 
     @Mock
     private ChallengeImportService challengeImportService;

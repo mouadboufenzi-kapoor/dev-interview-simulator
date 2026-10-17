@@ -3,6 +3,7 @@ package com.interview.simulator.admin.generation.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.interview.simulator.admin.generation.provider.LLMGenerationProvider;
 import com.interview.simulator.exception.ApiException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-public class GeminiGenerationClient {
+public class GeminiGenerationClient implements LLMGenerationProvider {
 
     private static final Logger logger = LoggerFactory.getLogger(GeminiGenerationClient.class);
 

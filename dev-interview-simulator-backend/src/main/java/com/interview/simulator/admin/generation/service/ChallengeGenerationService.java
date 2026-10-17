@@ -7,6 +7,7 @@ import com.interview.simulator.admin.challenge.dto.ChallengeImportRequest;
 import com.interview.simulator.admin.challenge.dto.ChallengeImportRequest.ImportedQuestion;
 import com.interview.simulator.admin.challenge.service.ChallengeImportService;
 import com.interview.simulator.admin.generation.dto.ChallengeGenerationRequest;
+import com.interview.simulator.admin.generation.provider.LLMGenerationProvider;
 import com.interview.simulator.category.entity.Category;
 import com.interview.simulator.category.repository.CategoryRepository;
 import com.interview.simulator.challenge.entity.ChallengeType;
@@ -100,7 +101,7 @@ public class ChallengeGenerationService {
             plausibles et une explication utile — et ne supprime jamais une information nécessaire pour \
             résoudre le problème.\n""";
 
-    private final GeminiGenerationClient geminiGenerationClient;
+    private final LLMGenerationProvider generationProvider;
     private final ChallengeImportService challengeImportService;
     private final ChallengeIdentityService challengeIdentityService;
     private final CategoryRepository categoryRepository;
@@ -109,14 +110,14 @@ public class ChallengeGenerationService {
     private final ObjectMapper objectMapper;
 
     public ChallengeGenerationService(
-            GeminiGenerationClient geminiGenerationClient,
+            LLMGenerationProvider generationProvider,
             ChallengeImportService challengeImportService,
             ChallengeIdentityService challengeIdentityService,
             CategoryRepository categoryRepository,
             SkillRepository skillRepository,
             ProfileRepository profileRepository,
             ObjectMapper objectMapper) {
-        this.geminiGenerationClient = geminiGenerationClient;
+        this.generationProvider = generationProvider;
         this.challengeImportService = challengeImportService;
         this.challengeIdentityService = challengeIdentityService;
         this.categoryRepository = categoryRepository;
@@ -126,9 +127,9 @@ public class ChallengeGenerationService {
     }
 
     public ChallengeImportReport generate(ChallengeGenerationRequest request) {
-        if (!geminiGenerationClient.isConfigured()) {
+        if (!generationProvider.isConfigured()) {
             throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE,
-                    "La génération automatique n'est pas configurée : renseignez GEMINI_API_KEY ou activez app.generation.enabled.");
+                    "La génération automatique n'est pas configurée : renseignez la clé du fournisseur de génération actif ou activez app.generation.enabled.");
         }
         Relations relations = resolveRelations(request);
         String prompt = buildPrompt(request, relations);
@@ -284,7 +285,7 @@ public class ChallengeGenerationService {
     }
 
     private List<ImportedQuestion> parseQuestions(String prompt, int count) {
-        String answer = geminiGenerationClient.generateText(prompt);
+        String answer = generationProvider.generateText(prompt);
         ChallengeImportRequest importRequest;
         try {
             importRequest = objectMapper.readValue(answer, ChallengeImportRequest.class);

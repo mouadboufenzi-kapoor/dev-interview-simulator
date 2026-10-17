@@ -50,6 +50,9 @@ app:
     # Generation LLM des questions (admin). Sans cle, la fonctionnalite repond
     # 503 sans appel au fournisseur ; l'application demarre normalement.
     enabled: ${GENERATION_ENABLED:true}
+    # Fournisseur LLM actif (defaut : gemini). Une valeur inconnue fait echouer
+    # le demarrage avec un message clair ; aucun basculement automatique.
+    provider: ${GENERATION_PROVIDER:gemini}
     gemini:
       api-key: ${GEMINI_API_KEY:}
       # Modele surchargeable sans rebuild via GEMINI_MODEL (son existence dans
