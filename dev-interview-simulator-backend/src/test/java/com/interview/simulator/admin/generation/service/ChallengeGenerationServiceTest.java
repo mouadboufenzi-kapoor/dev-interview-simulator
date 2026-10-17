@@ -8,6 +8,7 @@ import com.interview.simulator.admin.challenge.dto.ChallengeImportReport.Planned
 import com.interview.simulator.admin.challenge.dto.ChallengeImportRequest.ImportedQuestion;
 import com.interview.simulator.admin.challenge.service.ChallengeImportService;
 import com.interview.simulator.admin.generation.dto.ChallengeGenerationRequest;
+import com.interview.simulator.admin.generation.provider.GenerationProviderRegistry;
 import com.interview.simulator.admin.generation.provider.LLMGenerationProvider;
 import com.interview.simulator.category.entity.Category;
 import com.interview.simulator.category.repository.CategoryRepository;
@@ -36,6 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -68,6 +70,9 @@ class ChallengeGenerationServiceTest {
     private LLMGenerationProvider geminiGenerationClient;
 
     @Mock
+    private GenerationProviderRegistry generationProviderRegistry;
+
+    @Mock
     private ChallengeImportService challengeImportService;
 
     @Mock
@@ -88,6 +93,8 @@ class ChallengeGenerationServiceTest {
     void setUp() {
         ObjectMapper objectMapper = new ObjectMapper()
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        when(generationProviderRegistry.resolve(any(), any()))
+                .thenReturn(new GenerationProviderRegistry.Resolved(geminiGenerationClient, null));
         challengeGenerationService = new ChallengeGenerationService(
                 geminiGenerationClient,
                 challengeImportService,
@@ -95,7 +102,8 @@ class ChallengeGenerationServiceTest {
                 categoryRepository,
                 skillRepository,
                 profileRepository,
-                objectMapper);
+                objectMapper,
+                generationProviderRegistry);
     }
 
     @Test
@@ -200,7 +208,7 @@ class ChallengeGenerationServiceTest {
             Set<Long> profileIds) {
         return new ChallengeGenerationRequest(
                 profileIds, categoryIds, skillIds,
-                DifficultyLevel.JUNIOR, ChallengeType.SITUATIONAL_QCM, count, null);
+                DifficultyLevel.JUNIOR, ChallengeType.SITUATIONAL_QCM, count, null, null, null);
     }
 
     private ChallengeImportReport report() {

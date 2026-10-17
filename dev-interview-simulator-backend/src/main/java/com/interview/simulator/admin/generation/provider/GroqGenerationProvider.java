@@ -74,9 +74,13 @@ public class GroqGenerationProvider implements LLMGenerationProvider {
     }
 
     public String generateText(String prompt) {
+        return generateText(prompt, null);
+    }
+
+    public String generateText(String prompt, String requestedModel) {
         HttpResponse<String> response;
         try {
-            response = httpClient.send(buildRequest(prompt), HttpResponse.BodyHandlers.ofString());
+            response = httpClient.send(buildRequest(prompt, requestedModel), HttpResponse.BodyHandlers.ofString());
         } catch (HttpTimeoutException e) {
             throw new ApiException(HttpStatus.GATEWAY_TIMEOUT,
                     "Le service de génération n'a pas répondu à temps.");
@@ -105,16 +109,17 @@ public class GroqGenerationProvider implements LLMGenerationProvider {
         };
     }
 
-    private HttpRequest buildRequest(String prompt) {
+    private HttpRequest buildRequest(String prompt, String requestedModel) {
+        String effectiveModel = requestedModel == null || requestedModel.isBlank() ? model : requestedModel;
         return HttpRequest.newBuilder(URI.create(baseUrl + CHAT_COMPLETIONS_PATH))
                 .timeout(REQUEST_TIMEOUT)
                 .header(AUTHORIZATION_HEADER, BEARER_PREFIX + apiKey)
                 .header(CONTENT_TYPE_HEADER, APPLICATION_JSON)
-                .POST(HttpRequest.BodyPublishers.ofString(payload(prompt)))
+                .POST(HttpRequest.BodyPublishers.ofString(payload(prompt, effectiveModel)))
                 .build();
     }
 
-    private String payload(String prompt) {
+    private String payload(String prompt, String model) {
         try {
             return objectMapper.writeValueAsString(Map.of(
                     "model", model,

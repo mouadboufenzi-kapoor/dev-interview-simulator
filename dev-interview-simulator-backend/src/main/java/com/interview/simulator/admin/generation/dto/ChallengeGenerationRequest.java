@@ -16,5 +16,9 @@ public record ChallengeGenerationRequest(
         @NotNull DifficultyLevel difficulty,
         @NotNull ChallengeType type,
         @Min(1) @Max(10) int count,
-        String instructions
+        String instructions,
+        // Fournisseur LLM facultatif ("gemini" | "groq") : defaut = fournisseur du serveur.
+        String provider,
+        // modele facultatif : valide cote backend contre la liste autorisee du fournisseur.
+        String model
 ) {}

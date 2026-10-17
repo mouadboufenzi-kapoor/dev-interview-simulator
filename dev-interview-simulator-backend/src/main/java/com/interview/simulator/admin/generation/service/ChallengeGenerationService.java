@@ -7,6 +7,7 @@ import com.interview.simulator.admin.challenge.dto.ChallengeImportRequest;
 import com.interview.simulator.admin.challenge.dto.ChallengeImportRequest.ImportedQuestion;
 import com.interview.simulator.admin.challenge.service.ChallengeImportService;
 import com.interview.simulator.admin.generation.dto.ChallengeGenerationRequest;
+import com.interview.simulator.admin.generation.provider.GenerationProviderRegistry;
 import com.interview.simulator.admin.generation.provider.LLMGenerationProvider;
 import com.interview.simulator.category.entity.Category;
 import com.interview.simulator.category.repository.CategoryRepository;
@@ -108,6 +109,7 @@ public class ChallengeGenerationService {
     private final SkillRepository skillRepository;
     private final ProfileRepository profileRepository;
     private final ObjectMapper objectMapper;
+    private final GenerationProviderRegistry generationProviderRegistry;
 
     public ChallengeGenerationService(
             LLMGenerationProvider generationProvider,
@@ -116,7 +118,8 @@ public class ChallengeGenerationService {
             CategoryRepository categoryRepository,
             SkillRepository skillRepository,
             ProfileRepository profileRepository,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            GenerationProviderRegistry generationProviderRegistry) {
         this.generationProvider = generationProvider;
         this.challengeImportService = challengeImportService;
         this.challengeIdentityService = challengeIdentityService;
@@ -124,17 +127,34 @@ public class ChallengeGenerationService {
         this.skillRepository = skillRepository;
         this.profileRepository = profileRepository;
         this.objectMapper = objectMapper;
+        this.generationProviderRegistry = generationProviderRegistry;
     }
 
     public ChallengeImportReport generate(ChallengeGenerationRequest request) {
-        if (!generationProvider.isConfigured()) {
+        GenerationProviderRegistry.Resolved target = resolveTarget(request);
+        if (!target.provider().isConfigured()) {
             throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE,
                     "La génération automatique n'est pas configurée : renseignez la clé du fournisseur de génération actif ou activez app.generation.enabled.");
         }
         Relations relations = resolveRelations(request);
         String prompt = buildPrompt(request, relations);
-        List<ImportedQuestion> questions = bind(parseQuestions(prompt, request.count()), request, relations);
+        List<ImportedQuestion> questions = bind(parseQuestions(prompt, request.count(), target), request, relations);
         return challengeImportService.importQuestions(questions, ContentStatus.DRAFT, false);
+    }
+
+    /**
+     * Fournisseur + modele valides depuis la requete admin. Sans fournisseur explicite,
+     * on conserve le bean selectionne au demarrage (GENERATION_PROVIDER) : comportement
+     * par defaut strictement identique au comportement actuel. Le choix explicite est
+     * respecte tel quel, sans aucune basculement automatique vers un autre fournisseur.
+     */
+    private GenerationProviderRegistry.Resolved resolveTarget(ChallengeGenerationRequest request) {
+        GenerationProviderRegistry.Resolved resolved =
+                generationProviderRegistry.resolve(request.provider(), request.model());
+        boolean explicitProvider = request.provider() != null && !request.provider().isBlank();
+        return explicitProvider
+                ? resolved
+                : new GenerationProviderRegistry.Resolved(generationProvider, resolved.model());
     }
 
     private Relations resolveRelations(ChallengeGenerationRequest request) {
@@ -284,8 +304,10 @@ public class ChallengeGenerationService {
         };
     }
 
-    private List<ImportedQuestion> parseQuestions(String prompt, int count) {
-        String answer = generationProvider.generateText(prompt);
+    private List<ImportedQuestion> parseQuestions(String prompt, int count, GenerationProviderRegistry.Resolved target) {
+        String answer = target.model() == null
+                ? target.provider().generateText(prompt)
+                : target.provider().generateText(prompt, target.model());
         ChallengeImportRequest importRequest;
         try {
             importRequest = objectMapper.readValue(answer, ChallengeImportRequest.class);

@@ -20,4 +20,11 @@ public interface LLMGenerationProvider {
      *         (429 quota, 502 fournisseur indisponible ou reponse illisible, 504 timeout)
      */
     String generateText(String prompt);
+
+    /**
+     * Variante qui impose un modele pour cette requete (identifiant valide cote backend
+     * avant appel). Un modele null ou vide equivaut au modele par defaut du
+     * fournisseur, soit exactement generateText(prompt).
+     */
+    String generateText(String prompt, String model);
 }
