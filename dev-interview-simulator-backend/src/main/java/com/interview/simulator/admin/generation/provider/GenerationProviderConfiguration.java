@@ -20,10 +20,13 @@ import java.util.Locale;
  *   <li>configuration absente (ou vide) : fournisseur par defaut {@code gemini}, identique au
  *       comportement actuel ;</li>
  *   <li>valeur inconnue : echec explicite au demarrage avec la liste des valeurs disponibles ;</li>
+ *   <li>fournisseurs declarations : {@code gemini} (defaut) et {@code groq} ; un fournisseur
+ *       selectionne mais sans cle conserve le comportement metier (503 clair au moment de la
+ *       generation, sans bascule) ;</li>
  *   <li>fournisseur valide mais implementation absente de le contexte : echec explicite au
  *       demarrage ;</li>
  *   <li>aucun fallback automatique : seuls les fournisseurs declares ici existent ; ajouter
- *       Groq ou OpenRouter plus tard = une nouvelle implementation de
+ *       OpenRouter plus tard = une nouvelle implementation de
  *       {@link LLMGenerationProvider} + un {@code case} ci-dessous, sans toucher a
  *       {@code ChallengeGenerationService}.</li>
  * </ul>
@@ -34,6 +37,8 @@ public class GenerationProviderConfiguration {
     private static final Logger logger = LoggerFactory.getLogger(GenerationProviderConfiguration.class);
 
     private static final String DEFAULT_PROVIDER = "gemini";
+
+    private static final String SUPPORTED_PROVIDERS = "gemini, groq";
 
     @Bean
     @Primary
@@ -47,9 +52,10 @@ public class GenerationProviderConfiguration {
 
         return switch (provider) {
             case "gemini" -> requireBean(applicationContext, GeminiGenerationClient.class, provider);
+            case "groq" -> requireBean(applicationContext, GroqGenerationProvider.class, provider);
             default -> throw new IllegalStateException(
                     "Fournisseur LLM inconnu pour app.generation.provider : '" + providerName
-                            + "'. Valeurs disponibles : " + DEFAULT_PROVIDER
+                            + "'. Valeurs disponibles : " + SUPPORTED_PROVIDERS
                             + ". Aucun autre fournisseur n'est declare dans cette version.");
         };
     }
