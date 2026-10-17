@@ -165,6 +165,16 @@ Authorization is declared in `SecurityConfig`:
 
 The administrator account is created at startup from `ADMIN_USERNAME`, `ADMIN_EMAIL` and `ADMIN_PASSWORD`, and its password is kept in sync with that variable on restart.
 
+## External AI integration (Gemini)
+
+The back-office can generate new questions with an external LLM (Google Gemini). The integration is optional, admin-only, and the rest of the application runs normally without it.
+
+- `POST /api/admin/challenges/generate` (admin role) takes a difficulty, a challenge type, a count of 1 to 10, and profile, category and skill references. Its interface is the fifth tab of the back-office, "Génération": type, difficulty, count, at least one profile and one category, optional skills and extra instructions. The button stays disabled until the form is valid, so a misconfigured request never reaches the provider.
+- The backend builds the prompt itself (French, mobile-first editorial rules: short titles, a compact context matched to the difficulty, comparable answer options, no filler, and a self-check before returning) and asks for a strict JSON schema. The response goes through the same import service as a manual JSON import: every generated question lands as a `DRAFT`, categories, skills, profiles and difficulty are forced from the admin request and never taken from the model output, and an over-long answer is truncated to the requested count.
+- Configuration: `GEMINI_API_KEY` (sent in a request header, never in the URL or the logs), `GEMINI_MODEL` (default `gemini-3.8-flash`), `GEMINI_BASE_URL` and `GENERATION_ENABLED`. Without a key the application starts normally and only the endpoint answers 503.
+- Provider errors are translated: 429 stays a 429 (quota), while 401, 403, 404, other 5xx responses and unreadable bodies become a 502 with a generic message — the raw provider response and the key are never exposed.
+- No extra dependency: the backend calls the provider with the JDK's own `HttpClient`.
+
 ## Project status
 
 Available today: the full simulation flow with the five challenge types, guest and registered usage, the user dashboard, the administrator back-office, and the seeded question bank covering Java, Spring Boot, SQL, JPA Hibernate, API back-end, React, tests, architecture, distributed systems, system design, Git, Docker, CI/CD, and the Java to Spring transition.
