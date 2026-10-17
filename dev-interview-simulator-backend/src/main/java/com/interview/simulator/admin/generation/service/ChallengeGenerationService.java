@@ -11,6 +11,7 @@ import com.interview.simulator.category.entity.Category;
 import com.interview.simulator.category.repository.CategoryRepository;
 import com.interview.simulator.challenge.entity.ChallengeType;
 import com.interview.simulator.challenge.entity.ContentStatus;
+import com.interview.simulator.challenge.entity.DifficultyLevel;
 import com.interview.simulator.challenge.service.ChallengeIdentityService;
 import com.interview.simulator.exception.ApiException;
 import com.interview.simulator.profile.entity.Profile;
@@ -43,6 +44,61 @@ public class ChallengeGenerationService {
                     + "N'inclus JAMAIS les champs externalId, categories, skills ni profiles : le serveur les injecte. "
                     + "Ne mets un scenario et un stepOrder que si le type est ARCHITECTURE.";
     private static final String LANGUAGE_INSTRUCTION = "Rédige tout en français, ton professionnel, sans emojis.";
+
+    private static final String MOBILE_FIRST_RULE = """
+            Priorités éditoriales, par ordre d'importance : compréhension, contexte utile, réalisme, concision. \
+            Les questions sont majoritairement lues sur un téléphone : phrases courtes, paragraphes courts, \
+            une information par phrase lorsque c'est possible, formulations directes, peu de répétitions. \
+            Évite les longs paragraphes, les introductions inutiles, les formulations très académiques et \
+            les phrases qui empilent plusieurs notions techniques. \
+            Ne cherche jamais à atteindre artificiellement une longueur minimale : si un contexte se \
+            explique correctement en deux ou trois phrases, n'ajoute rien pour le rendre plus « complet ». \
+            Chaque phrase doit avoir une fonction : si une information n'influence ni le raisonnement \
+            attendu ni la réponse, supprime-la. \
+            Une question difficile ne doit pas être longue ni compliquée à lire : la difficulté vient du \
+            problème, du raisonnement nécessaire, des options, des compromis et des connaissances — jamais \
+            d'un vocabulaire inutilement compliqué. Inversement, une question Junior ne devient pas plus \
+            facile si on lui retire tout son contexte.\n""";
+    private static final String TITLE_RULE = """
+            Règle du titre : court et immédiatement compréhensible, il identifie le sujet ou le problème \
+            principal. Évite les titres qui ressemblent à des titres de documentation ou de cours, du type \
+            « Analyse et résolution d'un problème complexe concernant... ». Préfère des titres simples et \
+            directs comme « Une requête PostgreSQL trop lente », « Corriger une transaction Spring », \
+            « Un problème de concurrence » ou « Optimiser une requête SQL ». Le titre reste informatif : \
+            ce n'est pas une deuxième mise en situation.\n""";
+    private static final String CONTEXT_RULE = """
+            Règle de la mise en situation (context) : elle donne suffisamment d'informations pour comprendre \
+            le problème tout en restant compacte — ni une seule phrase trop pauvre, ni un long paragraphe, \
+            ni un mini-article technique. En repère indicatif : Junior 2 à 4 phrases courtes, Intermediate \
+            2 à 5 phrases, Advanced plus détaillé seulement si la complexité du scénario le justifie. Ces \
+            longueurs ne sont pas des quotas : la compréhension, le contexte utile et le réalisme priment, \
+            et aucun détail n'est ajouté artificiellement pour atteindre un nombre de phrases.\n""";
+    private static final String QUESTION_RULE = """
+            Règle de la question : directe, le candidat comprend rapidement ce qu'on attend de lui. Évite \
+            les formulations inutilement complexes et tout jargon qu'il faudrait décoder avant de saisir \
+            le problème. Une question teste idéalement une idée principale ou un raisonnement clairement \
+            identifiable ; si plusieurs notions sont nécessaires, elles restent naturellement liées au \
+            problème posé.\n""";
+    private static final String OPTIONS_RULE = """
+            Règles des options de QCM : chacune est compréhensible seule, concise, suffisamment précise \
+            pour distinguer les choix et formulée naturellement — jamais un long paragraphe. Ne répète pas \
+            dans les options des informations déjà données dans la mise en situation. Les distracteurs \
+            restent crédibles et de longueur raisonnablement comparable : la bonne réponse ne doit pas \
+            se repérer uniquement parce qu'elle est plus longue ou plus détaillée que les autres.\n""";
+    private static final String FINAL_CHECK_RULE = """
+            Avant de rendre chaque question, vérifie mentalement : le titre est-il court et compréhensible ; \
+            la mise en situation contient-elle uniquement les informations utiles ; le problème est-il \
+            compréhensible rapidement sur mobile ; le niveau de vocabulaire correspond-il à la difficulté \
+            demandée ; y a-t-il du jargon inutile ; la question demande-t-elle clairement quelque chose \
+            au candidat ; les options sont-elles assez courtes pour une lecture mobile ; la difficulté \
+            vient-elle du raisonnement plutôt que d'une formulation inutilement compliquée ; ai-je ajouté \
+            du texte uniquement pour remplir la réponse ? Si une formulation peut être plus claire sans \
+            perdre le raisonnement ni le contexte, retiens la formulation la plus claire. \
+            Ces règles de concision ne rendent jamais la question superficielle : elle reste ancrée dans \
+            le profil, la catégorie et la difficulté demandés, teste une compétence réellement pertinente, \
+            reste réaliste en entretien, propose une réponse correcte identifiable, des distracteurs \
+            plausibles et une explication utile — et ne supprime jamais une information nécessaire pour \
+            résoudre le problème.\n""";
 
     private final GeminiGenerationClient geminiGenerationClient;
     private final ChallengeImportService challengeImportService;
@@ -137,11 +193,13 @@ public class ChallengeGenerationService {
         appendTopics(prompt, relations);
         prompt.append(typeRules(request.type()));
         prompt.append("Chaque question doit exploiter un angle ou un piège différent des autres.\n");
+        prompt.append(editorialRules(request.difficulty()));
         prompt.append(LANGUAGE_INSTRUCTION).append('\n');
         if (request.instructions() != null && !request.instructions().isBlank()) {
             prompt.append("Consigne complémentaire de l'administrateur à respecter : ")
                     .append(request.instructions().trim()).append('\n');
         }
+        prompt.append(FINAL_CHECK_RULE).append('\n');
         prompt.append(JSON_ONLY_INSTRUCTION).append('\n');
         prompt.append(SCHEMA_INSTRUCTION);
         return prompt.toString();
@@ -186,6 +244,42 @@ public class ChallengeGenerationService {
                     options, toutes avec correct=true et severity=null ; displayOrder couvre exactement 0 à 4 \
                     et reflète l'ordre attendu de la démarche ; scenario=null et stepOrder=null ; \
                     selectionType vaut SINGLE_CHOICE ; l'explication de chaque étape justifie sa position.\n""";
+        };
+    }
+
+    private String editorialRules(DifficultyLevel difficulty) {
+        return MOBILE_FIRST_RULE
+                + TITLE_RULE
+                + CONTEXT_RULE
+                + QUESTION_RULE
+                + OPTIONS_RULE
+                + vocabularyRules(difficulty);
+    }
+
+    private String vocabularyRules(DifficultyLevel difficulty) {
+        return switch (difficulty) {
+            case JUNIOR -> """
+                    Vocabulaire Junior : simple et professionnel — on teste les fondamentaux et le raisonnement, \
+                    pas la capacité à décoder du jargon. Évite le jargon inutile ; lorsqu'un terme technique \
+                    avancé est réellement nécessaire, explique-le brièvement dans le contexte ou utilise une \
+                    formulation plus accessible. N'empile pas plusieurs termes spécialisés non expliqués dans \
+                    une même phrase. Par exemple, au lieu de « Comment forcer l'optimiseur à intégrer le \
+                    corps de la CTE dans la requête principale (inlining) afin d'appliquer le filtre au \
+                    plus tôt ? », préfère « Une requête PostgreSQL utilise une CTE et devient lente sur de \
+                    grands volumes ; le filtre semble appliqué trop tard. Quelle approche permet de réduire \
+                    plus tôt le nombre de lignes traitées ? ».\n""";
+            case INTERMEDIATE -> """
+                    Vocabulaire Intermediate : le niveau professionnel attendu d'un développeur ayant déjà \
+                    une expérience pratique. Le jargon technique est autorisé lorsqu'il est pertinent, mais \
+                    n'empile pas plusieurs termes spécialisés dans une seule phrase sans utilité pour le \
+                    raisonnement : le candidat doit comprendre la question sans avoir à décoder une \
+                    formulation inutilement sophistiquée.\n""";
+            case ADVANCED -> """
+                    Vocabulaire Advanced : la précision technique est autorisée et peut faire partie de la \
+                    difficulté ; les notions avancées sont bienvenues lorsqu'elles correspondent \
+                    réellement au problème, et la question peut y être plus dense et plus précise. Même à \
+                    ce niveau, évite le jargon décoratif et les phrases inutilement longues : chaque terme \
+                    technique doit avoir une utilité dans le problème posé.\n""";
         };
     }
 
