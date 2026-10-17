@@ -11,6 +11,21 @@ export interface GenerationRequest {
   type: ChallengeType;
   count: number;
   instructions?: string;
+  provider?: string;
+  model?: string;
+}
+
+export interface GenerationProviderOption {
+  id: string;
+  label: string;
+  configured: boolean;
+  defaultProvider: boolean;
+  models: string[];
+}
+
+export interface GenerationOptions {
+  defaultProvider: string;
+  providers: GenerationProviderOption[];
 }
 
 export interface GenerationReport {
@@ -237,6 +252,10 @@ const readableHttpMessage = (status: number, fallback: string): string => {
 };
 
 export const generationApi = {
+  options: async (): Promise<GenerationOptions> => {
+    const { data } = await apiClient.get('/admin/generation/options');
+    return data;
+  },
   generate: async (request: GenerationRequest): Promise<GenerationReport> => {
     const { data } = await apiClient.post('/admin/challenges/generate', request);
     return data;

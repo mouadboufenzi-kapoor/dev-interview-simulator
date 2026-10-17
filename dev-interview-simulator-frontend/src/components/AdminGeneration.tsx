@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { GenerationRequest, GenerationDifficulty } from '../api/adminApi';
+import type { GenerationRequest, GenerationDifficulty, GenerationOptions } from '../api/adminApi';
 import { generationApi } from '../api/adminApi';
 import { adminProfileApi, type AdminProfile } from '../api/adminApi';
 import { simulationApi } from '../api/simulationApi';
@@ -46,6 +46,11 @@ export const AdminGeneration = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [skills, setSkills] = useState<Skill[]>([]);
   const [taxonomyLoading, setTaxonomyLoading] = useState(true);
+  const [options, setOptions] = useState<GenerationOptions | null>(null);
+  const [optionsError, setOptionsError] = useState<string | null>(null);
+  const [optionsLoading, setOptionsLoading] = useState(true);
+  const [providerId, setProviderId] = useState('');
+  const [modelId, setModelId] = useState('');
 
   const [form, setForm] = useState<GenerationRequest>({
     profileIds: [],
@@ -75,9 +80,22 @@ export const AdminGeneration = () => {
       simulationApi.getCategories().then(setCategories),
       simulationApi.getSkills().then(setSkills),
     ]).finally(() => setTaxonomyLoading(false));
+    const loadOptions = generationApi
+      .options()
+      .then((opts) => {
+        const preferred =
+          opts.providers.find((p) => p.id === opts.defaultProvider) ?? opts.providers[0];
+        setOptions(opts);
+        setProviderId(preferred?.id ?? '');
+        setModelId(preferred?.models[0] ?? '');
+      })
+      .catch(() =>
+        setOptionsError('Catalogue des fournisseurs indisponible : vérifiez la configuration serveur.')
+      )
+      .finally(() => setOptionsLoading(false));
 
     let cancelled = false;
-    Promise.all([loadProfiles, loadTaxonomy]).catch(() => {
+    Promise.all([loadProfiles, loadTaxonomy, loadOptions]).catch(() => {
       if (!cancelled) {
         setProfiles([]);
         setCategories([]);
@@ -91,6 +109,8 @@ export const AdminGeneration = () => {
     items.map((item) => ({ id: item.id, name: item.name }));
 
   const dataReady = !profilesLoading && !taxonomyLoading;
+  const selectedProvider = options?.providers.find((p) => p.id === providerId);
+  const providerModels = selectedProvider?.models ?? [];
   const isGenerating = result.kind === 'loading';
 
   const countValue = parseCount(countInput);
@@ -102,11 +122,24 @@ export const AdminGeneration = () => {
   if (countValue === null) missingFields.push(`le nombre de questions (${MIN_COUNT} à ${MAX_COUNT})`);
   if ((form.profileIds ?? []).length === 0) missingFields.push('au moins un profil');
   if ((form.categoryIds ?? []).length === 0) missingFields.push('au moins une catégorie');
+  if (optionsError !== null || optionsLoading) missingFields.push('le catalogue des fournisseurs');
+  else if (!selectedProvider) missingFields.push('un fournisseur de génération valide');
+  else if (!selectedProvider.configured) missingFields.push('un fournisseur de génération configuré');
+  else if (modelId === '') missingFields.push('un modèle de génération');
 
-  const formValid = dataReady && missingFields.length === 0;
+  const formValid = dataReady && options !== null && missingFields.length === 0;
 
   const setField = <K extends keyof GenerationRequest>(key: K, value: GenerationRequest[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
+    if (result.kind === 'error') {
+      setResult({ kind: 'idle' });
+    }
+  };
+
+  const handleProviderChange = (id: string) => {
+    setProviderId(id);
+    const next = options?.providers.find((p) => p.id === id);
+    setModelId(next?.models[0] ?? '');
     if (result.kind === 'error') {
       setResult({ kind: 'idle' });
     }
@@ -126,7 +159,7 @@ export const AdminGeneration = () => {
     const count = parseCount(countInput);
     // Aucune requête n'est envoyée si le formulaire est invalide ou déjà en cours de génération.
     if (!formValid || count === null || isGenerating) return;
-    const request: GenerationRequest = { ...form, count };
+    const request: GenerationRequest = { ...form, count, provider: providerId, model: modelId };
     setResult({ kind: 'loading' });
     try {
       const report = await generationApi.generate(request);
@@ -146,9 +179,53 @@ export const AdminGeneration = () => {
         <div>
           <h2 className="font-serif text-2xl font-bold text-navy-900">Génération automatique</h2>
           <p className="text-sm text-ink-secondary mt-1">
-            Générez des questions en brouillon depuis le fournisseur configuré côté serveur.
+            Générez des questions en brouillon en choisissant le fournisseur et le modèle.
           </p>
         </div>
+      </div>
+
+      <div className="bg-surface rounded-2xl p-6 border border-border shadow-panel space-y-4">
+        <div>
+          <h3 className="font-serif font-bold text-lg text-navy-900">Fournisseur et modèle</h3>
+          <p className="text-xs text-ink-muted mt-1">
+            Moteur de génération de cette demande : modifiable à chaque génération, sans redémarrage.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Field label="Fournisseur">
+            <select
+              value={providerId}
+              onChange={(e) => handleProviderChange(e.target.value)}
+              className={fieldInput}
+            >
+              {(options?.providers ?? []).map((p) => (
+                <option key={p.id} value={p.id} disabled={!p.configured}>
+                  {p.label}
+                  {p.configured ? '' : ' (non configuré)'}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label="Modèle">
+            <select
+              value={modelId}
+              onChange={(e) => setModelId(e.target.value)}
+              className={fieldInput}
+              disabled={providerModels.length === 0}
+            >
+              {providerModels.map((m) => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+          </Field>
+        </div>
+        {selectedProvider && !selectedProvider.configured && (
+          <p className="text-xs text-danger">
+            Fournisseur non configuré côté serveur : génération impossible avec lui.
+          </p>
+        )}
+        {optionsError && <p className="text-xs text-danger">{optionsError}</p>}
       </div>
 
       {profilesLoading || taxonomyLoading ? (
