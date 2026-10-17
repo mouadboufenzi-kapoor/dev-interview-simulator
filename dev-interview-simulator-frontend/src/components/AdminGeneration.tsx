@@ -25,7 +25,20 @@ const DIFFICULTIES: GenerationDifficulty[] = [
   'ADVANCED',
 ];
 
+const MIN_COUNT = 1;
+const MAX_COUNT = 10;
 const DEFAULT_COUNT = 3;
+
+/**
+ * Valide la saisie texte du nombre de questions.
+ * Retourne un entier compris entre 1 et 10, ou null si la saisie est vide ou invalide.
+ */
+const parseCount = (raw: string): number | null => {
+  const trimmed = raw.trim();
+  if (!/^\d+$/.test(trimmed)) return null;
+  const value = Number(trimmed);
+  return value >= MIN_COUNT && value <= MAX_COUNT ? value : null;
+};
 
 export const AdminGeneration = () => {
   const [profiles, setProfiles] = useState<AdminProfile[]>([]);
@@ -43,6 +56,10 @@ export const AdminGeneration = () => {
     count: DEFAULT_COUNT,
     instructions: '',
   });
+
+  // Saisie du nombre de questions conservée en texte : permet de vider temporairement
+  // le champ pendant l'édition et évite d'imposer un « 0 » non significatif (ex. « 05 »).
+  const [countInput, setCountInput] = useState<string>(String(DEFAULT_COUNT));
 
   type Result =
     | { kind: 'loading' }
@@ -73,7 +90,20 @@ export const AdminGeneration = () => {
   const selectOptions = <T extends { id: number; name: string }>(items: T[]) =>
     items.map((item) => ({ id: item.id, name: item.name }));
 
-  const canSubmit = !profilesLoading && !taxonomyLoading;
+  const dataReady = !profilesLoading && !taxonomyLoading;
+  const isGenerating = result.kind === 'loading';
+
+  const countValue = parseCount(countInput);
+
+  // Paramètres minimums : type, difficulté, nombre (1–10), au moins un profil et une catégorie.
+  const missingFields: string[] = [];
+  if (!ALL_CHALLENGE_TYPES.includes(form.type)) missingFields.push('le type de question');
+  if (!DIFFICULTIES.includes(form.difficulty)) missingFields.push('la difficulté');
+  if (countValue === null) missingFields.push(`le nombre de questions (${MIN_COUNT} à ${MAX_COUNT})`);
+  if ((form.profileIds ?? []).length === 0) missingFields.push('au moins un profil');
+  if ((form.categoryIds ?? []).length === 0) missingFields.push('au moins une catégorie');
+
+  const formValid = dataReady && missingFields.length === 0;
 
   const setField = <K extends keyof GenerationRequest>(key: K, value: GenerationRequest[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -82,15 +112,28 @@ export const AdminGeneration = () => {
     }
   };
 
+  const handleCountChange = (raw: string) => {
+    // Chiffres uniquement, sans zéros non significatifs ; la chaîne vide reste possible
+    // le temps de la saisie et sera refusée par la validation avant envoi.
+    const next = raw.replace(/[^\d]/g, '').replace(/^0+(?=\d)/, '');
+    setCountInput(next);
+    if (result.kind === 'error') {
+      setResult({ kind: 'idle' });
+    }
+  };
+
   const handleGenerate = async () => {
-    if (!canSubmit) return;
+    const count = parseCount(countInput);
+    // Aucune requête n'est envoyée si le formulaire est invalide ou déjà en cours de génération.
+    if (!formValid || count === null || isGenerating) return;
+    const request: GenerationRequest = { ...form, count };
     setResult({ kind: 'loading' });
     try {
-      const report = await generationApi.generate(form);
+      const report = await generationApi.generate(request);
       setResult({ kind: 'done', report });
     } catch (err) {
       const { status, message } = generationApi.mapError(err);
-      setResult({ kind: 'error', status, message, request: form });
+      setResult({ kind: 'error', status, message, request });
     }
   };
 
@@ -140,20 +183,20 @@ export const AdminGeneration = () => {
             </Field>
           </div>
 
-          <Field label="Nombre de questions (1 à 10)">
+          <Field label={`Nombre de questions (${MIN_COUNT} à ${MAX_COUNT})`}>
             <input
               type="number"
-              min={1}
-              max={10}
+              min={MIN_COUNT}
+              max={MAX_COUNT}
               required
-              value={form.count}
-              onChange={(e) => setField('count', parseInt(e.target.value, 10) || 0)}
+              value={countInput}
+              onChange={(e) => handleCountChange(e.target.value)}
               className={fieldInput}
             />
           </Field>
 
           <div className="border-t border-border-subtle pt-4 space-y-4">
-            <h3 className="font-serif font-bold text-lg text-navy-900">Filtres optionnels</h3>
+            <h3 className="font-serif font-bold text-lg text-navy-900">Critères de sélection</h3>
 
             <MultiSelect
               label="Profils métier"
@@ -162,8 +205,10 @@ export const AdminGeneration = () => {
               onChange={(ids) => setField('profileIds', ids)}
               emptyMessage="Aucun profil actif disponible."
             />
-            {profiles.length > 0 && form.profileIds && form.profileIds.length === 0 && (
-              <p className="text-xs text-ink-muted">{counterHint(form.profileIds)}</p>
+            {profiles.length > 0 && (!form.profileIds || form.profileIds.length === 0) && (
+              <p className="text-xs text-ink-muted">
+                Sélection obligatoire : au moins un profil de référence pour orienter la génération.
+              </p>
             )}
 
             <MultiSelect
@@ -173,8 +218,10 @@ export const AdminGeneration = () => {
               onChange={(ids) => setField('categoryIds', ids)}
               emptyMessage="Aucune catégorie disponible."
             />
-            {categories.length > 0 && form.categoryIds && form.categoryIds.length === 0 && (
-              <p className="text-xs text-ink-muted">{counterHint(form.categoryIds)}</p>
+            {categories.length > 0 && (!form.categoryIds || form.categoryIds.length === 0) && (
+              <p className="text-xs text-ink-muted">
+                Sélection obligatoire : au moins une catégorie pour cadrer la génération.
+              </p>
             )}
 
             <MultiSelect
@@ -199,13 +246,19 @@ export const AdminGeneration = () => {
             />
           </Field>
 
+          {!formValid && missingFields.length > 0 && (
+            <p className="text-xs text-ink-muted">
+              Renseignez {missingFields.join(', ')} pour activer la génération.
+            </p>
+          )}
+
           <div className="flex justify-end gap-3 pt-2">
             <Button
               type="button"
               variant="primary"
               onClick={handleGenerate}
-              disabled={!canSubmit}
-              loading={result.kind === 'loading'}
+              disabled={!formValid}
+              loading={isGenerating}
             >
               Générer les questions
             </Button>
@@ -296,12 +349,6 @@ export const AdminGeneration = () => {
             </div>
           </div>
 
-          {result.request.profileIds && result.request.profileIds.length === 0 && (
-            <p className="text-xs text-ink-muted">{counterHint(result.request.profileIds)}</p>
-          )}
-          {result.request.categoryIds && result.request.categoryIds.length === 0 && (
-            <p className="text-xs text-ink-muted">{counterHint(result.request.categoryIds)}</p>
-          )}
           {result.request.skillIds && result.request.skillIds.length === 0 && (
             <p className="text-xs text-ink-muted">{counterHint(result.request.skillIds)}</p>
           )}
@@ -314,8 +361,8 @@ export const AdminGeneration = () => {
               type="button"
               variant="primary"
               onClick={handleGenerate}
-              disabled={!canSubmit}
-              loading={result.kind === 'loading'}
+              disabled={!formValid}
+              loading={isGenerating}
             >
               Réessayer
             </Button>
