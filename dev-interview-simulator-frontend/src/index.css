@@ -52,6 +52,17 @@
   --color-success-bg: #D6F5E3;
   --color-error: #D93025;
   --color-error-bg: #FDE0DC;
+  --color-nav-text: #111111;
+  --color-nav-muted: #555555;
+  --color-nav-hover: #FFFFFF;
+  --color-nav-ink-hover: #123C69;
+  --color-nav-border: #111111;
+  --color-nav-accent: #FF5A36;
+  --color-logo-body: #123C69;
+  --color-logo-cursor: #FF5A36;
+  --color-avatar-bg: #FFE88A;
+  --color-avatar-text: #123C69;
+  --color-highlight: #FFD23F;
 
   /* ===== Anciens tokens (génèrent les utilitaires existants) =====
      Valeurs par défaut = Soleil/Clair. Re-teintés par les blocs [data-theme]
@@ -105,7 +116,7 @@
 
 /* =====================================================================
    COMBINAISONS DE THÈME — posées sur <html data-theme data-mode>.
-   data-theme = soleil | menthe ; data-mode = light | dark.
+   data-theme = encre | soleil | menthe ; data-mode = light | dark.
    Le mode « system » est résolu côté JS en light/dark avant d'être écrit
    sur l'attribut : il n'existe AUCUN mode CSS « system ».
    Chaque bloc définit les tokens canoniques ; les anciens noms sont
@@ -130,6 +141,17 @@
   --color-success-bg: #D6F5E3;
   --color-error: #D93025;
   --color-error-bg: #FDE0DC;
+  --color-nav-text: var(--color-text);
+  --color-nav-muted: var(--color-muted);
+  --color-nav-hover: var(--color-card);
+  --color-nav-ink-hover: var(--color-brand);
+  --color-nav-border: var(--color-border);
+  --color-nav-accent: var(--color-accent);
+  --color-logo-body: var(--color-brand);
+  --color-logo-cursor: var(--color-accent);
+  --color-avatar-bg: var(--color-selected);
+  --color-avatar-text: var(--color-brand);
+  --color-highlight: var(--color-nav);
 }
 
 [data-theme="soleil"][data-mode="dark"] {
@@ -151,6 +173,17 @@
   --color-success-bg: #12301F;
   --color-error: #FF6B5E;
   --color-error-bg: #3A1714;
+  --color-nav-text: var(--color-text);
+  --color-nav-muted: var(--color-muted);
+  --color-nav-hover: var(--color-card);
+  --color-nav-ink-hover: var(--color-brand);
+  --color-nav-border: var(--color-border);
+  --color-nav-accent: var(--color-accent);
+  --color-logo-body: var(--color-brand);
+  --color-logo-cursor: var(--color-accent);
+  --color-avatar-bg: var(--color-selected);
+  --color-avatar-text: var(--color-brand);
+  --color-highlight: var(--color-nav);
 }
 
 [data-theme="menthe"][data-mode="light"] {
@@ -172,6 +205,17 @@
   --color-success-bg: #D6F5E3;
   --color-error: #D93025;
   --color-error-bg: #FDE0DC;
+  --color-nav-text: var(--color-text);
+  --color-nav-muted: var(--color-muted);
+  --color-nav-hover: var(--color-card);
+  --color-nav-ink-hover: var(--color-brand);
+  --color-nav-border: var(--color-border);
+  --color-nav-accent: var(--color-accent);
+  --color-logo-body: var(--color-brand);
+  --color-logo-cursor: var(--color-accent);
+  --color-avatar-bg: var(--color-selected);
+  --color-avatar-text: var(--color-brand);
+  --color-highlight: var(--color-nav);
 }
 
 [data-theme="menthe"][data-mode="dark"] {
@@ -193,6 +237,81 @@
   --color-success-bg: #12301F;
   --color-error: #FF6B5E;
   --color-error-bg: #3A1714;
+  --color-nav-text: var(--color-text);
+  --color-nav-muted: var(--color-muted);
+  --color-nav-hover: var(--color-card);
+  --color-nav-ink-hover: var(--color-brand);
+  --color-nav-border: var(--color-border);
+  --color-nav-accent: var(--color-accent);
+  --color-logo-body: var(--color-brand);
+  --color-logo-cursor: var(--color-accent);
+  --color-avatar-bg: var(--color-selected);
+  --color-avatar-text: var(--color-brand);
+  --color-highlight: var(--color-nav);
+}
+
+[data-theme="encre"][data-mode="light"] {
+  --color-bg: #EDF0F3;
+  --color-nav: #123C69;
+  --color-card: #FFFFFF;
+  --color-border: #0B1F3A;
+  --color-text: #0B1F3A;
+  --color-muted: #52627A;
+  --color-brand: #123C69;
+  --color-accent: #FF5A36;
+  --color-selected: #D6E2F2;
+  --color-cta-bg: #123C69;
+  --color-cta-text: #FFFFFF;
+  --color-cta-border: #0B1F3A;
+  --color-shadow: #0B1F3A;
+  --color-wordmark-accent: #FF8A6B;
+  --color-success: #1F9D55;
+  --color-success-bg: #D6F5E3;
+  --color-error: #D93025;
+  --color-error-bg: #FDE0DC;
+  --color-nav-text: #F4F1EA;
+  --color-nav-muted: #B9C7DA;
+  --color-nav-hover: #0B1F3A;
+  --color-nav-ink-hover: #FF8A6B;
+  --color-nav-border: #7FA8D6;
+  --color-nav-accent: #FF8A6B;
+  --color-logo-body: #F4F1EA;
+  --color-logo-cursor: #FF5A36;
+  --color-avatar-bg: #F4F1EA;
+  --color-avatar-text: #123C69;
+  --color-highlight: #D6E2F2;
+}
+
+[data-theme="encre"][data-mode="dark"] {
+  --color-bg: #0B1422;
+  --color-nav: #0F2744;
+  --color-card: #111E30;
+  --color-border: #B8CBE3;
+  --color-text: #EAF1FB;
+  --color-muted: #8FA3BF;
+  --color-brand: #7FA8D6;
+  --color-accent: #FF7A59;
+  --color-selected: #1A2E4A;
+  --color-cta-bg: #FF7A59;
+  --color-cta-text: #0B1422;
+  --color-cta-border: #B8CBE3;
+  --color-shadow: #FF7A59;
+  --color-wordmark-accent: #FF8A6B;
+  --color-success: #4ADE80;
+  --color-success-bg: #12301F;
+  --color-error: #FF6B5E;
+  --color-error-bg: #3A1714;
+  --color-nav-text: #EAF1FB;
+  --color-nav-muted: #9FB3CF;
+  --color-nav-hover: #0B1422;
+  --color-nav-ink-hover: #FF7A59;
+  --color-nav-border: #7FA8D6;
+  --color-nav-accent: #FF7A59;
+  --color-logo-body: #F4F1EA;
+  --color-logo-cursor: #FF7A59;
+  --color-avatar-bg: #F4F1EA;
+  --color-avatar-text: #0F2744;
+  --color-highlight: #1A2E4A;
 }
 
 /* ===== Re-teintage des anciens tokens → palette canonique =====
@@ -233,14 +352,14 @@
   --color-crimson-100: var(--color-selected);
   --color-crimson-50: var(--color-bg);
 
-  --color-peach-500: var(--color-nav);
-  --color-peach-400: var(--color-nav);
-  --color-peach-300: var(--color-nav);
+  --color-peach-500: var(--color-highlight);
+  --color-peach-400: var(--color-highlight);
+  --color-peach-300: var(--color-highlight);
   --color-peach-100: var(--color-selected);
   --color-peach-50: var(--color-bg);
   --color-peach-ink: var(--color-text);
-  --color-sand-100: var(--color-nav);
-  --color-sand-300: var(--color-nav);
+  --color-sand-100: var(--color-highlight);
+  --color-sand-300: var(--color-highlight);
 
   --color-success-strong: var(--color-success);
   --color-success-surface: var(--color-success-bg);

@@ -28,7 +28,7 @@ export const NavbarUserMenu = ({
   onOpenAdmin,
   onLogout,
 }: Props) => (
-  <div className="relative sm:pl-2 sm:border-l border-border" ref={menuRef}>
+  <div className="relative sm:pl-2 sm:border-l border-nav-border" ref={menuRef}>
     <button
       type="button"
       onClick={() => {
@@ -38,16 +38,16 @@ export const NavbarUserMenu = ({
           requestAccess();
         }
       }}
-      className="flex items-center gap-2 text-xs font-sans text-ink-warm transition hover:text-navy-900 cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas"
+      className="flex items-center gap-2 text-xs font-sans text-nav-muted transition hover:text-nav-ink-hover cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas"
       aria-label={user ? 'Ouvrir le menu utilisateur' : 'Ouvrir la connexion'}
     >
-      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-navy-100 text-navy-900">
+      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-avatar-bg text-avatar-text">
         <User className="w-3.5 h-3.5" />
       </div>
-      <span className="hidden md:inline font-medium text-ink">
+      <span className="hidden md:inline font-medium text-nav-text">
         {user?.username || 'Invité'}
       </span>
-      <ChevronDown className="h-3.5 w-3.5 text-ink-muted" />
+      <ChevronDown className="h-3.5 w-3.5 text-nav-muted" />
     </button>
 
     {user && showUserMenu && (

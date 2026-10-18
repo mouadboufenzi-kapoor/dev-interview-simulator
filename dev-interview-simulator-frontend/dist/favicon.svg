@@ -1,10 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
-  <!-- Soft Linen/Oyster Container -->
-  <rect width="32" height="32" rx="7" fill="#EEE2DC" />
-  <rect x="0.5" y="0.5" width="31" height="31" rx="6.5" stroke="#BAB2B5" stroke-width="1" />
-  
-  <!-- Architectural Monogram in Deep Navy (#123C69) and Rosewood (#AC3B61) -->
-  <path d="M8 24V8L18 16L8 24Z" fill="#123C69" />
-  <path d="M18 8V24L24 16L18 8Z" fill="#AC3B61" />
-  <circle cx="21" cy="16" r="1.5" fill="#EDC7B7" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Même mark que la navbar (src/components/common/LogoMark.tsx) :
+       bulle de dialogue + chevron « > » + curseur. Un favicon est un document
+       statique : il ne peut pas lire les var() CSS de l'app, d'où les valeurs
+       codées en dur de la palette « soleil » (défaut) :
+       brand #123C69 · nav #FFD23F · accent #FF5A36. -->
+  <!-- Corps de la bulle -->
+  <rect x="6" y="8" width="52" height="38" rx="12" fill="#123C69"/>
+  <!-- Queue de la bulle -->
+  <path d="M16 44 L14 58 L30 46 Z" fill="#123C69"/>
+  <!-- Chevron « > » du terminal -->
+  <path d="M22 19 L32 27 L22 35" fill="none" stroke="#FFD23F" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Trait du curseur (accent) -->
+  <path d="M36 35 H46" fill="none" stroke="#FF5A36" stroke-width="4" stroke-linecap="round"/>
 </svg>

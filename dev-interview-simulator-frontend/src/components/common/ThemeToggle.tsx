@@ -40,12 +40,12 @@ export const ThemeToggle: React.FC = () => {
       onClick={toggle}
       title={isDark ? 'Passer en mode clair' : 'Passer en mode sombre'}
       aria-label={isDark ? 'Passer en mode clair' : 'Passer en mode sombre'}
-      className="relative p-2 rounded flex items-center justify-center transition cursor-pointer hover:bg-card focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-bg before:absolute before:-inset-2 before:content-['']"
+      className="relative p-2 rounded flex items-center justify-center transition cursor-pointer hover:bg-nav-hover focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-bg before:absolute before:-inset-2 before:content-['']"
     >
       {isDark ? (
-        <Sun className="w-4 h-4 text-text" />
+        <Sun className="w-4 h-4 text-nav-text" />
       ) : (
-        <Moon className="w-4 h-4 text-muted" />
+        <Moon className="w-4 h-4 text-nav-muted" />
       )}
     </button>
   );

@@ -6,6 +6,7 @@ export type ButtonVariant =
   | 'secondary'
   | 'navy'
   | 'outline'
+  | 'outline-nav'
   | 'champagne'
   | 'ghost'
   | 'danger';
@@ -45,8 +46,10 @@ export const Button: React.FC<ButtonProps> = ({
     navy: 'cta-brutal font-semibold',
     outline:
       'bg-transparent hover:bg-selected text-text border-2 border-border hover:border-brand',
+    'outline-nav':
+      'bg-transparent hover:bg-selected text-nav-text hover:text-text border-2 border-nav-border hover:border-nav-accent',
     champagne:
-      'bg-nav hover:bg-selected text-text font-semibold border-2 border-border shadow-card',
+      'bg-nav hover:bg-selected text-nav-text hover:text-text font-semibold border-2 border-nav-border shadow-card',
     ghost:
       'bg-transparent hover:bg-selected text-muted hover:text-text border-2 border-transparent',
     danger:
