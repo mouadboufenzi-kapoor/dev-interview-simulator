@@ -14,6 +14,7 @@ import com.interview.simulator.skill.repository.SkillRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -26,6 +27,10 @@ public class AssistedPromptService {
             "Exemple de JSON complet et valide pour ce type (même structure, contenu à adapter) :";
     private static final String CLOSING_RULE =
             "Envoie uniquement le JSON final, sans Markdown ni texte d'introduction.";
+    private static final String FUNDAMENTALS_SKILL_NAME = "Fundamentals";
+    private static final String FUNDAMENTALS_RULE =
+            "Règle Fundamentals : question de connaissance ou de théorie sans scénario à diagnostiquer, "
+                    + "optimiser ou concevoir ; dès qu'une situation est à résoudre, choisir une autre compétence.";
 
     private static final String EXAMPLE_TEMPLATE = """
             {
@@ -70,7 +75,8 @@ public class AssistedPromptService {
 
     public String buildPrompt(AssistedPromptRequest request) {
         List<String> categoryNames = requireCategoryNames(request.categoryIds());
-        List<String> skillNames = requireSkillNames(request.skillIds());
+        List<Skill> skills = requireSkills(request.skillIds());
+        List<String> skillNames = skills.stream().map(Skill::getName).toList();
         List<String> profileCodes = requireProfileCodes(request.profileIds());
 
         StringBuilder prompt = new StringBuilder();
@@ -81,8 +87,12 @@ public class AssistedPromptService {
         if (!categoryNames.isEmpty()) {
             prompt.append("Catégories techniques autorisées (noms exacts) : ").append(String.join(", ", categoryNames)).append(".\n");
         }
-        if (!skillNames.isEmpty()) {
-            prompt.append("Compétences autorisées (noms exacts) : ").append(String.join(", ", skillNames)).append(".\n");
+        if (!skills.isEmpty()) {
+            prompt.append("Compétences autorisées (nom exact — description) :\n");
+            skills.forEach(skill -> prompt.append("- ").append(skillLine(skill)).append('\n'));
+            if (containsFundamentals(skills)) {
+                prompt.append(FUNDAMENTALS_RULE).append('\n');
+            }
         }
         if (!profileCodes.isEmpty()) {
             prompt.append("Profils destinataires (codes exacts) : ").append(String.join(", ", profileCodes)).append(".\n");
@@ -322,14 +332,28 @@ public class AssistedPromptService {
         return found.stream().map(Category::getName).sorted().toList();
     }
 
-    private List<String> requireSkillNames(Set<Long> ids) {
+    private List<Skill> requireSkills(Set<Long> ids) {
         if (ids == null || ids.isEmpty()) {
             return List.of();
         }
         Set<Skill> found = skillRepository.findAllById(ids).stream().collect(Collectors.toSet());
         rejectMissing(ids, found.stream().map(Skill::getId).collect(Collectors.toSet()),
                 "Compétence(s) introuvable(s) : ");
-        return found.stream().map(Skill::getName).sorted().toList();
+        return found.stream().sorted(Comparator.comparing(Skill::getName)).toList();
+    }
+
+    private String skillLine(Skill skill) {
+        return isBlank(skill.getDescription())
+                ? skill.getName()
+                : skill.getName() + " — " + skill.getDescription();
+    }
+
+    private boolean containsFundamentals(List<Skill> skills) {
+        return skills.stream().anyMatch(skill -> FUNDAMENTALS_SKILL_NAME.equals(skill.getName()));
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 
     private List<String> requireProfileCodes(Set<Long> ids) {

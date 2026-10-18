@@ -23,8 +23,11 @@ import com.interview.simulator.skill.repository.SkillRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -46,6 +49,10 @@ public class ChallengeGenerationService {
                     + "N'inclus JAMAIS les champs externalId, categories, skills ni profiles : le serveur les injecte. "
                     + "Ne mets un scenario et un stepOrder que si le type est ARCHITECTURE.";
     private static final String LANGUAGE_INSTRUCTION = "Rédige tout en français, ton professionnel, sans emojis.";
+    private static final String FUNDAMENTALS_SKILL_NAME = "Fundamentals";
+    private static final String FUNDAMENTALS_RULE =
+            "Règle Fundamentals : question de connaissance ou de théorie sans scénario à diagnostiquer, "
+                    + "optimiser ou concevoir ; dès qu'une situation est à résoudre, choisir une autre compétence.";
 
     private static final String MOBILE_FIRST_RULE = """
             Priorités éditoriales, par ordre d'importance : compréhension, contexte utile, réalisme, concision. \
@@ -194,7 +201,17 @@ public class ChallengeGenerationService {
         return new Relations(
                 categories.stream().map(Category::getName).collect(Collectors.toCollection(LinkedHashSet::new)),
                 skills.stream().map(Skill::getName).collect(Collectors.toCollection(LinkedHashSet::new)),
+                skillDescriptions(skills),
                 profiles.stream().map(Profile::getCode).collect(Collectors.toCollection(LinkedHashSet::new)));
+    }
+
+    private Map<String, String> skillDescriptions(Set<Skill> skills) {
+        return skills.stream()
+                .sorted(Comparator.comparing(Skill::getName))
+                .collect(Collectors.toMap(Skill::getName,
+                        skill -> skill.getDescription() == null ? "" : skill.getDescription(),
+                        (first, second) -> first,
+                        LinkedHashMap::new));
     }
 
     private String missingIds(Set<Long> requested, Set<Long> found) {
@@ -231,7 +248,12 @@ public class ChallengeGenerationService {
             prompt.append("Catégories techniques : ").append(String.join(", ", relations.categoryNames())).append(".\n");
         }
         if (!relations.skillNames().isEmpty()) {
-            prompt.append("Compétences ciblées : ").append(String.join(", ", relations.skillNames())).append(".\n");
+            prompt.append("Compétences ciblées (nom exact — description) :\n");
+            relations.skillDescriptions().forEach((name, description) ->
+                    prompt.append("- ").append(skillLine(name, description)).append('\n'));
+            if (relations.skillNames().contains(FUNDAMENTALS_SKILL_NAME)) {
+                prompt.append(FUNDAMENTALS_RULE).append('\n');
+            }
         }
         if (!relations.profileCodes().isEmpty()) {
             prompt.append("Profils destinataires : ").append(String.join(", ", relations.profileCodes())).append(".\n");
@@ -353,9 +375,14 @@ public class ChallengeGenerationService {
                 question.options());
     }
 
+    private String skillLine(String name, String description) {
+        return description.isBlank() ? name : name + " — " + description;
+    }
+
     private record Relations(
             Set<String> categoryNames,
             Set<String> skillNames,
+            Map<String, String> skillDescriptions,
             Set<String> profileCodes) {
     }
 }

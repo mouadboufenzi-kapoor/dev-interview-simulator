@@ -53,7 +53,7 @@ class AssistedPromptServiceTest {
     void stubsCatalogue() {
         Category java = category(1L, "Java");
         Category react = category(2L, "React");
-        Skill tests = skill(3L, "Tests unitaires");
+        Skill tests = skill(3L, "Tests unitaires", "Conception de tests : stratégie, cas limites, mocking, TDD");
         Profile dev = profile(4L, "DEV");
         when(categoryRepository.findAllById(any())).thenReturn(List.of(java, react));
         when(skillRepository.findAllById(any())).thenReturn(List.of(tests));
@@ -84,7 +84,8 @@ class AssistedPromptServiceTest {
         String prompt = service.buildPrompt(request(ChallengeType.SITUATIONAL_QCM));
 
         assertTrue(prompt.contains("Catégories techniques autorisées (noms exacts) : Java, React."));
-        assertTrue(prompt.contains("Compétences autorisées (noms exacts) : Tests unitaires."));
+        assertTrue(prompt.contains("Compétences autorisées (nom exact — description)"));
+        assertTrue(prompt.contains("- Tests unitaires — Conception de tests : stratégie, cas limites, mocking, TDD"));
         assertTrue(prompt.contains("Profils destinataires (codes exacts) : DEV."));
         assertTrue(prompt.contains("Une catégorie = le sujet technique de la question"));
         assertTrue(prompt.contains("une compétence = la capacité que la question évalue"));
@@ -138,6 +139,44 @@ class AssistedPromptServiceTest {
         }
     }
 
+    @Test
+    void prompt_DecritChaqueCompetanceEtMetLaRegleFundamentals_QuandSelectionne() {
+        Skill tests = skill(3L, "Tests unitaires", "Conception de tests : stratégie, cas limites, mocking, TDD");
+        Skill fundamentals = skill(6L, "Fundamentals", "Maîtrise des concepts de base et de la théorie");
+        when(skillRepository.findAllById(any())).thenReturn(List.of(tests, fundamentals));
+        AssistedPromptRequest request = new AssistedPromptRequest(
+                Set.of(4L), Set.of(1L, 2L), Set.of(3L, 6L),
+                DifficultyLevel.INTERMEDIATE, ChallengeType.SITUATIONAL_QCM, 5, null);
+
+        String prompt = service.buildPrompt(request);
+
+        assertTrue(prompt.contains("Compétences autorisées (nom exact — description)"));
+        assertTrue(prompt.contains("- Fundamentals — Maîtrise des concepts de base et de la théorie"));
+        assertTrue(prompt.contains("- Tests unitaires — Conception de tests : stratégie, cas limites, mocking, TDD"));
+        assertTrue(prompt.contains(
+                "Règle Fundamentals : question de connaissance ou de théorie sans scénario à diagnostiquer"));
+        assertTrue(prompt.contains(
+                "dès qu'une situation est à résoudre, choisir une autre compétence."));
+    }
+
+    @Test
+    void prompt_RegleFundamentalsAbsente_SansLeSkillFundamentals() {
+        String prompt = service.buildPrompt(request(ChallengeType.SITUATIONAL_QCM));
+
+        assertFalse(prompt.contains("Règle Fundamentals"));
+    }
+
+    @Test
+    void prompt_SansDescription_DecrireUniquementLeNom() {
+        Skill fundamentals = skill(3L, "Fundamentals", null);
+        when(skillRepository.findAllById(any())).thenReturn(List.of(fundamentals));
+
+        String prompt = service.buildPrompt(request(ChallengeType.SITUATIONAL_QCM));
+
+        assertTrue(prompt.contains("- Fundamentals\n"));
+        assertFalse(prompt.contains("Fundamentals —"));
+    }
+
     private String extractExample(String prompt) {
         int marker = prompt.indexOf(EXAMPLE_MARKER);
         assertTrue(marker >= 0, "exemple absent du prompt");
@@ -165,10 +204,11 @@ class AssistedPromptServiceTest {
         return category;
     }
 
-    private Skill skill(Long id, String name) {
+    private Skill skill(Long id, String name, String description) {
         Skill skill = mock(Skill.class);
         when(skill.getId()).thenReturn(id);
         when(skill.getName()).thenReturn(name);
+        when(skill.getDescription()).thenReturn(description);
         return skill;
     }
 

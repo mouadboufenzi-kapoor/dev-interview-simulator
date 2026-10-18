@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -41,6 +42,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -65,6 +67,9 @@ class ChallengeGenerationServiceTest {
 
     @Captor
     private ArgumentCaptor<List<ImportedQuestion>> questionsCaptor;
+
+    @Captor
+    private ArgumentCaptor<String> promptCaptor;
 
     @Mock
     private LLMGenerationProvider geminiGenerationClient;
@@ -189,6 +194,50 @@ class ChallengeGenerationServiceTest {
     }
 
     @Test
+    void generate_DecritLesCompetancesEtAppliqueLaRegleFundamentals() {
+        when(geminiGenerationClient.isConfigured()).thenReturn(true);
+        when(categoryRepository.findAllById(Set.of(1L)))
+                .thenReturn(List.of(new Category("Java", null)));
+        Skill fundamentals = mockSkill("Fundamentals", "Maîtrise des concepts de base et de la théorie");
+        Skill testsUnitaires = mockSkill("Tests unitaires", "Conception de tests : stratégie, cas limites, mocking, TDD");
+        when(skillRepository.findAllById(Set.of(2L, 3L))).thenReturn(List.of(fundamentals, testsUnitaires));
+        when(profileRepository.findAllById(Set.of(3L)))
+                .thenReturn(List.of(new Profile("DEVELOPER", "Développeur", null)));
+        when(geminiGenerationClient.generateText(anyString())).thenReturn(VALID_ANSWER);
+        when(challengeIdentityService.generateExternalId()).thenReturn("admin-généré");
+        when(challengeImportService.importQuestions(anyList(), eq(ContentStatus.DRAFT), eq(false)))
+                .thenReturn(report());
+
+        challengeGenerationService.generate(request(1, Set.of(1L), Set.of(2L, 3L), Set.of(3L)));
+
+        verify(geminiGenerationClient).generateText(promptCaptor.capture());
+        String prompt = promptCaptor.getValue();
+        assertTrue(prompt.contains("Compétences ciblées (nom exact — description)"));
+        assertTrue(prompt.contains("- Fundamentals — Maîtrise des concepts de base et de la théorie"));
+        assertTrue(prompt.contains("- Tests unitaires — Conception de tests : stratégie, cas limites, mocking, TDD"));
+        assertTrue(prompt.contains(
+                "Règle Fundamentals : question de connaissance ou de théorie sans scénario à diagnostiquer"));
+    }
+
+    @Test
+    void generate_PasDeRegleFundamentals_SansLeSkillFundamentals() {
+        when(geminiGenerationClient.isConfigured()).thenReturn(true);
+        when(skillRepository.findAllById(Set.of(2L)))
+                .thenReturn(List.of(new Skill("Spring", "Framework applicatif Java")));
+        when(geminiGenerationClient.generateText(anyString())).thenReturn(VALID_ANSWER);
+        when(challengeIdentityService.generateExternalId()).thenReturn("admin-généré");
+        when(challengeImportService.importQuestions(anyList(), eq(ContentStatus.DRAFT), eq(false)))
+                .thenReturn(report());
+
+        challengeGenerationService.generate(request(1, null, Set.of(2L), null));
+
+        verify(geminiGenerationClient).generateText(promptCaptor.capture());
+        String prompt = promptCaptor.getValue();
+        assertTrue(prompt.contains("- Spring — Framework applicatif Java"));
+        assertFalse(prompt.contains("Règle Fundamentals"));
+    }
+
+    @Test
     void generate_ShouldPropagateProviderQuotaError() {
         ApiException quota = new ApiException(HttpStatus.TOO_MANY_REQUESTS, "Quota épuisé.");
         when(geminiGenerationClient.isConfigured()).thenReturn(true);
@@ -209,6 +258,13 @@ class ChallengeGenerationServiceTest {
         return new ChallengeGenerationRequest(
                 profileIds, categoryIds, skillIds,
                 DifficultyLevel.JUNIOR, ChallengeType.SITUATIONAL_QCM, count, null, null, null);
+    }
+
+    private Skill mockSkill(String name, String description) {
+        Skill skill = mock(Skill.class);
+        when(skill.getName()).thenReturn(name);
+        when(skill.getDescription()).thenReturn(description);
+        return skill;
     }
 
     private ChallengeImportReport report() {
