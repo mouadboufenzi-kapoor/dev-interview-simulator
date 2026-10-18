@@ -14,7 +14,6 @@ import { AdminAssistedGeneration } from './AdminAssistedGeneration';
 
 const ALL_CHALLENGE_TYPES: ChallengeType[] = [
   'SITUATIONAL_QCM',
-  'PROBLEM_SOLVING',
   'CODE_REVIEW',
   'ARCHITECTURE',
   'SEQUENTIAL_REASONING',

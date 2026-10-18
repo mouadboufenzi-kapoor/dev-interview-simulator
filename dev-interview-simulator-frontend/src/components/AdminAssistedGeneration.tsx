@@ -16,7 +16,6 @@ import { AlertCircle } from 'lucide-react';
 
 const ALL_CHALLENGE_TYPES: ChallengeType[] = [
   'SITUATIONAL_QCM',
-  'PROBLEM_SOLVING',
   'CODE_REVIEW',
   'ARCHITECTURE',
   'SEQUENTIAL_REASONING',
@@ -64,6 +63,8 @@ export const AdminAssistedGeneration = () => {
 
   const [importLoading, setImportLoading] = useState(false);
   const [importReport, setImportReport] = useState<GenerationReport | null>(null);
+  const [importStatus, setImportStatus] = useState<'DRAFT' | 'VALIDATED'>('DRAFT');
+  const [lastImportStatus, setLastImportStatus] = useState<'DRAFT' | 'VALIDATED'>('DRAFT');
 
   useEffect(() => {
     let cancelled = false;
@@ -108,6 +109,7 @@ export const AdminAssistedGeneration = () => {
   if (countValue === null) missingFields.push(`le nombre de questions (1 à ${MAX_ASSIST_COUNT})`);
   if ((form.profileIds ?? []).length === 0) missingFields.push('au moins un profil');
   if ((form.categoryIds ?? []).length === 0) missingFields.push('au moins une catégorie');
+  if ((form.skillIds ?? []).length === 0) missingFields.push('au moins une compétence');
   const formValid = !dataLoading && missingFields.length === 0;
 
   const handleGeneratePrompt = async () => {
@@ -158,7 +160,9 @@ export const AdminAssistedGeneration = () => {
     setImportLoading(true);
     setActionError(null);
     try {
-      setImportReport(await assistApi.importJson(pastedJson));
+      const report = await assistApi.importJson(pastedJson, importStatus);
+      setImportReport(report);
+      setLastImportStatus(importStatus);
     } catch (err) {
       setActionError(generationApi.mapError(err).message);
     } finally {
@@ -264,6 +268,11 @@ export const AdminAssistedGeneration = () => {
             onChange={(ids) => setField('skillIds', ids)}
             emptyMessage="Aucune compétence disponible."
           />
+          {(form.skillIds ?? []).length === 0 && (
+            <p className="text-xs text-ink-muted">
+              Sélection obligatoire : au moins une compétence pour cadrer le lot.
+            </p>
+          )}
         </div>
 
         <Field label="Instructions complémentaires (facultatif)">
@@ -329,7 +338,18 @@ export const AdminAssistedGeneration = () => {
           rows={10}
           className={`${fieldInput} font-mono text-xs`}
         />
-        <div className="flex flex-wrap justify-end gap-3">
+        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+          <Field label="Statut à l'import">
+            <select
+              value={importStatus}
+              onChange={(e) => setImportStatus(e.target.value as 'DRAFT' | 'VALIDATED')}
+              className={`${fieldInput} md:w-72`}
+            >
+              <option value="DRAFT">Brouillon (DRAFT) — à valider ensuite</option>
+              <option value="VALIDATED">Validé (VALIDATED) — jouable immédiatement</option>
+            </select>
+          </Field>
+          <div className="flex flex-wrap justify-end gap-3">
           <Button
             type="button"
             variant="secondary"
@@ -348,10 +368,11 @@ export const AdminAssistedGeneration = () => {
           >
             Importer les questions
           </Button>
+          </div>
         </div>
         <p className="text-xs text-ink-muted">
-          L'import n'ajoute que les questions valides et non dupliquées, toutes en brouillon (DRAFT) :
-          les doublons et erreurs sont ignorés et restent listés dans l'aperçu.
+          L'import n'ajoute que les questions valides et non dupliquées, avec le statut choisi ci-dessus
+          ({importStatus}) : les doublons et erreurs sont ignorés et restent listés dans l'aperçu.
         </p>
       </div>
 
@@ -416,7 +437,7 @@ export const AdminAssistedGeneration = () => {
           {analysis.valid > 0 && (
             <section className="space-y-2">
               <h4 className="font-serif font-bold text-base text-navy-900">
-                Questions valides qui seront importées en DRAFT
+                Questions valides qui seront importées en {importStatus}
               </h4>
               <ul className="space-y-1 text-sm text-ink-secondary">
                 {analysis.questions
@@ -460,8 +481,9 @@ export const AdminAssistedGeneration = () => {
             erreur(s).
           </p>
           <p className="text-xs text-ink-muted">
-            Les questions importées sont en brouillon (DRAFT) : elles passent par le circuit de
-            validation habituel de l'onglet Contenus.
+            {lastImportStatus === 'VALIDATED'
+              ? 'Les questions importées sont VALIDÉES : elles sont immédiatement jouables par les candidats en simulation.'
+              : 'Les questions importées sont en brouillon (DRAFT) : elles passent par le circuit de validation habituel de l\'onglet Contenus.'}
           </p>
           <div className="flex justify-end">
             <Button type="button" variant="secondary" onClick={() => setImportReport(null)}>

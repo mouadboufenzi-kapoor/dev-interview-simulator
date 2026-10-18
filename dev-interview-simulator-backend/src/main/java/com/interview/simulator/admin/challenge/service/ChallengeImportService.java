@@ -248,7 +248,7 @@ public class ChallengeImportService {
             return QuestionOutcome.error(index, "Le hash du contenu correspond déjà à la question "
                     + sameHash.get(0).getId() + " (« " + sameHash.get(0).getTitle() + " »).");
         }
-        Relations relations = resolveRelations(question);
+        Relations relations = resolveRelations(question, index);
         if (relations.error() != null) {
             return QuestionOutcome.error(index, relations.error());
         }
@@ -281,7 +281,7 @@ public class ChallengeImportService {
             ContentStatus status,
             boolean dryRun,
             ImportState state) {
-        Relations relations = resolveRelations(question);
+        Relations relations = resolveRelations(question, index);
         if (relations.error() != null) {
             return QuestionOutcome.error(index, relations.error());
         }
@@ -346,7 +346,7 @@ public class ChallengeImportService {
         return question.type() == ChallengeType.ARCHITECTURE ? question.scenario() : null;
     }
 
-    private Relations resolveRelations(ImportedQuestion question) {
+    private Relations resolveRelations(ImportedQuestion question, int index) {
         Set<String> categoryNames = question.categories() == null ? Set.of() : question.categories();
         Set<String> skillNames = question.skills() == null ? Set.of() : question.skills();
         Set<String> profileCodes = question.profiles() == null ? Set.of() : question.profiles();
@@ -355,20 +355,23 @@ public class ChallengeImportService {
                 ? Set.of()
                 : categoryRepository.findByNameIn(categoryNames);
         if (categories.size() != categoryNames.size()) {
-            return Relations.error("Catégorie(s) inconnue(s) : "
-                    + missingValues(categoryNames, categories.stream().map(Category::getName).collect(Collectors.toSet())));
+            return Relations.error(unknownValuesMessage(index, "Catégorie(s) inconnue(s)",
+                    missingValues(categoryNames, categories.stream().map(Category::getName).collect(Collectors.toSet())),
+                    allowedCategoryNames()));
         }
 
         Set<Skill> skills = skillNames.isEmpty() ? Set.of() : skillRepository.findByNameIn(skillNames);
         if (skills.size() != skillNames.size()) {
-            return Relations.error("Compétence(s) inconnue(s) : "
-                    + missingValues(skillNames, skills.stream().map(Skill::getName).collect(Collectors.toSet())));
+            return Relations.error(unknownValuesMessage(index, "Compétence(s) inconnue(s)",
+                    missingValues(skillNames, skills.stream().map(Skill::getName).collect(Collectors.toSet())),
+                    allowedSkillNames()));
         }
 
         Set<Profile> profiles = profileCodes.isEmpty() ? Set.of() : profileRepository.findByCodeIn(profileCodes);
         if (profiles.size() != profileCodes.size()) {
-            return Relations.error("Profil(s) inconnu(s) : "
-                    + missingValues(profileCodes, profiles.stream().map(Profile::getCode).collect(Collectors.toSet())));
+            return Relations.error(unknownValuesMessage(index, "Profil(s) inconnu(s)",
+                    missingValues(profileCodes, profiles.stream().map(Profile::getCode).collect(Collectors.toSet())),
+                    allowedProfileCodes()));
         }
         List<String> inactive = profiles.stream()
                 .filter(profile -> !profile.isActive())
@@ -379,6 +382,27 @@ public class ChallengeImportService {
             return Relations.error("Profil(s) inactif(s) : " + String.join(", ", inactive));
         }
         return new Relations(categories, skills, profiles, null);
+    }
+
+    private String unknownValuesMessage(int index, String label, String missing, List<String> allowed) {
+        return "Question #" + index + " : " + label + " : " + missing
+                + ". Valeurs autorisées : " + String.join(", ", allowed) + ".";
+    }
+
+    private List<String> allowedCategoryNames() {
+        return categoryRepository.findAll().stream().map(Category::getName).sorted().toList();
+    }
+
+    private List<String> allowedSkillNames() {
+        return skillRepository.findAll().stream().map(Skill::getName).sorted().toList();
+    }
+
+    private List<String> allowedProfileCodes() {
+        return profileRepository.findAll().stream()
+                .filter(Profile::isActive)
+                .map(Profile::getCode)
+                .sorted()
+                .toList();
     }
 
     private String missingValues(Set<String> expected, Set<String> found) {

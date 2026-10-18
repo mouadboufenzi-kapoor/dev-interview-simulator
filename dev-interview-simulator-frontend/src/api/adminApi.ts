@@ -294,8 +294,8 @@ export const assistApi = {
     const { data } = await apiClient.post('/admin/generation/assist/analyze', { json });
     return data;
   },
-  importJson: async (json: string): Promise<GenerationReport> => {
-    const { data } = await apiClient.post('/admin/generation/assist/import', { json });
+  importJson: async (json: string, status: 'DRAFT' | 'VALIDATED' = 'DRAFT'): Promise<GenerationReport> => {
+    const { data } = await apiClient.post('/admin/generation/assist/import', { json, status });
     return data;
   },
 };

@@ -37,6 +37,6 @@ public class AdminAssistedGenerationController {
 
     @PostMapping("/import")
     public ChallengeImportReport importQuestions(@Valid @RequestBody AssistedJsonRequest request) {
-        return assistedGenerationService.importJson(request.json());
+        return assistedGenerationService.importJson(request.json(), request.status());
     }
 }

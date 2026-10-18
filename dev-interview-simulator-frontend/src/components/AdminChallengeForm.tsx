@@ -19,7 +19,7 @@ interface Props {
   onSaved: () => void;
 }
 
-const ALL_CHALLENGE_TYPES: ChallengeType[] = ['SITUATIONAL_QCM', 'PROBLEM_SOLVING', 'CODE_REVIEW', 'ARCHITECTURE', 'SEQUENTIAL_REASONING'];
+const ALL_CHALLENGE_TYPES: ChallengeType[] = ['SITUATIONAL_QCM', 'CODE_REVIEW', 'ARCHITECTURE', 'SEQUENTIAL_REASONING'];
 
 export const AdminChallengeForm = ({ challengeId, defaultScenarioId, onBack, onSaved }: Props) => {
   const [loading, setLoading] = useState(false);
