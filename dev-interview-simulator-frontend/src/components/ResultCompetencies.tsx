@@ -7,13 +7,14 @@ interface Props {
   icon: ReactNode;
   /** Classes de la puce d'en-tête (fond + bordure + couleur de l'icône). */
   iconChipClassName: string;
-  tone: 'success' | 'crimson';
+  tone: 'success' | 'crimson' | 'navy';
   items: AnalyzedCompetency[];
 }
 
 const TONE_STYLES = {
   success: { value: 'text-success', bar: 'bg-success' },
   crimson: { value: 'text-crimson-700', bar: 'bg-crimson-700' },
+  navy: { value: 'text-navy-900', bar: 'bg-navy-900' },
 } as const;
 
 export const ResultCompetencies = ({
