@@ -3,6 +3,7 @@ package com.interview.simulator.admin.challenge.service;
 import com.interview.simulator.admin.challenge.dto.*;
 import com.interview.simulator.admin.challenge.dto.BackfillIdentityReport.ChallengeReference;
 import com.interview.simulator.admin.challenge.dto.BackfillIdentityReport.DuplicateGroup;
+import com.interview.simulator.admin.challenge.validation.ValidatedStatusValidator;
 import com.interview.simulator.category.entity.Category;
 import com.interview.simulator.category.repository.CategoryRepository;
 import com.interview.simulator.challenge.entity.*;
@@ -89,6 +90,7 @@ public class AdminChallengeService {
         Challenge challenge = new Challenge();
         apply(challenge, request);
         challenge.setStatus(ContentStatus.DRAFT);
+        requireValidatedTaxonomy(challenge);
         return toResponse(challengeRepository.save(challenge));
     }
 
@@ -96,15 +98,35 @@ public class AdminChallengeService {
     public AdminChallengeResponse update(Long id, AdminChallengeRequest request) {
         Challenge challenge = findChallenge(id);
         apply(challenge, request);
+        requireValidatedTaxonomy(challenge);
         return toResponse(challengeRepository.save(challenge));
     }
 
     @Transactional
     public AdminChallengeResponse changeStatus(Long id, ContentStatus status) {
         Challenge challenge = findChallenge(id);
+        // Contrôle sur le statut CIBLE, avant toute modification de l'entité.
+        requireValidatedTaxonomy(status, challenge);
         challenge.setStatus(status);
         challenge.setActive(status != ContentStatus.ARCHIVED);
         return toResponse(challengeRepository.save(challenge));
+    }
+
+    /**
+     * Verrou de qualité : une question VALIDATED doit avoir au moins une
+     * catégorie et au moins une compétence. Appelé avant tout save — en cas
+     * d'échec, ApiException 400 et rien n'est enregistré (rollback).
+     */
+    private void requireValidatedTaxonomy(Challenge challenge) {
+        requireValidatedTaxonomy(challenge.getStatus(), challenge);
+    }
+
+    private void requireValidatedTaxonomy(ContentStatus targetStatus, Challenge challenge) {
+        String violation = ValidatedStatusValidator.violationMessage(
+                targetStatus, challenge.getCategories(), challenge.getSkills());
+        if (violation != null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, violation);
+        }
     }
 
     public BackfillIdentityReport backfillIdentity() {

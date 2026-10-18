@@ -10,6 +10,7 @@ import com.interview.simulator.admin.challenge.dto.ChallengeImportReport.Planned
 import com.interview.simulator.admin.challenge.dto.ChallengeImportRequest;
 import com.interview.simulator.admin.challenge.dto.ChallengeImportRequest.ImportedOption;
 import com.interview.simulator.admin.challenge.dto.ChallengeImportRequest.ImportedQuestion;
+import com.interview.simulator.admin.challenge.validation.ValidatedStatusValidator;
 import com.interview.simulator.admin.challenge.validation.ChallengeTypeValidatorRegistry;
 import com.interview.simulator.category.entity.Category;
 import com.interview.simulator.category.repository.CategoryRepository;
@@ -213,6 +214,7 @@ public class ChallengeImportService {
         return value.trim().toLowerCase(Locale.ROOT);
     }
 
+
     private QuestionOutcome persistOne(
             ImportedQuestion question,
             int index,
@@ -250,6 +252,11 @@ public class ChallengeImportService {
         if (relations.error() != null) {
             return QuestionOutcome.error(index, relations.error());
         }
+        String taxonomyProblem = ValidatedStatusValidator.violationMessage(
+                challenge.getStatus(), relations.categories(), relations.skills());
+        if (taxonomyProblem != null) {
+            return QuestionOutcome.error(index, taxonomyProblem);
+        }
         InterviewScenario scenario = resolveScenarioEntity(question, dryRun);
         String stepOrderProblem = stepOrderProblem(question, scenario, challenge.getId());
         if (stepOrderProblem != null) {
@@ -277,6 +284,11 @@ public class ChallengeImportService {
         Relations relations = resolveRelations(question);
         if (relations.error() != null) {
             return QuestionOutcome.error(index, relations.error());
+        }
+        String taxonomyProblem = ValidatedStatusValidator.violationMessage(
+                status, relations.categories(), relations.skills());
+        if (taxonomyProblem != null) {
+            return QuestionOutcome.error(index, taxonomyProblem);
         }
         InterviewScenario scenario = resolveScenarioEntity(question, dryRun);
         String stepOrderProblem = stepOrderProblem(question, scenario, null);
