@@ -14,12 +14,19 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 @Repository
 public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
 
     boolean existsByScenarioIdAndStepOrderAndIdNot(Long scenarioId, Integer stepOrder, Long id);
+
+    boolean existsByScenarioIdAndStepOrder(Long scenarioId, Integer stepOrder);
+
+    Optional<Challenge> findByExternalId(String externalId);
+
+    List<Challenge> findByContentHash(String contentHash);
 
     long countByStatus(ContentStatus status);
 
@@ -91,4 +98,39 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
         @Param("status") ContentStatus status,
         @Param("scenario") InterviewScenario scenario
     );
+
+    @Query("""
+        SELECT c.id FROM Challenge c
+        WHERE c.externalId IS NULL OR c.contentHash IS NULL
+        ORDER BY c.id
+    """)
+    List<Long> findIdsMissingIdentity(Pageable pageable);
+
+    @Query("""
+        SELECT DISTINCT c FROM Challenge c
+        LEFT JOIN FETCH c.options
+        LEFT JOIN FETCH c.scenario
+        WHERE c.id IN :ids
+    """)
+    List<Challenge> findAllByIdWithDetails(@Param("ids") List<Long> ids);
+
+    @Query("""
+        SELECT c.contentHash FROM Challenge c
+        WHERE c.contentHash IS NOT NULL
+        GROUP BY c.contentHash
+        HAVING COUNT(c) > 1
+    """)
+    List<String> findDuplicatedContentHashes();
+
+    @Query("""
+        SELECT c.id, c.title FROM Challenge c
+        WHERE c.contentHash = :contentHash
+        ORDER BY c.id
+    """)
+    List<ChallengeTitleView> findIdTitleByContentHash(@Param("contentHash") String contentHash);
+
+    interface ChallengeTitleView {
+        Long getId();
+        String getTitle();
+    }
 }

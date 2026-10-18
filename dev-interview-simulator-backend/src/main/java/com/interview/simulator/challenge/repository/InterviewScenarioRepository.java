@@ -11,6 +11,8 @@ import java.util.Optional;
 @Repository
 public interface InterviewScenarioRepository extends JpaRepository<InterviewScenario, Long> {
 
+    Optional<InterviewScenario> findByTitle(String title);
+
     Optional<InterviewScenario> findFirstByModeAndActiveTrue(ChallengeType mode);
 
     List<InterviewScenario> findByModeAndActiveTrue(ChallengeType mode);

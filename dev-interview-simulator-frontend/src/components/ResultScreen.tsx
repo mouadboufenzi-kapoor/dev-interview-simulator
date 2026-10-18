@@ -1,6 +1,6 @@
 import type { SimulationResultDTO, StartSimulationRequest } from '../types';
 import { Button } from './common/Button';
-import { Award, RotateCcw } from 'lucide-react';
+import { Award, RotateCcw, Target } from 'lucide-react';
 import { ResultHeader } from './ResultHeader';
 import { ResultEvaluation } from './ResultEvaluation';
 import { ResultCompetencies } from './ResultCompetencies';
@@ -29,7 +29,7 @@ export const ResultScreen = ({
   guestSimulationCount,
   onCreateAccount,
 }: Props) => {
-  const { strengths, weaknesses, weakest } = analyzeResult(
+  const { strengths, weaknesses, toConsolidate, weakest } = analyzeResult(
     summary.competencyResults ?? []
   );
 
@@ -82,6 +82,16 @@ export const ResultScreen = ({
           iconChipClassName="bg-success-soft border-success-border text-success"
           tone="success"
           items={strengths}
+        />
+      )}
+
+      {toConsolidate.length > 0 && (
+        <ResultCompetencies
+          title="À consolider"
+          icon={<Target className="w-4 h-4" />}
+          iconChipClassName="bg-warning-soft border-warning-border text-navy-900"
+          tone="navy"
+          items={toConsolidate}
         />
       )}
 

@@ -81,6 +81,12 @@ public class Challenge {
     @Column(nullable = false)
     private Integer points = 10;
 
+    @Column(name = "external_id", length = 100)
+    private String externalId;
+
+    @Column(name = "content_hash", length = 64)
+    private String contentHash;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -173,4 +179,8 @@ public class Challenge {
     public void setPoints(Integer points) { 
         this.points = points; 
     }
+    public String getExternalId() { return externalId; }
+    public void setExternalId(String externalId) { this.externalId = externalId; }
+    public String getContentHash() { return contentHash; }
+    public void setContentHash(String contentHash) { this.contentHash = contentHash; }
 }

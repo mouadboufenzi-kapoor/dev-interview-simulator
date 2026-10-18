@@ -82,6 +82,7 @@ export interface ResultAnalysis {
   competencies: AnalyzedCompetency[];
   strengths: AnalyzedCompetency[];
   weaknesses: AnalyzedCompetency[];
+  toConsolidate: AnalyzedCompetency[];
   weakest: AnalyzedCompetency | null;
 }
 
@@ -91,8 +92,8 @@ export interface ResultAnalysis {
  *   faiblesse (PRIORITY_THRESHOLD), triés du plus fragile au moins fragile —
  *   une performance correcte n'est jamais présentée comme une faiblesse ;
  * - strengths : compétences à 100 %, max 3.
- * Les axes intermédiaires (seuil ≤ pct < 100 %) n'apparaissent dans aucune
- * des deux listes : ni force, ni faiblesse (moins de bruit, pas de mensonge).
+ * - toConsolidate : axes entre le seuil et 100 % (exclus), du plus fragile
+ *   au plus solide — ni force, ni faiblesse, mais un retour reste affiché.
  */
 export const analyzeResult = (results: CompetencyResult[]): ResultAnalysis => {
   const competencies = results.map((c) => ({
@@ -108,10 +109,15 @@ export const analyzeResult = (results: CompetencyResult[]): ResultAnalysis => {
     .sort((a, b) => b.total - a.total)
     .slice(0, 3);
 
+  const toConsolidate = [...competencies]
+    .filter((c) => c.pct >= PRIORITY_THRESHOLD && c.pct < 100)
+    .sort((a, b) => a.pct - b.pct || a.total - b.total);
+
   return {
     competencies,
     strengths,
     weaknesses,
+    toConsolidate,
     weakest: weaknesses[0] ?? null,
   };
 };

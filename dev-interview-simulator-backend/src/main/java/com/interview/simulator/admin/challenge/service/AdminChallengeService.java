@@ -1,11 +1,15 @@
 package com.interview.simulator.admin.challenge.service;
 
 import com.interview.simulator.admin.challenge.dto.*;
+import com.interview.simulator.admin.challenge.dto.BackfillIdentityReport.ChallengeReference;
+import com.interview.simulator.admin.challenge.dto.BackfillIdentityReport.DuplicateGroup;
+import com.interview.simulator.admin.challenge.validation.ValidatedStatusValidator;
 import com.interview.simulator.category.entity.Category;
 import com.interview.simulator.category.repository.CategoryRepository;
 import com.interview.simulator.challenge.entity.*;
 import com.interview.simulator.challenge.repository.ChallengeRepository;
 import com.interview.simulator.challenge.repository.InterviewScenarioRepository;
+import com.interview.simulator.challenge.service.ChallengeIdentityService;
 import com.interview.simulator.profile.entity.Profile;
 import com.interview.simulator.profile.repository.ProfileRepository;
 import com.interview.simulator.skill.entity.Skill;
@@ -14,9 +18,11 @@ import com.interview.simulator.exception.ApiException;
 import com.interview.simulator.exception.ResourceNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -28,23 +34,31 @@ import java.util.stream.Collectors;
 @Service
 public class AdminChallengeService {
 
+    private static final int BACKFILL_PAGE_SIZE = 100;
+
     private final ChallengeRepository challengeRepository;
     private final CategoryRepository categoryRepository;
     private final SkillRepository skillRepository;
     private final ProfileRepository profileRepository;
     private final InterviewScenarioRepository interviewScenarioRepository;
+    private final ChallengeIdentityService challengeIdentityService;
+    private final TransactionTemplate transactionTemplate;
 
     public AdminChallengeService(
             ChallengeRepository challengeRepository,
             CategoryRepository categoryRepository,
             SkillRepository skillRepository,
             ProfileRepository profileRepository,
-            InterviewScenarioRepository interviewScenarioRepository) {
+            InterviewScenarioRepository interviewScenarioRepository,
+            ChallengeIdentityService challengeIdentityService,
+            TransactionTemplate transactionTemplate) {
         this.challengeRepository = challengeRepository;
         this.categoryRepository = categoryRepository;
         this.skillRepository = skillRepository;
         this.profileRepository = profileRepository;
         this.interviewScenarioRepository = interviewScenarioRepository;
+        this.challengeIdentityService = challengeIdentityService;
+        this.transactionTemplate = transactionTemplate;
     }
 
     @Transactional(readOnly = true)
@@ -76,6 +90,7 @@ public class AdminChallengeService {
         Challenge challenge = new Challenge();
         apply(challenge, request);
         challenge.setStatus(ContentStatus.DRAFT);
+        requireValidatedTaxonomy(challenge);
         return toResponse(challengeRepository.save(challenge));
     }
 
@@ -83,15 +98,78 @@ public class AdminChallengeService {
     public AdminChallengeResponse update(Long id, AdminChallengeRequest request) {
         Challenge challenge = findChallenge(id);
         apply(challenge, request);
+        requireValidatedTaxonomy(challenge);
         return toResponse(challengeRepository.save(challenge));
     }
 
     @Transactional
     public AdminChallengeResponse changeStatus(Long id, ContentStatus status) {
         Challenge challenge = findChallenge(id);
+        // Contrôle sur le statut CIBLE, avant toute modification de l'entité.
+        requireValidatedTaxonomy(status, challenge);
         challenge.setStatus(status);
         challenge.setActive(status != ContentStatus.ARCHIVED);
         return toResponse(challengeRepository.save(challenge));
+    }
+
+    /**
+     * Verrou de qualité : une question VALIDATED doit avoir au moins une
+     * catégorie et au moins une compétence. Appelé avant tout save — en cas
+     * d'échec, ApiException 400 et rien n'est enregistré (rollback).
+     */
+    private void requireValidatedTaxonomy(Challenge challenge) {
+        requireValidatedTaxonomy(challenge.getStatus(), challenge);
+    }
+
+    private void requireValidatedTaxonomy(ContentStatus targetStatus, Challenge challenge) {
+        String violation = ValidatedStatusValidator.violationMessage(
+                targetStatus, challenge.getCategories(), challenge.getSkills());
+        if (violation != null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, violation);
+        }
+    }
+
+    public BackfillIdentityReport backfillIdentity() {
+        int processed = 0;
+        int pageProcessed;
+        do {
+            pageProcessed = fillIdentityMissingPage();
+            processed += pageProcessed;
+        } while (pageProcessed > 0);
+        return new BackfillIdentityReport(processed, findDuplicateGroups());
+    }
+
+    private int fillIdentityMissingPage() {
+        Integer processed = transactionTemplate.execute(status -> {
+            List<Long> pageIds = challengeRepository.findIdsMissingIdentity(PageRequest.of(0, BACKFILL_PAGE_SIZE));
+            if (pageIds.isEmpty()) {
+                return 0;
+            }
+            List<Challenge> challenges = challengeRepository.findAllByIdWithDetails(pageIds);
+            challenges.forEach(this::applyLegacyIdentity);
+            challengeRepository.saveAll(challenges);
+            return challenges.size();
+        });
+        return processed == null ? 0 : processed;
+    }
+
+    private void applyLegacyIdentity(Challenge challenge) {
+        if (challenge.getExternalId() == null) {
+            challenge.setExternalId(challengeIdentityService.legacyExternalId(challenge.getId()));
+        }
+        if (challenge.getContentHash() == null) {
+            challenge.setContentHash(challengeIdentityService.contentHash(challenge));
+        }
+    }
+
+    private List<DuplicateGroup> findDuplicateGroups() {
+        return challengeRepository.findDuplicatedContentHashes().stream()
+                .map(contentHash -> new DuplicateGroup(
+                        contentHash,
+                        challengeRepository.findIdTitleByContentHash(contentHash).stream()
+                                .map(view -> new ChallengeReference(view.getId(), view.getTitle()))
+                                .toList()))
+                .toList();
     }
 
     private void apply(Challenge challenge, AdminChallengeRequest request) {
@@ -178,6 +256,21 @@ public class AdminChallengeService {
                         "Un contenu à sélection unique doit avoir exactement une bonne réponse.");
             }
         }
+
+        if (challenge.getExternalId() == null) {
+            challenge.setExternalId(challengeIdentityService.generateExternalId());
+        }
+        String contentHash = challengeIdentityService.contentHash(challenge);
+        List<Challenge> duplicates = challengeRepository.findByContentHash(contentHash).stream()
+                .filter(other -> !other.getId().equals(challenge.getId()))
+                .toList();
+        if (!duplicates.isEmpty()) {
+            Challenge duplicate = duplicates.get(0);
+            throw new ApiException(HttpStatus.CONFLICT,
+                    "Le contenu est identique à la question " + duplicate.getId()
+                            + " (« " + duplicate.getTitle() + " »).");
+        }
+        challenge.setContentHash(contentHash);
     }
 
     private void applyScenario(Challenge challenge, AdminChallengeRequest request) {
