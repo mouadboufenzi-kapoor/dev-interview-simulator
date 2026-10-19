@@ -1,143 +1,59 @@
 import { useEffect, useState } from 'react';
-import { Sun, Moon, Monitor } from 'lucide-react';
+import { Check } from 'lucide-react';
 import {
   getStoredPalette,
   getStoredMode,
   applyTheme,
   watchSystemMode,
   type Palette,
-  type Mode,
 } from '../utils/theme';
 
-// Aperçu miniature d'une palette (carte) — sert à distinguer Encre / Soleil / Menthe.
-const PREVIEWS: Record<Palette, { bg: string; nav: string }> = {
-  encre: { bg: '#EDF0F3', nav: '#123C69' },
-  soleil: { bg: '#F2F2EC', nav: '#FFD23F' },
-  menthe: { bg: '#F6F4EE', nav: '#8FE3C0' },
-};
-
-const PalettePreview = ({ palette }: { palette: Palette }) => {
-  const { bg, nav } = PREVIEWS[palette];
-  const brand = '#123C69';
-  const accent = '#FF5A36';
-
-  return (
-    <div
-      className="w-full h-16 rounded border-2 border-border overflow-hidden flex"
-      style={{ background: bg }}
-      aria-hidden="true"
-    >
-      <div className="w-1/4 h-full" style={{ background: nav }} />
-      <div className="flex-1 p-2 flex flex-col justify-center gap-1.5">
-        <div className="h-2 rounded-sm w-2/3" style={{ background: brand }} />
-        <div className="h-2 rounded-sm w-1/3" style={{ background: accent }} />
-      </div>
-    </div>
-  );
-};
-
-const MODE_OPTIONS: { id: Mode; label: string; icon: typeof Sun }[] = [
-  { id: 'light', label: 'Clair', icon: Sun },
-  { id: 'dark', label: 'Nuit', icon: Moon },
-  { id: 'system', label: 'Système', icon: Monitor },
+const PALETTE_CHOICES: { id: Palette; label: string; swatch: string; check: string }[] = [
+  { id: 'soleil', label: 'Jaune', swatch: '#FFD23F', check: '#111111' },
+  { id: 'menthe', label: 'Menthe', swatch: '#8FE3C0', check: '#111111' },
+  { id: 'encre', label: 'Bleu', swatch: '#123C69', check: '#FFFFFF' },
 ];
 
-/**
- * Section « Apparence » (spec §18) : choix de la palette (Encre / Soleil / Menthe) et
- * du mode (Clair / Nuit / Système). Le changement est immédiat (attributs
- * data-theme / data-mode sur <html>), persisté dans localStorage, et le mode
- * « system » suit les changements de préférence système en direct.
- */
 export const AppAppearance = () => {
   const [palette, setPalette] = useState<Palette>(() => getStoredPalette());
-  const [mode, setMode] = useState<Mode>(() => getStoredMode());
 
-  // Suit prefers-color-scheme quand le mode est « system ».
-  useEffect(() => watchSystemMode(palette, mode), [palette, mode]);
+  useEffect(() => watchSystemMode(), []);
 
   const selectPalette = (next: Palette) => {
     setPalette(next);
-    applyTheme(next, mode);
-  };
-
-  const selectMode = (next: Mode) => {
-    setMode(next);
-    applyTheme(palette, next);
+    applyTheme(next, getStoredMode());
   };
 
   return (
-    <section className="bg-card rounded border-2 border-border shadow-card p-5 sm:p-6 space-y-5">
+    <section className="bg-card rounded border-2 border-border shadow-card p-5 sm:p-6 space-y-4">
       <div className="space-y-1">
         <h2 className="font-serif text-lg sm:text-xl font-bold text-text">Apparence</h2>
         <p className="text-xs text-muted">
-          Choisissez la palette et le mode d'affichage. Le changement est immédiat.
+          Choisissez votre couleur. Le mode clair ou nuit suit automatiquement votre système.
         </p>
       </div>
 
-      {/* Palette */}
-      <div className="space-y-2">
-        <span className="font-mono text-[11px] uppercase tracking-[0.06em] text-muted font-medium">
-          Palette
-        </span>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {(['encre', 'soleil', 'menthe'] as Palette[]).map((p) => {
-            const isSelected = palette === p;
-            return (
-              <button
-                key={p}
-                type="button"
-                onClick={() => selectPalette(p)}
-                aria-pressed={isSelected}
-                className={`p-3 rounded border-2 text-left transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-bg min-h-11 ${
-                  isSelected
-                    ? 'bg-selected border-border shadow-[2px_2px_0_var(--color-shadow)]'
-                    : 'bg-card border-border hover:border-brand'
-                }`}
+      <div className="flex items-start gap-3 sm:gap-5">
+        {PALETTE_CHOICES.map((choice) => {
+          const isSelected = palette === choice.id;
+          return (
+            <button
+              key={choice.id}
+              type="button"
+              onClick={() => selectPalette(choice.id)}
+              aria-pressed={isSelected}
+              className="flex flex-col items-center gap-2 p-2 rounded cursor-pointer focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+            >
+              <span
+                className={`flex h-11 w-11 items-center justify-center rounded-full border-2 border-border transition-all ${isSelected ? 'shadow-[2px_2px_0_var(--color-shadow)]' : ''}`}
+                style={{ backgroundColor: choice.swatch }}
               >
-                <div className="space-y-2">
-                  <PalettePreview palette={p} />
-                  <span className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-text capitalize">{p}</span>
-                    {isSelected && (
-                      <span className="font-mono text-[11px] uppercase tracking-[0.06em] text-success">
-                        Actif
-                      </span>
-                    )}
-                  </span>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Mode */}
-      <div className="space-y-2">
-        <span className="font-mono text-[11px] uppercase tracking-[0.06em] text-muted font-medium">
-          Mode
-        </span>
-        <div className="flex flex-wrap gap-2">
-          {MODE_OPTIONS.map((opt) => {
-            const isSelected = mode === opt.id;
-            const Icon = opt.icon;
-            return (
-              <button
-                key={opt.id}
-                type="button"
-                onClick={() => selectMode(opt.id)}
-                aria-pressed={isSelected}
-                className={`inline-flex items-center gap-2 px-3.5 py-2 min-h-11 rounded border-2 text-xs font-semibold transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-bg ${
-                  isSelected
-                    ? 'bg-brand text-cta-text border-border shadow-[2px_2px_0_var(--color-shadow)]'
-                    : 'bg-card text-text border-border hover:border-brand'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                {opt.label}
-              </button>
-            );
-          })}
-        </div>
+                {isSelected && <Check className="w-5 h-5" style={{ color: choice.check }} />}
+              </span>
+              <span className="text-xs font-semibold text-text">{choice.label}</span>
+            </button>
+          );
+        })}
       </div>
     </section>
   );

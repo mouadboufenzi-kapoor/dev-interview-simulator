@@ -79,13 +79,12 @@ export const initTheme = (): void => {
  * Ré-applique le thème quand la préférence système change — uniquement si
  * l'utilisateur est en mode « system ». Retourne un désabonnement.
  */
-export const watchSystemMode = (palette: Palette, mode: Mode): (() => void) => {
+export const watchSystemMode = (): (() => void) => {
   const mql = window.matchMedia?.('(prefers-color-scheme: dark)');
   if (!mql) return () => {};
   const onChange = () => {
-    // Uniquement si l'utilisateur est réellement en mode « system ».
-    if (mode === 'system') {
-      applyToDocument(palette, systemMode());
+    if (getStoredMode() === 'system') {
+      applyToDocument(getStoredPalette(), systemMode());
     }
   };
   mql.addEventListener('change', onChange);

@@ -19,7 +19,6 @@ const initialsOf = (username: string) =>
 
 const ROLE_LABELS: Record<string, string> = {
   ADMIN: 'Administrateur',
-  USER: 'Utilisateur',
 };
 
 // Page Paramètres — profil du compte + apparence, côte à côte sur desktop,
@@ -75,7 +74,7 @@ export const SettingsScreen = ({ user }: Props) => (
             </div>
           </div>
 
-          {user.role && (
+          {user.role === 'ADMIN' && (
             <div className="flex items-start gap-3">
               <ShieldCheck className="mt-0.5 h-4 w-4 flex-shrink-0 text-ink-muted" />
               <div className="min-w-0">

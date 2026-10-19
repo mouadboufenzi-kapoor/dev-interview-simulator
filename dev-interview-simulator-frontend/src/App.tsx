@@ -318,6 +318,7 @@ export default function App() {
               simulation={simulation}
               onFinish={handleFinishQuiz}
               onError={setError}
+              finishing={loading}
             />
           )}
 
