@@ -8,18 +8,19 @@ It is aimed at developers preparing for back-end, front-end or generalist interv
 
 ## Features
 
-- Simulated interviews of 12 challenges, drawn at random and filtered by the selected profile and skills.
+- Simulated interviews of up to ten challenges, drawn at random and filtered by mode, difficulty, profile, categories and skills — or an architecture scenario of three to five ordered steps.
 - Five types of challenges: situational QCM, problem solving (multiple correct answers), code review (find the bugs, with severity), sequential reasoning (order the steps by drag and drop), and architecture scenarios.
 - Scoring computed on the server. The client never receives the corrections before submitting an answer.
 - Corrections with the expected answer, the common mistake to avoid, and good practices.
+- A report that separates strengths, skills to consolidate and weak points, with a targeted session on the weakest topic that leaves out questions already answered.
 - Guest mode without an account, and registered accounts with history and a progress dashboard.
-- Back-office for administrators: create and edit challenges, profiles and scenarios, view platform statistics.
+- Back-office for administrators: create and edit challenges, profiles and scenarios, view platform statistics, and generate new questions with an LLM (Gemini or Groq).
 - Email/password authentication and Google sign-in.
-- Light and dark theme.
+- Three color palettes (blue, yellow, mint), light and dark modes that follow the system preference, and a settings page for the account and appearance.
 
 ## Tech stack
 
-**Frontend:** React 19, TypeScript, Vite, Tailwind CSS 4, axios, dnd-kit, lucide-react.
+**Frontend:** React 19, TypeScript, Vite, Tailwind CSS 4, axios, dnd-kit, lucide-react, self-hosted fonts (Space Grotesk, Space Mono).
 
 **Backend:** Java 21, Spring Boot 3.4, Spring Web, Spring Data JPA, Spring Security, JJWT, Bean Validation, Flyway.
 
@@ -144,7 +145,7 @@ PostgreSQL 18. The schema and the content are both versioned with Flyway, in two
 - `db/migration` holds the structural changes: tables, columns, constraints.
 - `db/seed` holds the question bank and reference data: categories, skills, profiles, challenges.
 
-There are 30 versioned files, from the initial schema to the latest question catalogs. Files are applied once per database and are never edited afterwards; a change means a new versioned file. Seeds are written so that restarting the application does not create duplicates.
+There are 34 versioned files, from the initial schema to the latest question catalogs. Files are applied once per database and are never edited afterwards; a change means a new versioned file. Seeds are written so that restarting the application does not create duplicates.
 
 Two constraints protect the enumerated values in the database, one on `challenges.type` and one on `simulations.mode`. Adding a challenge type means extending both.
 
@@ -163,21 +164,23 @@ Authorization is declared in `SecurityConfig`:
 - `/api/admin/**` requires the `ADMIN` role
 - everything else requires a valid token
 
-The administrator account is created at startup from `ADMIN_USERNAME`, `ADMIN_EMAIL` and `ADMIN_PASSWORD`, and its password is kept in sync with that variable on restart.
+The administrator account is created at first startup from `ADMIN_USERNAME`, `ADMIN_EMAIL` and `ADMIN_PASSWORD`. Those variables are not applied afterwards: the password is set once, at creation, so changing them does not update an existing account.
 
-## External AI integration (Gemini)
+## External AI integration (Gemini, Groq, or any external LLM)
 
-The back-office can generate new questions with an external LLM (Google Gemini). The integration is optional, admin-only, and the rest of the application runs normally without it.
+The back-office can generate new questions with an external LLM. Two providers are built in (Google Gemini and Groq), plus an assisted mode that uses any LLM outside the application. The integration is optional, admin-only, and the rest of the application runs normally without it.
 
 - `POST /api/admin/challenges/generate` (admin role) takes a difficulty, a challenge type, a count of 1 to 10, and profile, category and skill references. Its interface is the fifth tab of the back-office, "Génération": type, difficulty, count, at least one profile and one category, optional skills and extra instructions. The button stays disabled until the form is valid, so a misconfigured request never reaches the provider.
-- The backend builds the prompt itself (French, mobile-first editorial rules: short titles, a compact context matched to the difficulty, comparable answer options, no filler, and a self-check before returning) and asks for a strict JSON schema. The response goes through the same import service as a manual JSON import: every generated question lands as a `DRAFT`, categories, skills, profiles and difficulty are forced from the admin request and never taken from the model output, and an over-long answer is truncated to the requested count.
-- Configuration: `GEMINI_API_KEY` (sent in a request header, never in the URL or the logs), `GEMINI_MODEL` (default `gemini-3.8-flash`), `GEMINI_BASE_URL` and `GENERATION_ENABLED`. Without a key the application starts normally and only the endpoint answers 503.
+- The backend builds the prompt itself (French, mobile-first editorial rules: short titles, a compact context matched to the difficulty, comparable answer options, no filler, and a self-check before returning) and asks for a strict JSON schema. When the "Fundamentals" skill is selected, an extra rule asks the model to stay on core concepts and theory. The response goes through the same import service as a manual JSON import: every generated question lands as a `DRAFT`, categories, skills, profiles and difficulty are forced from the admin request and never taken from the model output, and an over-long answer is truncated to the requested count.
+- The provider and the model can be chosen per request: `GET /api/admin/generation/options` lists them, and unknown combinations are rejected with a 400 instead of falling back silently.
+- Assisted mode targets any external LLM: the back-office builds a copyable prompt, then the administrator pastes the JSON answer for a dry-run analysis (nothing is written) before importing it as drafts. Batch size is capped by `ASSIST_MAX_BATCH` (20 by default).
+- Configuration: `GEMINI_API_KEY` (sent in a request header, never in the URL or the logs), `GEMINI_MODEL` (default `gemini-3.8-flash`), `GROQ_API_KEY`, `GROQ_MODEL`, the matching `*_BASE_URL` and `*_MODELS` lists, `GENERATION_PROVIDER` (default `gemini`) and `GENERATION_ENABLED`. Without a key the application starts normally and only the endpoint answers 503.
 - Provider errors are translated: 429 stays a 429 (quota), while 401, 403, 404, other 5xx responses and unreadable bodies become a 502 with a generic message — the raw provider response and the key are never exposed.
 - No extra dependency: the backend calls the provider with the JDK's own `HttpClient`.
 
 ## Project status
 
-Available today: the full simulation flow with the five challenge types, guest and registered usage, the user dashboard, the administrator back-office, and the seeded question bank covering Java, Spring Boot, SQL, JPA Hibernate, API back-end, React, tests, architecture, distributed systems, system design, Git, Docker, CI/CD, and the Java to Spring transition.
+Available today: the full simulation flow with the five challenge types, guest and registered usage, the user dashboard, the report with targeted training, the settings page, the administrator back-office, and the seeded question bank covering Java, Spring Boot, SQL, JPA Hibernate, API back-end, React, tests, architecture, distributed systems, system design, Git, Docker, CI/CD, and the Java to Spring transition.
 
 The application is deployed: the API runs as a web service on Render, the frontend as a static site on the same platform, and PostgreSQL is managed by Supabase.
 
