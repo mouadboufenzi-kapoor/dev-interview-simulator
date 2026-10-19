@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Loader2 } from 'lucide-react';
 import type { SimulationResponse, SubmitAnswerResponse } from '../types';
 import { simulationApi } from '../api/simulationApi';
 import { QuizProgressHeader } from './QuizProgressHeader';
@@ -12,9 +13,10 @@ interface Props {
   simulation: SimulationResponse;
   onFinish: () => void;
   onError: (message: string) => void;
+  finishing: boolean;
 }
 
-export const QuizScreen = ({ simulation, onFinish, onError }: Props) => {
+export const QuizScreen = ({ simulation, onFinish, onError, finishing }: Props) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOptionIds, setSelectedOptionIds] = useState<number[]>([]);
   const [feedback, setFeedback] = useState<SubmitAnswerResponse | null>(null);
@@ -64,6 +66,22 @@ export const QuizScreen = ({ simulation, onFinish, onError }: Props) => {
     }
   }, [currentIndex, simulation]);
 
+  if (finishing) {
+    return (
+      <div className="w-full max-w-4xl mx-auto py-16 text-center">
+        <div className="inline-flex flex-col items-center gap-4 bg-surface border-[0.5px] border-card-border rounded-2xl px-8 py-10 shadow-elevated">
+          <Loader2 className="w-7 h-7 animate-spin text-brand" />
+          <div className="space-y-1">
+            <p className="text-sm font-semibold text-text">Préparation de votre bilan…</p>
+            <p className="text-xs text-muted">
+              La session est en cours de clôture, un instant.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!currentChallenge) {
     return (
       <div className="w-full max-w-3xl mx-auto py-12 text-center">
@@ -111,14 +129,14 @@ export const QuizScreen = ({ simulation, onFinish, onError }: Props) => {
   };
 
   const handleNext = () => {
+    if (currentIndex + 1 >= simulation.challenges.length) {
+      onFinish();
+      return;
+    }
     setFeedback(null);
     setSelectedOptionIds([]);
     setSecondsElapsed(0);
-    if (currentIndex + 1 < simulation.challenges.length) {
-      setCurrentIndex((prev) => prev + 1);
-    } else {
-      onFinish();
-    }
+    setCurrentIndex((prev) => prev + 1);
   };
 
   const isMultiChoice = currentChallenge.selectionType === 'MULTIPLE_CHOICE';
