@@ -3,6 +3,7 @@ package com.interview.simulator.simulation.service;
 import com.interview.simulator.challenge.entity.Challenge;
 import com.interview.simulator.challenge.entity.ChallengeOption;
 import com.interview.simulator.challenge.entity.ChallengeType;
+import com.interview.simulator.exception.ResourceNotFoundException;
 import com.interview.simulator.category.entity.Category;
 import com.interview.simulator.skill.entity.Skill;
 import com.interview.simulator.simulation.dto.SimulationResultDTO;
@@ -10,8 +11,13 @@ import com.interview.simulator.simulation.entity.Simulation;
 import com.interview.simulator.simulation.entity.SimulationAnswer;
 import com.interview.simulator.simulation.entity.SimulationChallenge;
 import com.interview.simulator.simulation.repository.SimulationRepository;
+import com.interview.simulator.user.entity.User;
+import com.interview.simulator.user.service.UserResolver;
 import org.junit.jupiter.api.Test;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.HexFormat;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
@@ -19,25 +25,35 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class SimulationResultServiceTest {
 
     @Test
-    void includesAnsweredTimedOutAndUnansweredQuestionsInDisplayOrder() {
+    void includesAnsweredTimedOutAndUnansweredQuestionsInDisplayOrder() throws Exception {
         Simulation simulation = new Simulation();
         simulation.setMode(ChallengeType.SITUATIONAL_QCM);
         simulation.getSimulationChallenges().add(question(simulation, 3, "Jamais atteinte", null));
         simulation.getSimulationChallenges().add(question(simulation, 1, "Répondue", answeredAnswer()));
         simulation.getSimulationChallenges().add(question(simulation, 2, "Expirée", timedOutAnswer()));
 
+        simulation.setUser(new User(UserResolver.GUEST_USERNAME, "guest@example.com"));
+        simulation.setGuestAccessTokenHash(null);
+
+        String guestAccessToken = "test-guest-token";
+        simulation.setGuestAccessTokenHash(HexFormat.of().formatHex(
+                MessageDigest.getInstance("SHA-256")
+                        .digest(guestAccessToken.getBytes(StandardCharsets.US_ASCII))));
         SimulationRepository repository = mock(SimulationRepository.class);
         when(repository.findById(42L)).thenReturn(Optional.of(simulation));
+        UserResolver userResolver = mock(UserResolver.class);
+        when(userResolver.currentAuthenticatedOrNull()).thenReturn(Optional.empty());
         SimulationService service = new SimulationService(
-                repository, null, null, null, null, null, new ScoringService(), null, null);
+                repository, null, userResolver, null, null, null, new ScoringService(), null, null);
 
-        SimulationResultDTO result = service.getSimulationResult(42L);
+        SimulationResultDTO result = service.getSimulationResult(42L, guestAccessToken);
 
         assertEquals(3, result.totalQuestions());
         assertEquals(1, result.correctAnswersCount());
@@ -51,6 +67,12 @@ class SimulationResultServiceTest {
                         SimulationResultDTO.QuestionStatus.UNANSWERED),
                 result.questions().stream().map(SimulationResultDTO.QuestionSummaryDTO::status).toList());
         assertEquals("Choix utilisateur", result.questions().get(0).userSelectedOptionContent());
+        assertEquals(List.of("Java"), result.questions().get(0).categories());
+        assertEquals(List.of("Debugging"), result.questions().get(0).skills());
+        assertEquals(List.of("Spring Boot"), result.questions().get(1).categories());
+        assertEquals(List.of("Problem Solving"), result.questions().get(1).skills());
+        assertEquals(List.of("Java"), result.questions().get(2).categories());
+        assertEquals(List.of(), result.questions().get(2).skills());
         assertNull(result.questions().get(1).userSelectedOptionContent());
         assertNull(result.questions().get(2).userSelectedOptionContent());
         assertEquals(0, result.questions().get(1).pointsEarned());
@@ -72,6 +94,41 @@ class SimulationResultServiceTest {
                 .map(SimulationResultDTO.CompetencyResult::name).toList());
         assertEquals(List.of("Problem Solving"), result.weakSkillResults().stream()
                 .map(SimulationResultDTO.CompetencyResult::name).toList());
+    }
+
+    @Test
+    void rejectsAuthenticatedUserWhenSimulationBelongsToAnotherAccount() {
+        Simulation simulation = new Simulation();
+        User owner = mock(User.class);
+        when(owner.getId()).thenReturn(10L);
+        simulation.setUser(owner);
+        SimulationRepository repository = mock(SimulationRepository.class);
+        when(repository.findById(42L)).thenReturn(Optional.of(simulation));
+        User currentUser = mock(User.class);
+        when(currentUser.getId()).thenReturn(20L);
+        UserResolver userResolver = mock(UserResolver.class);
+        when(userResolver.currentAuthenticatedOrNull()).thenReturn(Optional.of(currentUser));
+        SimulationService service = new SimulationService(
+                repository, null, userResolver, null, null, null, new ScoringService(), null, null);
+
+        assertThrows(ResourceNotFoundException.class, () -> service.getSimulationResult(42L, null));
+    }
+
+    @Test
+    void rejectsGuestWithoutMatchingSimulationAccessToken() {
+        Simulation simulation = new Simulation();
+        simulation.setUser(new User("default_user", "guest@example.com"));
+        simulation.setGuestAccessTokenHash("some-stored-hash");
+        SimulationRepository repository = mock(SimulationRepository.class);
+        when(repository.findById(42L)).thenReturn(Optional.of(simulation));
+        UserResolver userResolver = mock(UserResolver.class);
+        when(userResolver.currentAuthenticatedOrNull()).thenReturn(Optional.empty());
+        SimulationService service = new SimulationService(
+                repository, null, userResolver, null, null, null, new ScoringService(), null, null);
+
+        assertThrows(ResourceNotFoundException.class, () -> service.getSimulationResult(42L, null));
+        assertThrows(ResourceNotFoundException.class,
+                () -> service.getSimulationResult(42L, "not-the-guest-token"));
     }
 
     private SimulationChallenge question(

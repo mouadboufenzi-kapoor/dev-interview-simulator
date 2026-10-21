@@ -35,7 +35,9 @@ public record SimulationResultDTO(
         QuestionStatus status,
         String explanation,
         Integer pointsEarned,
-        Long timeSpentMs
+        Long timeSpentMs,
+        List<String> categories,
+        List<String> skills
     ) {}
 
     /**

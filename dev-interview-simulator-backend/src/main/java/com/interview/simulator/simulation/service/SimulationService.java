@@ -36,7 +36,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.HexFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -46,9 +50,13 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.Objects;
 
 @Service
 public class SimulationService {
+
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+    private static final int GUEST_TOKEN_BYTES = 32;
 
     private final SimulationRepository simulationRepository;
     private final ChallengeRepository challengeRepository;
@@ -85,7 +93,10 @@ public class SimulationService {
     @Transactional
     public SimulationResponse startSimulation(StartSimulationRequest request) {
         // 1. Résolution de l'utilisateur : connecté → son compte ; invité → default_user (trial sans historique)
-        User user = userResolver.resolveOrCreate();
+        User authenticatedUser = userResolver.currentAuthenticatedOrNull().orElse(null);
+        User user = authenticatedUser != null ? authenticatedUser : userResolver.resolveOrCreate();
+        boolean guest = authenticatedUser == null;
+        String guestAccessToken = guest ? generateGuestAccessToken() : null;
 
         // 2. Trouver les challenges correspondants au mode
         List<Challenge> matchingChallenges;
@@ -166,6 +177,7 @@ public class SimulationService {
         // 4. Créer la simulation
         Simulation simulation = new Simulation();
         simulation.setUser(user);
+        simulation.setGuestAccessTokenHash(guest ? hashGuestAccessToken(guestAccessToken) : null);
         simulation.setMode(request.mode());
         simulation.setDifficulty(request.difficulty());
         simulation.setProfile(profile);
@@ -182,7 +194,7 @@ public class SimulationService {
 
         Simulation saved = simulationRepository.save(simulation);
 
-        return mapToResponse(saved);
+        return mapToResponse(saved, guestAccessToken);
     }
 
     // Les questions Architecture mélangent l'affichage des choix pour éviter
@@ -212,7 +224,7 @@ public class SimulationService {
                 .toList();
     }
 
-    private SimulationResponse mapToResponse(Simulation simulation) {
+    private SimulationResponse mapToResponse(Simulation simulation, String guestAccessToken) {
         List<SimulationChallengeResponse> challengeResponses = simulation.getSimulationChallenges().stream()
                 .map(sc -> new SimulationChallengeResponse(
                         sc.getId(),
@@ -250,14 +262,15 @@ public class SimulationService {
                 simulation.getStatus(),
                 simulation.getTotalScore(),
                 simulation.getStartedAt(),
-                challengeResponses
+                challengeResponses,
+                guestAccessToken
         );
     }
 
     @Transactional
-    public SubmitAnswerResponse submitAnswer(Long simulationId, SubmitAnswerRequest request) {
-        Simulation simulation = simulationRepository.findById(simulationId)
-                .orElseThrow(() -> new ResourceNotFoundException("Simulation non trouvée."));
+    public SubmitAnswerResponse submitAnswer(
+            Long simulationId, SubmitAnswerRequest request, String guestAccessToken) {
+        Simulation simulation = findOwnedSimulation(simulationId, guestAccessToken);
 
         if (simulation.getStatus() != SimulationStatus.IN_PROGRESS) {
             throw new ApiException(
@@ -477,9 +490,8 @@ public class SimulationService {
     }
 
     @Transactional
-    public SimulationSummaryResponse abandonSimulation(Long simulationId) {
-        Simulation simulation = simulationRepository.findById(simulationId)
-                .orElseThrow(() -> new ResourceNotFoundException("Simulation non trouvée."));
+    public SimulationSummaryResponse abandonSimulation(Long simulationId, String guestAccessToken) {
+        Simulation simulation = findOwnedSimulation(simulationId, guestAccessToken);
 
         // Idempotent : seul un en-cours bascule en ABANDONNÉ — une session déjà
         // terminée (bilan consulté depuis l'historique) n'est jamais rétrogradée.
@@ -504,9 +516,8 @@ public class SimulationService {
     }
 
     @Transactional
-    public SimulationSummaryResponse completeSimulation(Long simulationId) {
-        Simulation simulation = simulationRepository.findById(simulationId)
-                .orElseThrow(() -> new ResourceNotFoundException("Simulation non trouvée."));
+    public SimulationSummaryResponse completeSimulation(Long simulationId, String guestAccessToken) {
+        Simulation simulation = findOwnedSimulation(simulationId, guestAccessToken);
 
         if (simulation.getStatus() != SimulationStatus.IN_PROGRESS) {
             throw new ApiException(
@@ -535,10 +546,8 @@ public class SimulationService {
     }
 
     @Transactional(readOnly = true)
-    public SimulationResultDTO getSimulationResult(Long simulationId) {
-        Simulation simulation = simulationRepository.findById(simulationId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Simulation introuvable avec l'ID: " + simulationId));
+    public SimulationResultDTO getSimulationResult(Long simulationId, String guestAccessToken) {
+        Simulation simulation = findOwnedSimulation(simulationId, guestAccessToken);
 
         List<SimulationAnswer> answers = simulation.getSimulationChallenges().stream()
                 .map(SimulationChallenge::getAnswer)
@@ -585,7 +594,15 @@ public class SimulationService {
                             status,
                             challenge.getExplanation(),
                             score,
-                            responseTimeMs
+                            responseTimeMs,
+                            challenge.getCategories().stream()
+                                    .map(Category::getName)
+                                    .sorted()
+                                    .toList(),
+                            challenge.getSkills().stream()
+                                    .map(Skill::getName)
+                                    .sorted()
+                                    .toList()
                     );
                 })
                 .toList();
@@ -689,6 +706,51 @@ public class SimulationService {
                 skillResults,
                 questionSummaries
         );
+    }
+
+    private Simulation findOwnedSimulation(Long simulationId, String guestAccessToken) {
+        Simulation simulation = simulationRepository.findById(simulationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Simulation introuvable."));
+        User authenticatedUser = userResolver.currentAuthenticatedOrNull().orElse(null);
+        if (authenticatedUser != null) {
+            if (!Objects.equals(authenticatedUser.getId(), simulation.getUser().getId())) {
+                throw new ResourceNotFoundException("Simulation introuvable.");
+            }
+            return simulation;
+        }
+        if (!UserResolver.GUEST_USERNAME.equals(simulation.getUser().getUsername())
+                || !hasValidGuestAccessToken(simulation, guestAccessToken)) {
+            throw new ResourceNotFoundException("Simulation introuvable.");
+        }
+        return simulation;
+    }
+
+    private String generateGuestAccessToken() {
+        byte[] tokenBytes = new byte[GUEST_TOKEN_BYTES];
+        SECURE_RANDOM.nextBytes(tokenBytes);
+        return java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(tokenBytes);
+    }
+
+    private String hashGuestAccessToken(String guestAccessToken) {
+        try {
+            byte[] digest = MessageDigest.getInstance("SHA-256")
+                    .digest(guestAccessToken.getBytes(java.nio.charset.StandardCharsets.US_ASCII));
+            return HexFormat.of().formatHex(digest);
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 indisponible.", exception);
+        }
+    }
+
+    private boolean hasValidGuestAccessToken(
+            Simulation simulation, String guestAccessToken) {
+        if (guestAccessToken == null || guestAccessToken.isBlank()) {
+            return false;
+        }
+        String providedHash = hashGuestAccessToken(guestAccessToken);
+        String storedHash = simulation.getGuestAccessTokenHash();
+        return storedHash != null && MessageDigest.isEqual(
+                providedHash.getBytes(java.nio.charset.StandardCharsets.US_ASCII),
+                storedHash.getBytes(java.nio.charset.StandardCharsets.US_ASCII));
     }
 
     private List<SimulationResultDTO.CompetencyResult> toCompetencyResults(

@@ -44,6 +44,9 @@ public class Simulation {
     @Column(name = "total_score")
     private Integer totalScore = 0;
 
+    @Column(name = "guest_access_token_hash", length = 64)
+    private String guestAccessTokenHash;
+
     @Column(name = "started_at", nullable = false, updatable = false)
     private LocalDateTime startedAt;
 
@@ -74,6 +77,8 @@ public class Simulation {
     public void setStatus(SimulationStatus status) { this.status = status; }
     public Integer getTotalScore() { return totalScore; }
     public void setTotalScore(Integer totalScore) { this.totalScore = totalScore; }
+    public String getGuestAccessTokenHash() { return guestAccessTokenHash; }
+    public void setGuestAccessTokenHash(String guestAccessTokenHash) { this.guestAccessTokenHash = guestAccessTokenHash; }
     public LocalDateTime getStartedAt() { return startedAt; }
     public LocalDateTime getCompletedAt() { return completedAt; }
     public void setCompletedAt(LocalDateTime completedAt) { this.completedAt = completedAt; }
