@@ -1,6 +1,7 @@
 package com.interview.simulator.user.service;
 
 import com.interview.simulator.category.entity.Category;
+import com.interview.simulator.skill.entity.Skill;
 import com.interview.simulator.simulation.entity.Simulation;
 import com.interview.simulator.simulation.entity.SimulationAnswer;
 import com.interview.simulator.simulation.entity.SimulationChallenge;
@@ -51,6 +52,8 @@ public class UserStatsService {
         long correctAnswers = 0;
         Map<Long, long[]> byCategory = new HashMap<>();   // categoryId -> [answered, correct]
         Map<Long, String> categoryNames = new HashMap<>();
+        Map<Long, long[]> bySkill = new HashMap<>();       // skillId -> [answered, correct]
+        Map<Long, String> skillNames = new HashMap<>();
         Map<String, long[]> byType = new HashMap<>();     // type -> [answered, correct]
 
         for (Simulation simulation : simulations) {
@@ -79,6 +82,14 @@ public class UserStatsService {
                         categoryStats[1]++;
                     }
                     categoryNames.put(category.getId(), category.getName());
+                }
+                for (Skill skill : sc.getChallenge().getSkills()) {
+                    long[] skillStats = bySkill.computeIfAbsent(skill.getId(), k -> new long[2]);
+                    skillStats[0]++;
+                    if (correct) {
+                        skillStats[1]++;
+                    }
+                    skillNames.put(skill.getId(), skill.getName());
                 }
             }
         }
@@ -144,17 +155,53 @@ public class UserStatsService {
             return byRate != 0 ? byRate : Integer.compare(b.answered(), a.answered());
         });
 
-        // Points faibles : uniquement des taux réellement perfectibles (< 100 %),
-        // en priorisant les compétences avec assez de réponses (>= 3) pour être fiables.
-        List<UserStatsResponse.StatEntry> reliable = byCategoryEntries.stream()
+        // Points faibles par domaine et par skill. Une entrée n'est une vraie
+        // priorité qu'à partir de 3 réponses ; sinon son score reste visible dans
+        // byCategory/bySkill mais n'est pas présenté comme fiable.
+        List<UserStatsResponse.WeakPointEntry> reliableWeakPoints = new ArrayList<>();
+        byCategoryEntries.stream()
                 .filter(entry -> entry.answered() >= MIN_ANSWERS_FOR_RELIABLE_RATE
                         && entry.successRate() < 100)
-                .toList();
-        List<UserStatsResponse.StatEntry> weakSource = reliable.isEmpty()
-                ? byCategoryEntries.stream().filter(entry -> entry.successRate() < 100).toList()
-                : reliable;
-        List<UserStatsResponse.StatEntry> weakPoints = weakSource.stream()
-                .limit(3)
+                .map(entry -> new UserStatsResponse.WeakPointEntry(
+                        entry.id(), entry.name(), entry.answered(), entry.correct(),
+                        entry.successRate(), "CATEGORY"))
+                .forEach(reliableWeakPoints::add);
+        bySkill.entrySet().stream()
+                .filter(entry -> entry.getValue()[0] >= MIN_ANSWERS_FOR_RELIABLE_RATE
+                        && entry.getValue()[1] < entry.getValue()[0])
+                .map(entry -> new UserStatsResponse.WeakPointEntry(
+                        entry.getKey(), skillNames.get(entry.getKey()),
+                        (int) entry.getValue()[0], (int) entry.getValue()[1],
+                        rate(entry.getValue()[1], entry.getValue()[0]), "SKILL"))
+                .forEach(reliableWeakPoints::add);
+        reliableWeakPoints.sort((a, b) -> {
+            int byRate = Double.compare(a.successRate(), b.successRate());
+            return byRate != 0 ? byRate : Integer.compare(b.answered(), a.answered());
+        });
+        List<UserStatsResponse.WeakPointEntry> weakPoints = new ArrayList<>(reliableWeakPoints);
+        byCategoryEntries.stream()
+                .filter(entry -> entry.successRate() < 100)
+                .map(entry -> new UserStatsResponse.WeakPointEntry(
+                        entry.id(), entry.name(), entry.answered(), entry.correct(),
+                        entry.successRate(), "CATEGORY"))
+                .forEach(weakPoints::add);
+        bySkill.entrySet().stream()
+                .filter(entry -> entry.getValue()[1] < entry.getValue()[0])
+                .map(entry -> new UserStatsResponse.WeakPointEntry(
+                        entry.getKey(), skillNames.get(entry.getKey()),
+                        (int) entry.getValue()[0], (int) entry.getValue()[1],
+                        rate(entry.getValue()[1], entry.getValue()[0]), "SKILL"))
+                .forEach(weakPoints::add);
+        weakPoints = weakPoints.stream()
+                .distinct()
+                .sorted((a, b) -> {
+                    int byReliability = Boolean.compare(
+                            b.answered() >= MIN_ANSWERS_FOR_RELIABLE_RATE,
+                            a.answered() >= MIN_ANSWERS_FOR_RELIABLE_RATE);
+                    if (byReliability != 0) return byReliability;
+                    int byRate = Double.compare(a.successRate(), b.successRate());
+                    return byRate != 0 ? byRate : Integer.compare(b.answered(), a.answered());
+                })
                 .toList();
 
         // Par type de format, même tri (plus faible en premier)

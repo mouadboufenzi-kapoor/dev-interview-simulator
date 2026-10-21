@@ -3,6 +3,8 @@ package com.interview.simulator.simulation.service;
 import com.interview.simulator.challenge.entity.Challenge;
 import com.interview.simulator.challenge.entity.ChallengeOption;
 import com.interview.simulator.challenge.entity.ChallengeType;
+import com.interview.simulator.category.entity.Category;
+import com.interview.simulator.skill.entity.Skill;
 import com.interview.simulator.simulation.dto.SimulationResultDTO;
 import com.interview.simulator.simulation.entity.Simulation;
 import com.interview.simulator.simulation.entity.SimulationAnswer;
@@ -54,6 +56,22 @@ class SimulationResultServiceTest {
         assertEquals(0, result.questions().get(1).pointsEarned());
         assertEquals(0, result.questions().get(2).pointsEarned());
         assertNull(result.questions().get(2).timeSpentMs());
+        assertEquals(List.of("Java", "Spring Boot"), result.categoryResults().stream()
+                .map(SimulationResultDTO.CompetencyResult::name).toList());
+        assertEquals(List.of("Debugging", "Problem Solving"), result.skillResults().stream()
+                .map(SimulationResultDTO.CompetencyResult::name).toList());
+        assertEquals(1, result.categoryResults().get(0).correct());
+        assertEquals(2, result.categoryResults().get(0).total());
+        assertEquals(0, result.categoryResults().get(1).correct());
+        assertEquals(1, result.categoryResults().get(1).total());
+        assertEquals(1, result.skillResults().get(0).correct());
+        assertEquals(1, result.skillResults().get(0).total());
+        assertEquals(0, result.skillResults().get(1).correct());
+        assertEquals(1, result.skillResults().get(1).total());
+        assertEquals(List.of("Spring Boot", "Java"), result.weakCategoryResults().stream()
+                .map(SimulationResultDTO.CompetencyResult::name).toList());
+        assertEquals(List.of("Problem Solving"), result.weakSkillResults().stream()
+                .map(SimulationResultDTO.CompetencyResult::name).toList());
     }
 
     private SimulationChallenge question(
@@ -62,6 +80,16 @@ class SimulationResultServiceTest {
         challenge.setTitle(title);
         challenge.setQuestion("Question " + title);
         challenge.setPoints(10);
+        Category category = mock(Category.class);
+        when(category.getId()).thenReturn(title.equals("Expirée") ? 2L : 1L);
+        when(category.getName()).thenReturn(title.equals("Expirée") ? "Spring Boot" : "Java");
+        challenge.getCategories().add(category);
+        if (!title.equals("Jamais atteinte")) {
+            Skill skill = mock(Skill.class);
+            when(skill.getId()).thenReturn(title.equals("Expirée") ? 3L : 2L);
+            when(skill.getName()).thenReturn(title.equals("Expirée") ? "Problem Solving" : "Debugging");
+            challenge.getSkills().add(skill);
+        }
         ChallengeOption correct = mock(ChallengeOption.class);
         when(correct.isCorrect()).thenReturn(true);
         when(correct.getContent()).thenReturn("Réponse attendue");

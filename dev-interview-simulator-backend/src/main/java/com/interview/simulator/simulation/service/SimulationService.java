@@ -185,25 +185,31 @@ public class SimulationService {
         return mapToResponse(saved);
     }
 
-    // Raisonnement séquentiel : le DTO de démarrage ne doit jamais contenir
-    // l'ordre attendu (displayOrder = la réponse). On mélange et on renumérote
-    // en position de présentation. La correction serveur relit l'entité en base.
+    // Les questions Architecture mélangent l'affichage des choix pour éviter
+    // que la bonne réponse soit toujours en première position. Le séquentiel
+    // mélange aussi ses étapes et renumérote l'ordre de présentation ; dans les
+    // deux cas, la correction serveur relit les options originales en base.
     private List<SimulationChallengeResponse.OptionResponse> presentationOptions(Challenge challenge) {
-        if (challenge.getType() != ChallengeType.SEQUENTIAL_REASONING) {
-            return challenge.getOptions().stream()
-                    .map(o -> new SimulationChallengeResponse.OptionResponse(
-                            o.getId(), o.getContent(), o.getDisplayOrder()))
-                    .toList();
+        if (challenge.getType() == ChallengeType.SEQUENTIAL_REASONING) {
+            List<ChallengeOption> shuffled = new ArrayList<>(challenge.getOptions());
+            Collections.shuffle(shuffled);
+            List<SimulationChallengeResponse.OptionResponse> options = new ArrayList<>();
+            int presentationPosition = 1;
+            for (ChallengeOption option : shuffled) {
+                options.add(new SimulationChallengeResponse.OptionResponse(
+                        option.getId(), option.getContent(), presentationPosition++));
+            }
+            return options;
         }
-        List<ChallengeOption> shuffled = new ArrayList<>(challenge.getOptions());
-        Collections.shuffle(shuffled);
-        List<SimulationChallengeResponse.OptionResponse> options = new ArrayList<>();
-        int presentationPosition = 1;
-        for (ChallengeOption option : shuffled) {
-            options.add(new SimulationChallengeResponse.OptionResponse(
-                    option.getId(), option.getContent(), presentationPosition++));
+
+        List<ChallengeOption> options = new ArrayList<>(challenge.getOptions());
+        if (challenge.getType() == ChallengeType.ARCHITECTURE) {
+            Collections.shuffle(options);
         }
-        return options;
+        return options.stream()
+                .map(option -> new SimulationChallengeResponse.OptionResponse(
+                        option.getId(), option.getContent(), option.getDisplayOrder()))
+                .toList();
     }
 
     private SimulationResponse mapToResponse(Simulation simulation) {
@@ -610,18 +616,20 @@ public class SimulationService {
                 ? 0.0
                 : ((double) correctAnswersCount / totalQuestions) * 100;
 
-        // Breakdown par compétence, fondé sur les données existantes
-        // (Challenge.skills / Challenge.categories × réponse) : aucun nouveau calcul de scoring.
+        // Breakdown distinct par domaine technique et compétence transversale.
+        // Toutes les questions comptent dans le dénominateur : une question expirée
+        // ou jamais atteinte n'est pas une réussite, mais reste visible dans le diagnostic.
         Map<Long, int[]> skillAgg = new LinkedHashMap<>();
         Map<Long, String> skillNames = new HashMap<>();
         Map<Long, int[]> categoryAgg = new LinkedHashMap<>();
         Map<Long, String> categoryNames = new HashMap<>();
         int answeredWithSkills = 0;
 
-        for (SimulationAnswer answer : answers) {
-            Challenge challenge = answer.getSimulationChallenge().getChallenge();
-            boolean correct = answer.isCorrect();
-            if (!challenge.getSkills().isEmpty()) {
+        for (SimulationChallenge simulationChallenge : simulation.getSimulationChallenges()) {
+            Challenge challenge = simulationChallenge.getChallenge();
+            SimulationAnswer answer = simulationChallenge.getAnswer();
+            boolean correct = answer != null && answer.isCorrect();
+            if (answer != null && !challenge.getSkills().isEmpty()) {
                 answeredWithSkills++;
             }
             for (Skill skill : challenge.getSkills()) {
@@ -642,25 +650,25 @@ public class SimulationService {
             }
         }
 
-        // Axe principal : skills si au moins la moitié des questions en portent,
-        // sinon catégories (couverture complète en base, y compris Architecture).
-        double skillCoverage = answers.isEmpty() ? 0.0 : (double) answeredWithSkills / answers.size();
-        boolean useSkills = skillCoverage >= 0.5 && !skillAgg.isEmpty();
+        List<SimulationResultDTO.CompetencyResult> categoryResults = toCompetencyResults(
+                categoryAgg, categoryNames, true);
+        List<SimulationResultDTO.CompetencyResult> skillResults = toCompetencyResults(
+                skillAgg, skillNames, true);
+        List<SimulationResultDTO.CompetencyResult> categoryPriorityResults = toCompetencyResults(
+                categoryAgg, categoryNames, false);
+        List<SimulationResultDTO.CompetencyResult> skillPriorityResults = toCompetencyResults(
+                skillAgg, skillNames, false);
 
+        // Conservé pour compatibilité avec les anciens clients : l'axe historique
+        // reste disponible, tandis que les nouvelles interfaces reçoivent les deux.
+        double skillCoverage = answers.isEmpty() ? 0.0 : (double) answeredWithSkills / answers.size();
+        boolean useSkills = skillCoverage >= 0.5 && !skillResults.isEmpty();
         SimulationResultDTO.CompetencySource competencySource = useSkills
                 ? SimulationResultDTO.CompetencySource.SKILL
                 : SimulationResultDTO.CompetencySource.CATEGORY;
-        Map<Long, int[]> competencyAgg = useSkills ? skillAgg : categoryAgg;
-        Map<Long, String> competencyNames = useSkills ? skillNames : categoryNames;
-
-        List<SimulationResultDTO.CompetencyResult> competencyResults = competencyAgg.entrySet().stream()
-                .map(entry -> new SimulationResultDTO.CompetencyResult(
-                        entry.getKey(), competencyNames.get(entry.getKey()), entry.getValue()[0], entry.getValue()[1]))
-                .sorted(Comparator
-                        .comparingDouble((SimulationResultDTO.CompetencyResult r) -> (double) r.correct() / r.total())
-                        .reversed()
-                        .thenComparing(Comparator.comparingInt(SimulationResultDTO.CompetencyResult::total).reversed()))
-                .toList();
+        List<SimulationResultDTO.CompetencyResult> competencyResults = useSkills
+                ? skillResults
+                : categoryResults;
 
         return new SimulationResultDTO(
                 simulation.getId(),
@@ -675,7 +683,34 @@ public class SimulationService {
                 simulation.getProfile() != null ? simulation.getProfile().getId() : null,
                 competencySource,
                 competencyResults,
+                categoryPriorityResults,
+                skillPriorityResults,
+                categoryResults,
+                skillResults,
                 questionSummaries
         );
+    }
+
+    private List<SimulationResultDTO.CompetencyResult> toCompetencyResults(
+            Map<Long, int[]> aggregates, Map<Long, String> names) {
+        return toCompetencyResults(aggregates, names, false);
+    }
+
+    private List<SimulationResultDTO.CompetencyResult> toCompetencyResults(
+            Map<Long, int[]> aggregates, Map<Long, String> names, boolean includePerfectScores) {
+        Comparator<SimulationResultDTO.CompetencyResult> rateComparator = Comparator.comparingDouble(
+                (SimulationResultDTO.CompetencyResult result) -> (double) result.correct() / result.total());
+        if (includePerfectScores) {
+            rateComparator = rateComparator.reversed();
+        }
+        Comparator<SimulationResultDTO.CompetencyResult> comparator = rateComparator
+                .thenComparing(Comparator.comparingInt(
+                        SimulationResultDTO.CompetencyResult::total).reversed());
+        return aggregates.entrySet().stream()
+                .filter(entry -> includePerfectScores || entry.getValue()[0] < entry.getValue()[1])
+                .map(entry -> new SimulationResultDTO.CompetencyResult(
+                        entry.getKey(), names.get(entry.getKey()), entry.getValue()[0], entry.getValue()[1]))
+                .sorted(comparator)
+                .toList();
     }
 }
