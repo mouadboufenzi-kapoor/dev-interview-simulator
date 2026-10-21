@@ -21,6 +21,7 @@ public record SimulationChallengeResponse(
     Integer totalSteps,
     String revealedInformation,
     String tradeoff,
+    Integer estimatedTimeSeconds,
     List<OptionResponse> options
 ) {
     public record OptionResponse(

@@ -15,9 +15,16 @@ interface Props {
   loading: boolean;
   activeMode?: ChallengeType;
   initialCategoryIds?: number[];
+  initialSkillIds?: number[];
 }
 
-export const SetupScreen = ({ onStart, loading, activeMode, initialCategoryIds }: Props) => {
+export const SetupScreen = ({
+  onStart,
+  loading,
+  activeMode,
+  initialCategoryIds,
+  initialSkillIds,
+}: Props) => {
   const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
   const [showConfiguration, setShowConfiguration] = useState(false);
   const [selectedMode, setSelectedMode] = useState<ChallengeType>(
@@ -28,7 +35,7 @@ export const SetupScreen = ({ onStart, loading, activeMode, initialCategoryIds }
   const [categories, setCategories] = useState<Category[]>([]);
   const [skills, setSkills] = useState<Skill[]>([]);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>(initialCategoryIds ?? []);
-  const [selectedSkillIds, setSelectedSkillIds] = useState<number[]>([]);
+  const [selectedSkillIds, setSelectedSkillIds] = useState<number[]>(initialSkillIds ?? []);
   const [isLoadingTopics, setIsLoadingTopics] = useState(false);
   const [topicsError, setTopicsError] = useState<string | null>(null);
 

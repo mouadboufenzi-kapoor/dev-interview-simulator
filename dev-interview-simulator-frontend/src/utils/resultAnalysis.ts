@@ -91,7 +91,7 @@ export interface ResultAnalysis {
  * - weaknesses (priorités) : uniquement les axes SOUS le seuil de vraie
  *   faiblesse (PRIORITY_THRESHOLD), triés du plus fragile au moins fragile —
  *   une performance correcte n'est jamais présentée comme une faiblesse ;
- * - strengths : compétences à 100 %, max 3.
+ * - strengths : toutes les compétences à 100 %.
  * - toConsolidate : axes entre le seuil et 100 % (exclus), du plus fragile
  *   au plus solide — ni force, ni faiblesse, mais un retour reste affiché.
  */
@@ -106,8 +106,7 @@ export const analyzeResult = (results: CompetencyResult[]): ResultAnalysis => {
     .sort((a, b) => a.pct - b.pct || a.total - b.total);
   const strengths = [...competencies]
     .filter((c) => c.pct === 100)
-    .sort((a, b) => b.total - a.total)
-    .slice(0, 3);
+    .sort((a, b) => b.total - a.total);
 
   const toConsolidate = [...competencies]
     .filter((c) => c.pct >= PRIORITY_THRESHOLD && c.pct < 100)
@@ -130,12 +129,13 @@ export const analyzeResult = (results: CompetencyResult[]): ResultAnalysis => {
 export const buildTargetedRequest = (
   summary: SimulationResultDTO,
   target: CompetencyResult,
-  answeredChallengeIds: number[]
+  answeredChallengeIds: number[],
+  source: 'SKILL' | 'CATEGORY' = summary.competencySource
 ): StartSimulationRequest => ({
   mode: summary.mode,
   difficulty: summary.difficulty ?? undefined,
   profileId: summary.profileId ?? undefined,
-  ...(summary.competencySource === 'SKILL'
+  ...(source === 'SKILL'
     ? { skillIds: [target.id] }
     : { categoryIds: [target.id] }),
   excludeChallengeIds: answeredChallengeIds,

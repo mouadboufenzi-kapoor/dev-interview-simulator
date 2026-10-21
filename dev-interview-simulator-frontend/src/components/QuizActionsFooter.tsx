@@ -6,6 +6,8 @@ interface Props {
   feedback: SubmitAnswerResponse | null;
   selectedCount: number;
   submitting: boolean;
+  timedOut: boolean;
+  timeoutError: boolean;
   isLastQuestion: boolean;
   onSubmit: () => void;
   onNext: () => void;
@@ -15,6 +17,8 @@ export const QuizActionsFooter = ({
   feedback,
   selectedCount,
   submitting,
+  timedOut,
+  timeoutError,
   isLastQuestion,
   onSubmit,
   onNext,
@@ -28,19 +32,22 @@ export const QuizActionsFooter = ({
       )}
     </div>
 
-    <div className="ml-auto">
+    <div className="ml-auto flex flex-col items-end gap-2">
       {!feedback ? (
-        <Button
-          variant="primary"
-          size="md"
-          onClick={onSubmit}
-          disabled={selectedCount === 0 || submitting}
-          loading={submitting}
-          rightIcon={<ArrowRight className="w-4 h-4" />}
-          className="px-6 font-semibold"
-        >
-          Valider ma réponse
-        </Button>
+        <>
+          {timeoutError && <p className="text-xs text-danger" role="alert">L’expiration n’a pas été enregistrée. Réessayez.</p>}
+          <Button
+            variant="primary"
+            size="md"
+            onClick={onSubmit}
+            disabled={(selectedCount === 0 && !timedOut) || submitting}
+            loading={submitting}
+            rightIcon={<ArrowRight className="w-4 h-4" />}
+            className="px-6 font-semibold"
+          >
+            {timeoutError ? 'Réessayer l’enregistrement' : timedOut ? 'Enregistrer sans réponse' : 'Valider ma réponse'}
+          </Button>
+        </>
       ) : (
         <Button
           variant="primary"

@@ -8,6 +8,10 @@ export interface UserStatEntry {
   successRate: number;
 }
 
+export interface UserWeakPointEntry extends UserStatEntry {
+  source: 'CATEGORY' | 'SKILL';
+}
+
 export interface UserTypeStat {
   type: string;
   answered: number;
@@ -47,7 +51,7 @@ export interface UserStats {
   bestSuccessRate?: number | null;
   byCategory: UserStatEntry[];
   byType: UserTypeStat[];
-  weakPoints: UserStatEntry[];
+  weakPoints: UserWeakPointEntry[];
   simulations: PagedSimulations;
 }
 

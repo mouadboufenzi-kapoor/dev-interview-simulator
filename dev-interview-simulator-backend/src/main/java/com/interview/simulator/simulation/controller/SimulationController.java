@@ -27,25 +27,32 @@ public class SimulationController {
     }
 
     @PostMapping("/{id}/abandon")
-    public ResponseEntity<SimulationSummaryResponse> abandonSimulation(@PathVariable @Positive Long id) {
-        return ResponseEntity.ok(simulationService.abandonSimulation(id));
+    public ResponseEntity<SimulationSummaryResponse> abandonSimulation(
+            @PathVariable @Positive Long id,
+            @RequestHeader(value = "X-Guest-Access-Token", required = false) String guestAccessToken) {
+        return ResponseEntity.ok(simulationService.abandonSimulation(id, guestAccessToken));
     }
 
     @PostMapping("/{id}/complete")
-    public ResponseEntity<SimulationSummaryResponse> completeSimulation(@PathVariable @Positive Long id) {
-        SimulationSummaryResponse response = simulationService.completeSimulation(id);
+    public ResponseEntity<SimulationSummaryResponse> completeSimulation(
+            @PathVariable @Positive Long id,
+            @RequestHeader(value = "X-Guest-Access-Token", required = false) String guestAccessToken) {
+        SimulationSummaryResponse response = simulationService.completeSimulation(id, guestAccessToken);
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/{id}/answers")
     public ResponseEntity<SubmitAnswerResponse> submitAnswer(
             @PathVariable @Positive Long id,
-            @Valid @RequestBody SubmitAnswerRequest request) {
-        return ResponseEntity.ok(simulationService.submitAnswer(id, request));
+            @Valid @RequestBody SubmitAnswerRequest request,
+            @RequestHeader(value = "X-Guest-Access-Token", required = false) String guestAccessToken) {
+        return ResponseEntity.ok(simulationService.submitAnswer(id, request, guestAccessToken));
     }
 
     @GetMapping("/{id}/result")
-    public ResponseEntity<SimulationResultDTO> getSimulationResult(@PathVariable @Positive Long id) {
-        return ResponseEntity.ok(simulationService.getSimulationResult(id));
+    public ResponseEntity<SimulationResultDTO> getSimulationResult(
+            @PathVariable @Positive Long id,
+            @RequestHeader(value = "X-Guest-Access-Token", required = false) String guestAccessToken) {
+        return ResponseEntity.ok(simulationService.getSimulationResult(id, guestAccessToken));
     }
 }

@@ -43,6 +43,7 @@ export interface SimulationChallengeResponse {
   totalSteps: number | null;
   revealedInformation: string | null;
   tradeoff: string | null;
+  estimatedTimeSeconds: number | null;
   options: OptionResponse[];
 }
 
@@ -54,6 +55,7 @@ export interface SimulationResponse {
   totalScore: number;
   startedAt: string;
   challenges: SimulationChallengeResponse[];
+  guestAccessToken?: string | null;
 }
 
 export interface StartSimulationRequest {
@@ -105,6 +107,8 @@ export interface SimulationSummaryResponse {
   completedAt: string;
 }
 
+export type QuestionStatus = 'ANSWERED' | 'TIMED_OUT' | 'UNANSWERED';
+
 export interface QuestionSummary {
   challengeId: number;
   title: string;
@@ -113,9 +117,13 @@ export interface QuestionSummary {
   userSelectedOptionContent: string | null;
   correctOptionContent: string | null;
   isCorrect: boolean;
+  /** Optional for compatibility with historical result payloads. */
+  status?: QuestionStatus;
   explanation: string | null;
   pointsEarned: number;
   timeSpentMs: number | null;
+  categories?: string[];
+  skills?: string[];
 }
 
 export type CompetencySource = 'SKILL' | 'CATEGORY';
@@ -139,6 +147,15 @@ export interface SimulationResultDTO {
   difficulty: DifficultyLevel | null;
   profileId: number | null;
   competencySource: CompetencySource;
+  /** Historique groupé conservé pour compatibilité avec les anciennes sessions. */
   competencyResults: CompetencyResult[];
+  /** Axes techniques sous le seuil de faiblesse, sans les maîtrises à 100 %. */
+  weakCategoryResults?: CompetencyResult[];
+  /** Skills transversaux sous le seuil de faiblesse, sans les maîtrises à 100 %. */
+  weakSkillResults?: CompetencyResult[];
+  /** Résultats par domaine technique, par exemple Java ou Spring Boot. */
+  categoryResults?: CompetencyResult[];
+  /** Résultats par compétence transversale, par exemple Debugging. */
+  skillResults?: CompetencyResult[];
   questions: QuestionSummary[];
 }

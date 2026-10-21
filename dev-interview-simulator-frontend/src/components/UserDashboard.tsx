@@ -13,12 +13,10 @@ import { UserDashboardSimulations } from './UserDashboardSimulations';
 interface Props {
   user: AuthUser;
   onStartSimulation: () => void;
-  onRevise?: (categoryIds: number[]) => void;
+  onRevise?: (filters: { categoryIds?: number[]; skillIds?: number[] }) => void;
   onOpenResult?: (simulationId: number) => void;
 }
 
-// Dashboard utilisateur — ordre mobile-first :
-// accueil (profil) → progression → compétences → priorités → dernières simulations.
 export const UserDashboard = ({ user, onStartSimulation, onRevise, onOpenResult }: Props) => {
   const [stats, setStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -64,12 +62,16 @@ export const UserDashboard = ({ user, onStartSimulation, onRevise, onOpenResult 
 
       {/* Desktop : Compétences + À travailler côte à côte ; mobile : empilés */}
       <div className="grid gap-5 lg:grid-cols-2 lg:items-start lg:gap-6">
-        {stats && !loading && !error && stats.byCategory.length > 0 && (
-          <UserDashboardSkills byCategory={stats.byCategory} />
+        {stats && !loading && !error && stats.totalAnswers > 0 && (
+          <div className="order-1 lg:order-2">
+            <UserDashboardWeakPoints weakPoints={stats.weakPoints} onRevise={onRevise} />
+          </div>
         )}
 
-        {stats && !loading && !error && stats.totalAnswers > 0 && (
-          <UserDashboardWeakPoints weakPoints={stats.weakPoints} onRevise={onRevise} />
+        {stats && !loading && !error && stats.byCategory.length > 0 && (
+          <div className="order-2 lg:order-1">
+            <UserDashboardSkills byCategory={stats.byCategory} />
+          </div>
         )}
       </div>
 

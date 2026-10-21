@@ -43,6 +43,10 @@ public class UserResolver {
      * Retourne {@code empty} si personne n'est connecté et que {@code default_user}
      * n'existe pas encore.
      */
+    public Optional<User> currentAuthenticatedOrNull() {
+        return authenticatedUser();
+    }
+
     public Optional<User> currentOrNull() {
         Optional<User> authenticated = authenticatedUser();
         if (authenticated.isPresent()) {

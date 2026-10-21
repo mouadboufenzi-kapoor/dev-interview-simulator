@@ -10,4 +10,6 @@ import java.util.Set;
 public interface SkillRepository extends JpaRepository<Skill, Long> {
 
     Set<Skill> findByNameIn(Set<String> names);
+
+    java.util.List<Skill> findAllByOrderByNameAsc();
 }

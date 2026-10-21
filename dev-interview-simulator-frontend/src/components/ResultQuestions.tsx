@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import type { SimulationResultDTO } from '../types';
+import type { QuestionStatus, QuestionSummary, SimulationResultDTO } from '../types';
 import { PageTitle } from './common/PageTitle';
 import { QuestionDetails } from './QuestionDetails';
-import { Check, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Check, X, Clock3, CircleDashed, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface Props {
   summary: SimulationResultDTO;
@@ -13,18 +13,24 @@ const INITIAL_VISIBLE = 4;
 
 export const ResultQuestions = ({ summary }: Props) => {
   const [openQuestionId, setOpenQuestionId] = useState<number | null>(null);
-  const [filter, setFilter] = useState<'ALL' | 'CORRECT' | 'INCORRECT'>('ALL');
+  const [filter, setFilter] = useState<'ALL' | 'CORRECT' | 'INCORRECT' | 'NO_ANSWER'>('ALL');
   const [showAll, setShowAll] = useState(false);
 
   const toggleAccordion = (id: number) => {
     setOpenQuestionId(openQuestionId === id ? null : id);
   };
 
+  const getQuestionStatus = (question: QuestionSummary): QuestionStatus =>
+    question.status ?? (question.userSelectedOptionContent ? 'ANSWERED' : 'TIMED_OUT');
   const filteredQuestions = summary.questions.filter((q) => {
-    if (filter === 'CORRECT') return q.isCorrect;
-    if (filter === 'INCORRECT') return !q.isCorrect;
+    const status = getQuestionStatus(q);
+    if (filter === 'CORRECT') return status === 'ANSWERED' && q.isCorrect;
+    if (filter === 'INCORRECT') return status === 'ANSWERED' && !q.isCorrect;
+    if (filter === 'NO_ANSWER') return status !== 'ANSWERED';
     return true;
   });
+  const incorrectCount = summary.questions.filter(q => getQuestionStatus(q) === 'ANSWERED' && !q.isCorrect).length;
+  const noAnswerCount = summary.questions.filter(q => getQuestionStatus(q) !== 'ANSWERED').length;
 
   // Densité visuelle : initialement seulement quelques questions, déploiement
   // à la demande (le filtre actif s'applique quelle que soit l'étendue).
@@ -75,7 +81,17 @@ export const ResultQuestions = ({ summary }: Props) => {
                 : 'text-ink-secondary hover:text-danger'
             }`}
           >
-            Erreurs ({summary.questions.length - summary.correctAnswersCount})
+            Erreurs ({incorrectCount})
+          </button>
+          <button
+            onClick={() => setFilter('NO_ANSWER')}
+            className={`px-3 py-1 rounded-lg transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas ${
+              filter === 'NO_ANSWER'
+                ? 'bg-canvas-subtle text-ink font-semibold'
+                : 'text-ink-secondary hover:text-ink'
+            }`}
+          >
+            Sans réponse ({noAnswerCount})
           </button>
         </div>
       </div>
@@ -83,6 +99,7 @@ export const ResultQuestions = ({ summary }: Props) => {
       {/* Questions Accordion List */}
       <div className="space-y-3">
         {visibleQuestions.map((q, index) => {
+          const status = getQuestionStatus(q);
           const isOpen = openQuestionId === q.challengeId;
 
           return (
@@ -99,15 +116,20 @@ export const ResultQuestions = ({ summary }: Props) => {
                 <div className="flex items-center gap-3.5 pr-2 flex-1 min-w-0">
                   <span
                     className={`flex-shrink-0 w-6 h-6 rounded-md flex items-center justify-center text-xs font-mono font-bold ${
-                      q.isCorrect
-                        ? 'bg-success-soft border border-success-border text-success'
-                        : 'bg-danger-soft border border-danger-border text-danger'
+                      status === 'ANSWERED'
+                        ? q.isCorrect
+                          ? 'bg-success-soft border border-success-border text-success'
+                          : 'bg-danger-soft border border-danger-border text-danger'
+                        : 'bg-canvas-subtle border border-border text-ink-muted'
                     }`}
+                    aria-label={status === 'TIMED_OUT' ? 'Temps écoulé' : status === 'UNANSWERED' ? 'Non répondue' : q.isCorrect ? 'Réponse correcte' : 'Réponse incorrecte'}
                   >
-                    {q.isCorrect ? (
-                      <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                    {status === 'ANSWERED' ? (
+                      q.isCorrect ? <Check className="w-3.5 h-3.5 stroke-[2.5]" /> : <X className="w-3.5 h-3.5 stroke-[2.5]" />
+                    ) : status === 'TIMED_OUT' ? (
+                      <Clock3 className="w-3.5 h-3.5" />
                     ) : (
-                      <X className="w-3.5 h-3.5 stroke-[2.5]" />
+                      <CircleDashed className="w-3.5 h-3.5" />
                     )}
                   </span>
 

@@ -18,6 +18,10 @@ public record SimulationResultDTO(
     Long profileId,
     CompetencySource competencySource,
     List<CompetencyResult> competencyResults,
+    List<CompetencyResult> weakCategoryResults,
+    List<CompetencyResult> weakSkillResults,
+    List<CompetencyResult> categoryResults,
+    List<CompetencyResult> skillResults,
     List<QuestionSummaryDTO> questions
 ) {
     public record QuestionSummaryDTO(
@@ -28,9 +32,12 @@ public record SimulationResultDTO(
         String userSelectedOptionContent,
         String correctOptionContent,
         Boolean isCorrect,
+        QuestionStatus status,
         String explanation,
         Integer pointsEarned,
-        Long timeSpentMs
+        Long timeSpentMs,
+        List<String> categories,
+        List<String> skills
     ) {}
 
     /**
@@ -39,9 +46,8 @@ public record SimulationResultDTO(
      */
     public record CompetencyResult(Long id, String name, Integer correct, Integer total) {}
 
-    /**
-     * Axe du breakdown retourné : SKILL si au moins la moitié des questions
-     * portent un skill, sinon CATEGORY (couverture complète en base).
-     */
+    public enum QuestionStatus { ANSWERED, TIMED_OUT, UNANSWERED }
+
+    /** Axe du breakdown retourné historiquement dans competencyResults. */
     public enum CompetencySource { SKILL, CATEGORY }
 }

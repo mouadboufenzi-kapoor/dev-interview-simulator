@@ -8,11 +8,13 @@ import { AdminProfilePanel } from './AdminProfilePanel';
 import { AdminStatsPanel } from './AdminStatsPanel';
 import { AdminChallengesContent } from './AdminChallengesContent';
 import { AdminGeneration } from './AdminGeneration';
+import { AdminCoveragePanel } from './AdminCoveragePanel';
 
-type Tab = 'stats' | 'content' | 'scenarios' | 'profiles' | 'generation';
+type Tab = 'stats' | 'coverage' | 'content' | 'scenarios' | 'profiles' | 'generation';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'stats', label: 'Statistiques' },
+  { id: 'coverage', label: 'Couverture' },
   { id: 'content', label: 'Contenus' },
   { id: 'scenarios', label: 'Scénarios' },
   { id: 'profiles', label: 'Profils' },
@@ -78,6 +80,8 @@ export const AdminDashboard = () => {
 
       {tab === 'stats' ? (
         <AdminStatsPanel />
+      ) : tab === 'coverage' ? (
+        <AdminCoveragePanel />
       ) : tab === 'scenarios' ? (
         <AdminScenarioPanel onAddStep={id => { setPreselectedScenarioId(id); setIsCreating(true); }} />
       ) : tab === 'profiles' ? (

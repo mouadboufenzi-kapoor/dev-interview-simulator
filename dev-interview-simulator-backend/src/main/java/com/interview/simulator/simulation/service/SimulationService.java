@@ -36,7 +36,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.HexFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -46,9 +50,13 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.Objects;
 
 @Service
 public class SimulationService {
+
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+    private static final int GUEST_TOKEN_BYTES = 32;
 
     private final SimulationRepository simulationRepository;
     private final ChallengeRepository challengeRepository;
@@ -85,7 +93,10 @@ public class SimulationService {
     @Transactional
     public SimulationResponse startSimulation(StartSimulationRequest request) {
         // 1. Résolution de l'utilisateur : connecté → son compte ; invité → default_user (trial sans historique)
-        User user = userResolver.resolveOrCreate();
+        User authenticatedUser = userResolver.currentAuthenticatedOrNull().orElse(null);
+        User user = authenticatedUser != null ? authenticatedUser : userResolver.resolveOrCreate();
+        boolean guest = authenticatedUser == null;
+        String guestAccessToken = guest ? generateGuestAccessToken() : null;
 
         // 2. Trouver les challenges correspondants au mode
         List<Challenge> matchingChallenges;
@@ -166,6 +177,7 @@ public class SimulationService {
         // 4. Créer la simulation
         Simulation simulation = new Simulation();
         simulation.setUser(user);
+        simulation.setGuestAccessTokenHash(guest ? hashGuestAccessToken(guestAccessToken) : null);
         simulation.setMode(request.mode());
         simulation.setDifficulty(request.difficulty());
         simulation.setProfile(profile);
@@ -182,31 +194,37 @@ public class SimulationService {
 
         Simulation saved = simulationRepository.save(simulation);
 
-        return mapToResponse(saved);
+        return mapToResponse(saved, guestAccessToken);
     }
 
-    // Raisonnement séquentiel : le DTO de démarrage ne doit jamais contenir
-    // l'ordre attendu (displayOrder = la réponse). On mélange et on renumérote
-    // en position de présentation. La correction serveur relit l'entité en base.
+    // Les questions Architecture mélangent l'affichage des choix pour éviter
+    // que la bonne réponse soit toujours en première position. Le séquentiel
+    // mélange aussi ses étapes et renumérote l'ordre de présentation ; dans les
+    // deux cas, la correction serveur relit les options originales en base.
     private List<SimulationChallengeResponse.OptionResponse> presentationOptions(Challenge challenge) {
-        if (challenge.getType() != ChallengeType.SEQUENTIAL_REASONING) {
-            return challenge.getOptions().stream()
-                    .map(o -> new SimulationChallengeResponse.OptionResponse(
-                            o.getId(), o.getContent(), o.getDisplayOrder()))
-                    .toList();
+        if (challenge.getType() == ChallengeType.SEQUENTIAL_REASONING) {
+            List<ChallengeOption> shuffled = new ArrayList<>(challenge.getOptions());
+            Collections.shuffle(shuffled);
+            List<SimulationChallengeResponse.OptionResponse> options = new ArrayList<>();
+            int presentationPosition = 1;
+            for (ChallengeOption option : shuffled) {
+                options.add(new SimulationChallengeResponse.OptionResponse(
+                        option.getId(), option.getContent(), presentationPosition++));
+            }
+            return options;
         }
-        List<ChallengeOption> shuffled = new ArrayList<>(challenge.getOptions());
-        Collections.shuffle(shuffled);
-        List<SimulationChallengeResponse.OptionResponse> options = new ArrayList<>();
-        int presentationPosition = 1;
-        for (ChallengeOption option : shuffled) {
-            options.add(new SimulationChallengeResponse.OptionResponse(
-                    option.getId(), option.getContent(), presentationPosition++));
+
+        List<ChallengeOption> options = new ArrayList<>(challenge.getOptions());
+        if (challenge.getType() == ChallengeType.ARCHITECTURE) {
+            Collections.shuffle(options);
         }
-        return options;
+        return options.stream()
+                .map(option -> new SimulationChallengeResponse.OptionResponse(
+                        option.getId(), option.getContent(), option.getDisplayOrder()))
+                .toList();
     }
 
-    private SimulationResponse mapToResponse(Simulation simulation) {
+    private SimulationResponse mapToResponse(Simulation simulation, String guestAccessToken) {
         List<SimulationChallengeResponse> challengeResponses = simulation.getSimulationChallenges().stream()
                 .map(sc -> new SimulationChallengeResponse(
                         sc.getId(),
@@ -231,6 +249,7 @@ public class SimulationService {
                                 : null,
                         null,
                         null,
+                        sc.getChallenge().getEstimatedTimeSeconds(),
                         presentationOptions(sc.getChallenge())
                 ))
                 .toList();
@@ -243,14 +262,15 @@ public class SimulationService {
                 simulation.getStatus(),
                 simulation.getTotalScore(),
                 simulation.getStartedAt(),
-                challengeResponses
+                challengeResponses,
+                guestAccessToken
         );
     }
 
     @Transactional
-    public SubmitAnswerResponse submitAnswer(Long simulationId, SubmitAnswerRequest request) {
-        Simulation simulation = simulationRepository.findById(simulationId)
-                .orElseThrow(() -> new ResourceNotFoundException("Simulation non trouvée."));
+    public SubmitAnswerResponse submitAnswer(
+            Long simulationId, SubmitAnswerRequest request, String guestAccessToken) {
+        Simulation simulation = findOwnedSimulation(simulationId, guestAccessToken);
 
         if (simulation.getStatus() != SimulationStatus.IN_PROGRESS) {
             throw new ApiException(
@@ -276,12 +296,6 @@ public class SimulationService {
             );
         }
 
-        // Raisonnement séquentiel : la réponse est une permutation complète des
-        // étapes — traitement dédié (notation par position, ordre attendu).
-        if (simChallenge.getChallenge().getType() == ChallengeType.SEQUENTIAL_REASONING) {
-            return submitSequentialAnswer(simChallenge, request);
-        }
-
         if (simulation.getMode() == ChallengeType.ARCHITECTURE) {
             SimulationChallenge expectedChallenge = simulation.getSimulationChallenges().stream()
                     .filter(challenge -> challenge.getAnswer() == null)
@@ -294,6 +308,15 @@ public class SimulationService {
                         "Les étapes Architecture doivent être répondues dans l'ordre."
                 );
             }
+        }
+
+        if (request.selectedOptionIds().isEmpty()) {
+            return recordTimedOutAnswer(simChallenge, request.responseTimeMs());
+        }
+
+        // Raisonnement séquentiel : réponse = permutation complète des étapes.
+        if (simChallenge.getChallenge().getType() == ChallengeType.SEQUENTIAL_REASONING) {
+            return submitSequentialAnswer(simChallenge, request);
         }
 
         if (simChallenge.getChallenge().getSelectionType() == SelectionType.SINGLE_CHOICE
@@ -356,6 +379,33 @@ public class SimulationService {
                         selectedOptionIds),
                 null // expectedOrder : réservé au raisonnement séquentiel
         );
+    }
+
+    private SubmitAnswerResponse recordTimedOutAnswer(
+            SimulationChallenge simChallenge,
+            Long responseTimeMs) {
+        Simulation simulation = simChallenge.getSimulation();
+        Challenge challenge = simChallenge.getChallenge();
+        Set<ChallengeOption> emptySelection = new LinkedHashSet<>();
+        List<Long> expectedOrder = challenge.getType() == ChallengeType.SEQUENTIAL_REASONING
+                ? challenge.getOptions().stream()
+                    .sorted(Comparator.comparingInt(ChallengeOption::getDisplayOrder))
+                    .map(ChallengeOption::getId).toList()
+                : null;
+
+        SimulationAnswer answer = new SimulationAnswer();
+        answer.setSimulationChallenge(simChallenge);
+        answer.setSelectedOptions(emptySelection);
+        answer.setCorrect(false);
+        answer.setScore(0);
+        answer.setResponseTimeMs(responseTimeMs);
+        simChallenge.setAnswer(answer);
+        simulationAnswerRepository.save(answer);
+
+        return new SubmitAnswerResponse(answer.getId(), false, 0,
+                simulation.getTotalScore(), "Temps écoulé : aucune réponse n'a été enregistrée.", null,
+                null, null,
+                ChallengeCorrectionDTO.forOptions(challenge.getOptions(), Set.of()), expectedOrder);
     }
 
     // ===== Raisonnement séquentiel =====
@@ -440,9 +490,8 @@ public class SimulationService {
     }
 
     @Transactional
-    public SimulationSummaryResponse abandonSimulation(Long simulationId) {
-        Simulation simulation = simulationRepository.findById(simulationId)
-                .orElseThrow(() -> new ResourceNotFoundException("Simulation non trouvée."));
+    public SimulationSummaryResponse abandonSimulation(Long simulationId, String guestAccessToken) {
+        Simulation simulation = findOwnedSimulation(simulationId, guestAccessToken);
 
         // Idempotent : seul un en-cours bascule en ABANDONNÉ — une session déjà
         // terminée (bilan consulté depuis l'historique) n'est jamais rétrogradée.
@@ -467,9 +516,8 @@ public class SimulationService {
     }
 
     @Transactional
-    public SimulationSummaryResponse completeSimulation(Long simulationId) {
-        Simulation simulation = simulationRepository.findById(simulationId)
-                .orElseThrow(() -> new ResourceNotFoundException("Simulation non trouvée."));
+    public SimulationSummaryResponse completeSimulation(Long simulationId, String guestAccessToken) {
+        Simulation simulation = findOwnedSimulation(simulationId, guestAccessToken);
 
         if (simulation.getStatus() != SimulationStatus.IN_PROGRESS) {
             throw new ApiException(
@@ -498,19 +546,33 @@ public class SimulationService {
     }
 
     @Transactional(readOnly = true)
-    public SimulationResultDTO getSimulationResult(Long simulationId) {
-        Simulation simulation = simulationRepository.findById(simulationId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Simulation introuvable avec l'ID: " + simulationId));
+    public SimulationResultDTO getSimulationResult(Long simulationId, String guestAccessToken) {
+        Simulation simulation = findOwnedSimulation(simulationId, guestAccessToken);
 
         List<SimulationAnswer> answers = simulation.getSimulationChallenges().stream()
                 .map(SimulationChallenge::getAnswer)
                 .filter(answer -> answer != null)
                 .toList();
+        int totalQuestions = simulation.getSimulationChallenges().size();
 
-        List<SimulationResultDTO.QuestionSummaryDTO> questionSummaries = answers.stream()
-                .map(answer -> {
-                    Challenge challenge = answer.getSimulationChallenge().getChallenge();
+        List<SimulationResultDTO.QuestionSummaryDTO> questionSummaries = simulation.getSimulationChallenges().stream()
+                .sorted(Comparator.comparingInt(SimulationChallenge::getDisplayOrder))
+                .map(simulationChallenge -> {
+                    SimulationAnswer answer = simulationChallenge.getAnswer();
+                    Challenge challenge = simulationChallenge.getChallenge();
+                    SimulationResultDTO.QuestionStatus status = answer == null
+                            ? SimulationResultDTO.QuestionStatus.UNANSWERED
+                            : answer.getSelectedOptions().isEmpty()
+                                    ? SimulationResultDTO.QuestionStatus.TIMED_OUT
+                                    : SimulationResultDTO.QuestionStatus.ANSWERED;
+                    String selectedContent = answer == null || answer.getSelectedOptions().isEmpty()
+                            ? null
+                            : answer.getSelectedOptions().stream()
+                                    .map(ChallengeOption::getContent)
+                                    .collect(java.util.stream.Collectors.joining(", "));
+                    boolean isCorrect = answer != null && answer.isCorrect();
+                    int score = answer != null && answer.getScore() != null ? answer.getScore() : 0;
+                    Long responseTimeMs = answer == null ? null : answer.getResponseTimeMs();
 
                     // Toutes les bonnes options (et non plus la première seule) :
                     // un QCM multiple doit afficher l'intégralité de la bonne réponse.
@@ -526,14 +588,21 @@ public class SimulationService {
                             challenge.getTitle(),
                             challenge.getContext(),
                             challenge.getQuestion(),
-                            answer.getSelectedOptions().stream()
-                                    .map(ChallengeOption::getContent)
-                                    .collect(java.util.stream.Collectors.joining(", ")),
+                            selectedContent,
                             !correctContent.isBlank() ? correctContent : "Inconnue",
-                            answer.isCorrect(),
+                            isCorrect,
+                            status,
                             challenge.getExplanation(),
-                            answer.getScore(),
-                            answer.getResponseTimeMs()
+                            score,
+                            responseTimeMs,
+                            challenge.getCategories().stream()
+                                    .map(Category::getName)
+                                    .sorted()
+                                    .toList(),
+                            challenge.getSkills().stream()
+                                    .map(Skill::getName)
+                                    .sorted()
+                                    .toList()
                     );
                 })
                 .toList();
@@ -542,8 +611,9 @@ public class SimulationService {
                 .mapToInt(answer -> answer.getScore() != null ? answer.getScore() : 0)
                 .sum();
 
-        int maxScore = answers.stream()
-                .mapToInt(answer -> answer.getSimulationChallenge().getChallenge().getPoints())
+        int maxScore = simulation.getSimulationChallenges().stream()
+                .map(SimulationChallenge::getChallenge)
+                .mapToInt(challenge -> challenge.getPoints() != null ? challenge.getPoints() : 0)
                 .sum();
 
         int correctAnswersCount = (int) answers.stream()
@@ -559,22 +629,24 @@ public class SimulationService {
         // Taux de réussite = bonnes réponses / nombre total de questions
         // (invariant métier). Le ratio points/points reste affiché
         // séparément via totalScore / maxPossibleScore.
-        double successPercentage = answers.isEmpty()
+        double successPercentage = totalQuestions == 0
                 ? 0.0
-                : ((double) correctAnswersCount / answers.size()) * 100;
+                : ((double) correctAnswersCount / totalQuestions) * 100;
 
-        // Breakdown par compétence, fondé sur les données existantes
-        // (Challenge.skills / Challenge.categories × réponse) : aucun nouveau calcul de scoring.
+        // Breakdown distinct par domaine technique et compétence transversale.
+        // Toutes les questions comptent dans le dénominateur : une question expirée
+        // ou jamais atteinte n'est pas une réussite, mais reste visible dans le diagnostic.
         Map<Long, int[]> skillAgg = new LinkedHashMap<>();
         Map<Long, String> skillNames = new HashMap<>();
         Map<Long, int[]> categoryAgg = new LinkedHashMap<>();
         Map<Long, String> categoryNames = new HashMap<>();
         int answeredWithSkills = 0;
 
-        for (SimulationAnswer answer : answers) {
-            Challenge challenge = answer.getSimulationChallenge().getChallenge();
-            boolean correct = answer.isCorrect();
-            if (!challenge.getSkills().isEmpty()) {
+        for (SimulationChallenge simulationChallenge : simulation.getSimulationChallenges()) {
+            Challenge challenge = simulationChallenge.getChallenge();
+            SimulationAnswer answer = simulationChallenge.getAnswer();
+            boolean correct = answer != null && answer.isCorrect();
+            if (answer != null && !challenge.getSkills().isEmpty()) {
                 answeredWithSkills++;
             }
             for (Skill skill : challenge.getSkills()) {
@@ -595,25 +667,25 @@ public class SimulationService {
             }
         }
 
-        // Axe principal : skills si au moins la moitié des questions en portent,
-        // sinon catégories (couverture complète en base, y compris Architecture).
-        double skillCoverage = answers.isEmpty() ? 0.0 : (double) answeredWithSkills / answers.size();
-        boolean useSkills = skillCoverage >= 0.5 && !skillAgg.isEmpty();
+        List<SimulationResultDTO.CompetencyResult> categoryResults = toCompetencyResults(
+                categoryAgg, categoryNames, true);
+        List<SimulationResultDTO.CompetencyResult> skillResults = toCompetencyResults(
+                skillAgg, skillNames, true);
+        List<SimulationResultDTO.CompetencyResult> categoryPriorityResults = toCompetencyResults(
+                categoryAgg, categoryNames, false);
+        List<SimulationResultDTO.CompetencyResult> skillPriorityResults = toCompetencyResults(
+                skillAgg, skillNames, false);
 
+        // Conservé pour compatibilité avec les anciens clients : l'axe historique
+        // reste disponible, tandis que les nouvelles interfaces reçoivent les deux.
+        double skillCoverage = answers.isEmpty() ? 0.0 : (double) answeredWithSkills / answers.size();
+        boolean useSkills = skillCoverage >= 0.5 && !skillResults.isEmpty();
         SimulationResultDTO.CompetencySource competencySource = useSkills
                 ? SimulationResultDTO.CompetencySource.SKILL
                 : SimulationResultDTO.CompetencySource.CATEGORY;
-        Map<Long, int[]> competencyAgg = useSkills ? skillAgg : categoryAgg;
-        Map<Long, String> competencyNames = useSkills ? skillNames : categoryNames;
-
-        List<SimulationResultDTO.CompetencyResult> competencyResults = competencyAgg.entrySet().stream()
-                .map(entry -> new SimulationResultDTO.CompetencyResult(
-                        entry.getKey(), competencyNames.get(entry.getKey()), entry.getValue()[0], entry.getValue()[1]))
-                .sorted(Comparator
-                        .comparingDouble((SimulationResultDTO.CompetencyResult r) -> (double) r.correct() / r.total())
-                        .reversed()
-                        .thenComparing(Comparator.comparingInt(SimulationResultDTO.CompetencyResult::total).reversed()))
-                .toList();
+        List<SimulationResultDTO.CompetencyResult> competencyResults = useSkills
+                ? skillResults
+                : categoryResults;
 
         return new SimulationResultDTO(
                 simulation.getId(),
@@ -621,14 +693,86 @@ public class SimulationService {
                 maxScore,
                 Math.round(successPercentage * 100.0) / 100.0,
                 totalTimeSpentSeconds,
-                answers.size(),
+                simulation.getSimulationChallenges().size(),
                 correctAnswersCount,
                 simulation.getMode(),
                 simulation.getDifficulty(),
                 simulation.getProfile() != null ? simulation.getProfile().getId() : null,
                 competencySource,
                 competencyResults,
+                categoryPriorityResults,
+                skillPriorityResults,
+                categoryResults,
+                skillResults,
                 questionSummaries
         );
+    }
+
+    private Simulation findOwnedSimulation(Long simulationId, String guestAccessToken) {
+        Simulation simulation = simulationRepository.findById(simulationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Simulation introuvable."));
+        User authenticatedUser = userResolver.currentAuthenticatedOrNull().orElse(null);
+        if (authenticatedUser != null) {
+            if (!Objects.equals(authenticatedUser.getId(), simulation.getUser().getId())) {
+                throw new ResourceNotFoundException("Simulation introuvable.");
+            }
+            return simulation;
+        }
+        if (!UserResolver.GUEST_USERNAME.equals(simulation.getUser().getUsername())
+                || !hasValidGuestAccessToken(simulation, guestAccessToken)) {
+            throw new ResourceNotFoundException("Simulation introuvable.");
+        }
+        return simulation;
+    }
+
+    private String generateGuestAccessToken() {
+        byte[] tokenBytes = new byte[GUEST_TOKEN_BYTES];
+        SECURE_RANDOM.nextBytes(tokenBytes);
+        return java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(tokenBytes);
+    }
+
+    private String hashGuestAccessToken(String guestAccessToken) {
+        try {
+            byte[] digest = MessageDigest.getInstance("SHA-256")
+                    .digest(guestAccessToken.getBytes(java.nio.charset.StandardCharsets.US_ASCII));
+            return HexFormat.of().formatHex(digest);
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 indisponible.", exception);
+        }
+    }
+
+    private boolean hasValidGuestAccessToken(
+            Simulation simulation, String guestAccessToken) {
+        if (guestAccessToken == null || guestAccessToken.isBlank()) {
+            return false;
+        }
+        String providedHash = hashGuestAccessToken(guestAccessToken);
+        String storedHash = simulation.getGuestAccessTokenHash();
+        return storedHash != null && MessageDigest.isEqual(
+                providedHash.getBytes(java.nio.charset.StandardCharsets.US_ASCII),
+                storedHash.getBytes(java.nio.charset.StandardCharsets.US_ASCII));
+    }
+
+    private List<SimulationResultDTO.CompetencyResult> toCompetencyResults(
+            Map<Long, int[]> aggregates, Map<Long, String> names) {
+        return toCompetencyResults(aggregates, names, false);
+    }
+
+    private List<SimulationResultDTO.CompetencyResult> toCompetencyResults(
+            Map<Long, int[]> aggregates, Map<Long, String> names, boolean includePerfectScores) {
+        Comparator<SimulationResultDTO.CompetencyResult> rateComparator = Comparator.comparingDouble(
+                (SimulationResultDTO.CompetencyResult result) -> (double) result.correct() / result.total());
+        if (includePerfectScores) {
+            rateComparator = rateComparator.reversed();
+        }
+        Comparator<SimulationResultDTO.CompetencyResult> comparator = rateComparator
+                .thenComparing(Comparator.comparingInt(
+                        SimulationResultDTO.CompetencyResult::total).reversed());
+        return aggregates.entrySet().stream()
+                .filter(entry -> includePerfectScores || entry.getValue()[0] < entry.getValue()[1])
+                .map(entry -> new SimulationResultDTO.CompetencyResult(
+                        entry.getKey(), names.get(entry.getKey()), entry.getValue()[0], entry.getValue()[1]))
+                .sorted(comparator)
+                .toList();
     }
 }

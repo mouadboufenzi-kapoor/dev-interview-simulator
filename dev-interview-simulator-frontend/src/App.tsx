@@ -30,6 +30,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [reviseCategoryIds, setReviseCategoryIds] = useState<number[] | null>(null);
+  const [reviseSkillIds, setReviseSkillIds] = useState<number[] | null>(null);
   const [showAccessModal, setShowAccessModal] = useState(false);
   // Garde anti double-clic sur « Réviser » : évite deux démarrages simultanés.
   const reviseInFlight = useRef(false);
@@ -85,7 +86,9 @@ export default function App() {
 
       setSimulation(data);
       setScreen('QUIZ');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (!window.matchMedia('(max-width: 639px)').matches) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
       return true;
     } catch (err) {
       console.error(err);
@@ -111,11 +114,11 @@ export default function App() {
       // si la clôture échoue, le bilan reste affichable (/result ne dépend
       // pas du statut).
       try {
-        await simulationApi.completeSimulation(simulation.id);
+        await simulationApi.completeSimulation(simulation.id, simulation.guestAccessToken ?? undefined);
       } catch (completeErr) {
         console.error('Clôture de la simulation impossible', completeErr);
       }
-      const data = await simulationApi.getSimulationResult(simulation.id);
+      const data = await simulationApi.getSimulationResult(simulation.id, simulation.guestAccessToken ?? undefined);
       setSummary(data);
       setScreen('RESULT');
       if (!user) {
@@ -143,7 +146,7 @@ export default function App() {
   // sessions encore IN_PROGRESS basculent (jamais un bilan déjà consulté).
   const handleQuit = () => {
     if (screen === 'QUIZ' && simulation?.status === 'IN_PROGRESS') {
-      simulationApi.abandonSimulation(simulation.id).catch((err) => {
+      simulationApi.abandonSimulation(simulation.id, simulation.guestAccessToken).catch((err) => {
         console.error('Abandon de la simulation impossible', err);
       });
     }
@@ -185,18 +188,22 @@ export default function App() {
   // la compétence — même moteur de création que l'écran Setup (mode QCM par
   // défaut, toutes difficultés pour maximiser le pool). Repli : écran de
   // configuration pré-pré-sélectionné si aucune question n'est disponible.
-  const handleRevise = async (categoryIds: number[]) => {
+  const handleRevise = async (
+    filters: { categoryIds?: number[]; skillIds?: number[] }
+  ) => {
     if (reviseInFlight.current) return;
     reviseInFlight.current = true;
     try {
       const started = await handleStartSimulation(
-        { mode: 'SITUATIONAL_QCM', categoryIds },
+        { mode: 'SITUATIONAL_QCM', ...filters },
         'Aucune question ciblée disponible pour cette compétence pour le moment. Vous pouvez préparer votre session manuellement.'
       );
       if (started) {
         setReviseCategoryIds(null);
+        setReviseSkillIds(null);
       } else {
-        setReviseCategoryIds(categoryIds);
+        setReviseCategoryIds(filters.categoryIds ?? null);
+        setReviseSkillIds(filters.skillIds ?? null);
         setSimulation(null);
         setSummary(null);
         setScreen('SETUP');
@@ -293,6 +300,7 @@ export default function App() {
               loading={loading}
               activeMode={selectedDashboardMode}
               initialCategoryIds={reviseCategoryIds ?? undefined}
+              initialSkillIds={reviseSkillIds ?? undefined}
             />
           )}
 

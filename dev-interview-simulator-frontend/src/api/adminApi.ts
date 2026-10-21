@@ -1,5 +1,5 @@
 import { apiClient  } from './client'; 
-import type { ChallengeType } from '../types';
+import type { ChallengeType, DifficultyLevel } from '../types';
 
 export type GenerationDifficulty = 'JUNIOR' | 'INTERMEDIATE' | 'ADVANCED';
 
@@ -153,6 +153,85 @@ export interface AdminStats {
   completedSimulations: number;
   inProgressSimulations: number;
 }
+
+export interface CoverageProfileOption {
+  id: number;
+  code: string;
+  name: string;
+  allowedTypes: ChallengeType[];
+}
+
+export interface CoverageTaxonomyOption {
+  id: number;
+  name: string;
+}
+
+export interface CoverageOptions {
+  profiles: CoverageProfileOption[];
+  types: ChallengeType[];
+  difficulties: DifficultyLevel[];
+  categories: CoverageTaxonomyOption[];
+  skills: CoverageTaxonomyOption[];
+}
+
+export interface CoverageCell {
+  profileId: number;
+  profileName: string;
+  difficulty: DifficultyLevel;
+  type: ChallengeType;
+  taxonomyId: number;
+  taxonomyName: string;
+  count: number;
+}
+
+export interface CoverageContentItem {
+  id: number;
+  title: string;
+  question: string | null;
+  type: ChallengeType;
+  difficulty: DifficultyLevel;
+  stepOrder: number | null;
+  scenarioId: number | null;
+  scenarioTitle: string | null;
+  stepCount: number;
+}
+
+export const coverageApi = {
+  getOptions: async (): Promise<CoverageOptions> => {
+    const { data } = await apiClient.get('/admin/coverage/options');
+    return data;
+  },
+  getCoverage: async (params: {
+    profileId?: number;
+    difficulty?: DifficultyLevel;
+    type?: ChallengeType;
+    dimension: 'CATEGORY' | 'SKILL';
+  }): Promise<{ cells: CoverageCell[] }> => {
+    const { data } = await apiClient.get('/admin/coverage', { params });
+    return data;
+  },
+  getDetails: async (params: {
+    profileId: number;
+    difficulty: DifficultyLevel;
+    type: ChallengeType;
+    dimension: 'CATEGORY' | 'SKILL';
+    taxonomyId: number;
+    page?: number;
+    size?: number;
+  }): Promise<Page<CoverageContentItem>> => {
+    const { data } = await apiClient.get('/admin/coverage/details', { params });
+    return data;
+  },
+  getScenarioSteps: async (scenarioId: number, params: {
+    profileId: number;
+    difficulty: DifficultyLevel;
+    page?: number;
+    size?: number;
+  }): Promise<Page<CoverageContentItem>> => {
+    const { data } = await apiClient.get(`/admin/coverage/scenarios/${scenarioId}/steps`, { params });
+    return data;
+  },
+};
 
 export const statsApi = {
   getStats: async (): Promise<AdminStats> => {

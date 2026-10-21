@@ -27,6 +27,8 @@ interface Props {
   disabled: boolean;
   /** Présent après validation : colore chaque position et montre l'ordre attendu. */
   feedback?: SubmitAnswerResponse | null;
+  /** Expiration : présente l'ordre attendu comme correction sans fausse réponse utilisateur. */
+  timedOut?: boolean;
 }
 
 /** État d'une position en mode correction. */
@@ -110,6 +112,7 @@ export const QuizSequenceList = ({
   onChange,
   disabled,
   feedback,
+  timedOut = false,
 }: Props) => {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -119,7 +122,8 @@ export const QuizSequenceList = ({
   const optionById = new Map(challenge.options.map((option) => [option.id, option]));
   const expectedOrder = feedback?.expectedOrder ?? null;
   const isCorrection =
-    !!feedback && !!expectedOrder && expectedOrder.length === orderedOptionIds.length;
+    !timedOut && !!feedback && !!expectedOrder && expectedOrder.length === orderedOptionIds.length;
+  const showExpectedOrder = Boolean(expectedOrder?.length) && (isCorrection || timedOut);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -137,6 +141,12 @@ export const QuizSequenceList = ({
 
   return (
     <div className="space-y-3">
+      {timedOut && (
+        <p className="text-sm font-semibold text-danger" role="status">
+          Temps écoulé — voici l’ordre attendu.
+        </p>
+      )}
+
       {isCorrection ? (
         <p
           className={`text-xs font-sans font-semibold uppercase tracking-wider ${
@@ -145,11 +155,11 @@ export const QuizSequenceList = ({
         >
           {correctCount} / {orderedOptionIds.length} étapes bien placées
         </p>
-      ) : (
+      ) : !timedOut ? (
         <p className="text-xs font-sans font-semibold uppercase tracking-wider text-ink-muted">
           Remets les étapes dans l'ordre logique
         </p>
-      )}
+      ) : null}
 
       {isCorrection && (
         <p className="text-xs font-sans font-semibold uppercase tracking-wider text-ink-muted">
@@ -157,34 +167,36 @@ export const QuizSequenceList = ({
         </p>
       )}
 
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext
-          items={orderedOptionIds.map(String)}
-          strategy={verticalListSortingStrategy}
-        >
-          <div className="space-y-2.5">
-            {orderedOptionIds.map((optionId, index) => {
-              const expectedId = isCorrection ? expectedOrder?.[index] : null;
-              const misplaced = isCorrection && expectedId !== optionId;
-              return (
-                <SortableStep
-                  key={optionId}
-                  id={optionId}
-                  index={index}
-                  content={optionById.get(optionId)?.content ?? ''}
-                  disabled={disabled}
-                  status={isCorrection ? (misplaced ? 'incorrect' : 'correct') : null}
-                />
-              );
-            })}
-          </div>
-        </SortableContext>
-      </DndContext>
+      {!timedOut && (
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext
+            items={orderedOptionIds.map(String)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-2.5">
+              {orderedOptionIds.map((optionId, index) => {
+                const expectedId = isCorrection ? expectedOrder?.[index] : null;
+                const misplaced = isCorrection && expectedId !== optionId;
+                return (
+                  <SortableStep
+                    key={optionId}
+                    id={optionId}
+                    index={index}
+                    content={optionById.get(optionId)?.content ?? ''}
+                    disabled={disabled}
+                    status={isCorrection ? (misplaced ? 'incorrect' : 'correct') : null}
+                  />
+                );
+              })}
+            </div>
+          </SortableContext>
+        </DndContext>
+      )}
 
       {/* Ordre attendu : référence purement neutre — liste numérotée, sans
           fond/bordure colorés et sans icône de correction : le rouge/vert
           ne sert qu'à la performance de l'utilisateur, dans son classement. */}
-      {isCorrection && expectedOrder && (
+      {showExpectedOrder && expectedOrder && (
         <div className="space-y-2 pt-1">
           <p className="text-xs font-sans font-semibold uppercase tracking-wider text-ink-muted">
             Ordre attendu
@@ -207,7 +219,7 @@ export const QuizSequenceList = ({
         </div>
       )}
 
-      {!disabled && (
+      {!disabled && !timedOut && (
         <p className="text-[11px] text-ink-muted">
           Glisse une étape (souris ou doigt) pour changer sa position.
         </p>

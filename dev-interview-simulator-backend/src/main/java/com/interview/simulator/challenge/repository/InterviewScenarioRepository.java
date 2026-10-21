@@ -19,5 +19,7 @@ public interface InterviewScenarioRepository extends JpaRepository<InterviewScen
 
     long countByActiveTrue();
 
+    boolean existsByModeAndActiveTrue(ChallengeType mode);
+
     List<InterviewScenario> findByActiveTrueOrderByTitleAsc();
 }

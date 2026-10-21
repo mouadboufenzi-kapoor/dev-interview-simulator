@@ -3,13 +3,16 @@ import { Target, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from './common/Button';
 import { PageTitle } from './common/PageTitle';
 import type { AnalyzedCompetency } from '../utils/resultAnalysis';
+import type { SimulationResultDTO } from '../types';
+import { buildTargetedRequest } from '../utils/resultAnalysis';
 
 interface Props {
-  /** Axes sous le seuil de vraie faiblesse, triés du plus fragile au moins fragile. */
-  weaknesses: AnalyzedCompetency[];
+  /** Axes faibles des deux familles, triés du plus fragile au moins fragile. */
+  weaknesses: Array<AnalyzedCompetency & { source: 'CATEGORY' | 'SKILL' }>;
+  summary: SimulationResultDTO;
   loading: boolean;
   /** Démarre la simulation ciblée sur la compétence prioritaire. */
-  onStart: () => void;
+  onStart: (request: ReturnType<typeof buildTargetedRequest>) => void;
   /** Faux en Architecture : diagnostic affiché, CTA masqué (filtres backend ignorés). */
   showCta: boolean;
 }
@@ -17,12 +20,14 @@ interface Props {
 /** Lignes visibles avant le dépliage « Voir les autres ». */
 const MAX_VISIBLE = 3;
 
-export const ResultPriority = ({ weaknesses, loading, onStart, showCta }: Props) => {
+export const ResultPriority = ({ weaknesses, summary, loading, onStart, showCta }: Props) => {
   const [expanded, setExpanded] = useState(false);
 
   const priority = weaknesses[0];
   const hiddenCount = weaknesses.length - MAX_VISIBLE;
   const visible = expanded ? weaknesses : weaknesses.slice(0, MAX_VISIBLE);
+
+  if (!priority) return null;
 
   // Égalité en tête (ex. deux axes à 0 %) : le badge « Priorité principale »
   // serait arbitraire → badge « Priorité » partagé + phrase d'égalité.
@@ -48,21 +53,20 @@ export const ResultPriority = ({ weaknesses, loading, onStart, showCta }: Props)
         </PageTitle>
       </div>
 
-      {/* Liste compacte : nom + % ; la priorité principale est marquée par une
-          pastille, pas par un paragraphe dédié. */}
+      {isTied && (
+        <span className="inline-flex text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded bg-navy-100 border border-navy-200 text-navy-900">
+          {tiedPriorityCount} axes à égalité · {priority.pct} %
+        </span>
+      )}
+
       <ul className="space-y-2.5">
         {visible.map((c, index) => (
-          <li key={c.id} className="flex items-center justify-between gap-3">
+          <li key={`${c.source}-${c.id}`} className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2 min-w-0">
               <span className="font-semibold text-sm text-ink truncate">{c.name}</span>
               {index === 0 && !isTied && (
                 <span className="flex-shrink-0 text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded bg-navy-100 border border-navy-200 text-navy-900">
                   Priorité principale
-                </span>
-              )}
-              {isTied && c.pct === priority.pct && (
-                <span className="flex-shrink-0 text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded bg-navy-100 border border-navy-200 text-navy-900">
-                  Priorité
                 </span>
               )}
             </div>
@@ -100,8 +104,8 @@ export const ResultPriority = ({ weaknesses, loading, onStart, showCta }: Props)
           <p className="text-xs text-ink-secondary leading-relaxed">
             {isTied ? (
               <>
-                <span className="font-semibold text-ink">{joinedNames}</span> sont au même niveau
-                ({priority.pct} %) sur cette simulation — commencez par l'un de ces axes.
+                <span className="font-semibold text-ink">{joinedNames}</span> ont le même résultat
+                sur cette simulation — commencez par l'un de ces axes.
               </>
             ) : (
               <>
@@ -118,7 +122,7 @@ export const ResultPriority = ({ weaknesses, loading, onStart, showCta }: Props)
             size="lg"
             loading={loading}
             rightIcon={<Target className="w-4 h-4" />}
-            onClick={onStart}
+            onClick={() => onStart(buildTargetedRequest(summary, priority, summary.questions.map((q) => q.challengeId), priority.source))}
             className="w-full sm:w-auto px-8"
           >
             S'entraîner sur {priority.name}

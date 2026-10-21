@@ -9,6 +9,9 @@ import { QuizSequenceList } from './QuizSequenceList';
 import { QuizFeedbackPanel } from './QuizFeedbackPanel';
 import { QuizActionsFooter } from './QuizActionsFooter';
 
+const FALLBACK_QUESTION_TIME_SECONDS = 90;
+const AUTO_ADVANCE_DELAY_MS = 1500;
+
 interface Props {
   simulation: SimulationResponse;
   onFinish: () => void;
@@ -21,29 +24,105 @@ export const QuizScreen = ({ simulation, onFinish, onError, finishing }: Props) 
   const [selectedOptionIds, setSelectedOptionIds] = useState<number[]>([]);
   const [feedback, setFeedback] = useState<SubmitAnswerResponse | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [secondsElapsed, setSecondsElapsed] = useState(0);
+  const [timeoutError, setTimeoutError] = useState(false);
 
   const startTimeRef = useRef<number>(0);
+  const timeoutSubmittedRef = useRef(false);
+  const submissionInFlightRef = useRef(false);
+  const submitAnswerRef = useRef<(forceTimeout?: boolean) => Promise<void>>(async () => {});
+  const autoAdvanceTimerRef = useRef<number | null>(null);
   const challengeSurfaceRef = useRef<HTMLDivElement>(null);
+  const feedbackPanelRef = useRef<HTMLDivElement>(null);
+  const scrollToFeedbackRef = useRef(false);
   const isFirstQuestionRef = useRef(true);
   const currentChallenge = simulation.challenges?.[currentIndex];
+  const questionTimeLimit = Math.max(
+    1,
+    currentChallenge?.estimatedTimeSeconds ?? FALLBACK_QUESTION_TIME_SECONDS
+  );
+  const [timerState, setTimerState] = useState(() => ({
+    challengeId: simulation.challenges?.[0]?.simulationChallengeId ?? null,
+    secondsRemaining: Math.max(
+      1,
+      simulation.challenges?.[0]?.estimatedTimeSeconds ?? FALLBACK_QUESTION_TIME_SECONDS
+    ),
+  }));
+  const timerDeadlineRef = useRef(Date.now() + Math.max(
+    1,
+    simulation.challenges?.[0]?.estimatedTimeSeconds ?? FALLBACK_QUESTION_TIME_SECONDS
+  ) * 1000);
+  const secondsRemaining = timerState.secondsRemaining;
+  const isTimedOut = Boolean(currentChallenge) && secondsRemaining === 0;
+  const [optionOrderByChallenge] = useState(() => {
+    const orders = new Map<number, SimulationResponse['challenges'][number]['options']>();
+    (simulation.challenges ?? []).forEach(challenge => {
+      if (challenge.type === 'SEQUENTIAL_REASONING') {
+        orders.set(challenge.simulationChallengeId, challenge.options);
+        return;
+      }
+
+      const shuffledOptions = [...challenge.options];
+      for (let index = shuffledOptions.length - 1; index > 0; index -= 1) {
+        const swapIndex = Math.floor(Math.random() * (index + 1));
+        [shuffledOptions[index], shuffledOptions[swapIndex]] = [
+          shuffledOptions[swapIndex],
+          shuffledOptions[index],
+        ];
+      }
+      orders.set(challenge.simulationChallengeId, shuffledOptions);
+    });
+    return orders;
+  });
+  const displayedOptions = currentChallenge
+    ? optionOrderByChallenge.get(currentChallenge.simulationChallengeId) ?? currentChallenge.options
+    : [];
 
   const totalChallenges = simulation.challenges?.length || 1;
 
-  // Timer interval per challenge
+  // Le compte à rebours est réinitialisé pour chaque question et mis en pause
+  // pendant la validation ou l'affichage du feedback.
   useEffect(() => {
-    startTimeRef.current = Date.now();
+    if (!currentChallenge) return;
+    const challengeId = currentChallenge.simulationChallengeId;
 
-    const timer = setInterval(() => {
-      setSecondsElapsed((prev) => prev + 1);
+    if (timerState.challengeId !== challengeId) {
+      timeoutSubmittedRef.current = false;
+      setTimeoutError(false);
+      startTimeRef.current = Date.now();
+      timerDeadlineRef.current = Date.now() + questionTimeLimit * 1000;
+      setTimerState({ challengeId, secondsRemaining: questionTimeLimit });
+      return;
+    }
+
+    if (!startTimeRef.current) startTimeRef.current = Date.now();
+    if (feedback || finishing || submitting) return;
+
+    const timer = window.setInterval(() => {
+      setTimerState(current => {
+        if (current.challengeId !== challengeId || current.secondsRemaining <= 0) return current;
+        const remaining = Math.max(0, Math.ceil((timerDeadlineRef.current - Date.now()) / 1000));
+        return { ...current, secondsRemaining: remaining };
+      });
     }, 1000);
 
-    return () => clearInterval(timer);
-  }, [currentIndex]);
+    return () => window.clearInterval(timer);
+  }, [currentChallenge?.simulationChallengeId, feedback, finishing, questionTimeLimit, submitting, timerState.challengeId]);
+
+  useEffect(() => {
+    if (!feedback || !scrollToFeedbackRef.current) return;
+    scrollToFeedbackRef.current = false;
+    feedbackPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [feedback]);
 
   useEffect(() => {
     if (isFirstQuestionRef.current) {
       isFirstQuestionRef.current = false;
+      if (window.matchMedia('(max-width: 639px)').matches) {
+        challengeSurfaceRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      }
       return;
     }
     challengeSurfaceRef.current?.scrollIntoView({
@@ -65,6 +144,24 @@ export const QuizScreen = ({ simulation, onFinish, onError, finishing }: Props) 
       );
     }
   }, [currentIndex, simulation]);
+
+  useEffect(() => {
+    if (!currentChallenge
+      || timerState.challengeId !== currentChallenge.simulationChallengeId
+      || secondsRemaining > 0
+      || feedback
+      || submitting
+      || finishing
+      || timeoutSubmittedRef.current) return;
+
+    void submitAnswerRef.current(true);
+  }, [currentChallenge?.simulationChallengeId, feedback, finishing, secondsRemaining, submitting, timeoutError, timerState.challengeId]);
+
+  useEffect(() => () => {
+    if (autoAdvanceTimerRef.current !== null) {
+      window.clearTimeout(autoAdvanceTimerRef.current);
+    }
+  }, []);
 
   if (finishing) {
     return (
@@ -107,36 +204,78 @@ export const QuizScreen = ({ simulation, onFinish, onError, finishing }: Props) 
     }
   };
 
-  const handleSubmitAnswer = async () => {
-    if (selectedOptionIds.length === 0 || !currentChallenge || submitting) return;
+  const advanceToNextQuestion = () => {
+    if (currentIndex + 1 >= simulation.challenges.length) {
+      onFinish();
+      return;
+    }
+    if (autoAdvanceTimerRef.current !== null) {
+      window.clearTimeout(autoAdvanceTimerRef.current);
+      autoAdvanceTimerRef.current = null;
+    }
+    const nextChallenge = simulation.challenges[currentIndex + 1];
+    const nextTimeLimit = Math.max(1, nextChallenge.estimatedTimeSeconds ?? FALLBACK_QUESTION_TIME_SECONDS);
+    setFeedback(null);
+    setSelectedOptionIds([]);
+    timeoutSubmittedRef.current = false;
+    setTimeoutError(false);
+    startTimeRef.current = Date.now();
+    timerDeadlineRef.current = Date.now() + nextTimeLimit * 1000;
+    setTimerState({ challengeId: nextChallenge.simulationChallengeId, secondsRemaining: nextTimeLimit });
+    setCurrentIndex((prev) => prev + 1);
+  };
 
-    const responseTimeMs = startTimeRef.current ? Date.now() - startTimeRef.current : secondsElapsed * 1000;
+  const handleSubmitAnswer = async (forceTimeout = false) => {
+    if (!currentChallenge || submitting || submissionInFlightRef.current || feedback) return;
+    if (timeoutError && !forceTimeout) return;
+    const timedOut = forceTimeout || Date.now() >= timerDeadlineRef.current;
+    if (selectedOptionIds.length === 0 && !timedOut) return;
+
+    submissionInFlightRef.current = true;
+    scrollToFeedbackRef.current = !timedOut;
+    if (timedOut) timeoutSubmittedRef.current = true;
+    const responseTimeMs = startTimeRef.current ? Date.now() - startTimeRef.current : 0;
     setSubmitting(true);
 
     try {
       const res = await simulationApi.submitAnswer(simulation.id, {
         simulationChallengeId: currentChallenge.simulationChallengeId,
-        selectedOptionIds,
+        selectedOptionIds: timedOut ? [] : selectedOptionIds,
         responseTimeMs,
-      });
-      setFeedback(res);
+      }, simulation.guestAccessToken ?? undefined);
+      setTimeoutError(false);
+      if (timedOut) {
+        timeoutSubmittedRef.current = true;
+        if (isSequentialChallenge) {
+          setSelectedOptionIds([]);
+          setFeedback(res);
+        }
+        autoAdvanceTimerRef.current = window.setTimeout(() => {
+          autoAdvanceTimerRef.current = null;
+          advanceToNextQuestion();
+        }, AUTO_ADVANCE_DELAY_MS);
+      } else {
+        setFeedback(res);
+      }
     } catch (err) {
       console.error(err);
-      onError('Impossible de valider la réponse. Vérifie la connexion avec le serveur.');
+      scrollToFeedbackRef.current = false;
+      if (timedOut) {
+        setTimeoutError(true);
+        timeoutSubmittedRef.current = true;
+        onError("Impossible d'enregistrer l'expiration. Réessayez.");
+      } else {
+        onError('Impossible de valider la réponse. Vérifie la connexion avec le serveur.');
+      }
     } finally {
+      submissionInFlightRef.current = false;
       setSubmitting(false);
     }
   };
+  submitAnswerRef.current = handleSubmitAnswer;
 
   const handleNext = () => {
-    if (currentIndex + 1 >= simulation.challenges.length) {
-      onFinish();
-      return;
-    }
-    setFeedback(null);
-    setSelectedOptionIds([]);
-    setSecondsElapsed(0);
-    setCurrentIndex((prev) => prev + 1);
+    advanceToNextQuestion();
   };
 
   const isMultiChoice = currentChallenge.selectionType === 'MULTIPLE_CHOICE';
@@ -148,7 +287,9 @@ export const QuizScreen = ({ simulation, onFinish, onError, finishing }: Props) 
         challenge={currentChallenge}
         currentIndex={currentIndex}
         totalChallenges={totalChallenges}
-        secondsElapsed={secondsElapsed}
+        secondsRemaining={secondsRemaining}
+        isTimeWarning={secondsRemaining <= 15 && !feedback && !submitting && !finishing}
+        timerPaused={Boolean(feedback) || submitting || finishing || isTimedOut}
         score={feedback ? feedback.totalSimulationScore : simulation.totalScore}
       />
 
@@ -156,7 +297,11 @@ export const QuizScreen = ({ simulation, onFinish, onError, finishing }: Props) 
           utile sur écran étroit), identique à partir de sm. */}
       <div
         ref={challengeSurfaceRef}
-        className="scroll-mt-14 sm:scroll-mt-16 bg-surface border-[0.5px] border-card-border rounded-2xl p-5 sm:p-9 shadow-elevated space-y-7"
+        className={`scroll-mt-14 sm:scroll-mt-16 border-[0.5px] rounded-2xl p-5 sm:p-9 space-y-7 transition-colors duration-200 ${
+          secondsRemaining <= 15 && !feedback && !submitting
+            ? 'border-danger-border bg-danger-soft shadow-[0_2px_10px_rgba(172,59,97,0.12)] animate-pulse'
+            : 'bg-surface border-card-border shadow-elevated'
+        }`}
       >
         <QuizChallengeBody
           challenge={currentChallenge}
@@ -168,28 +313,44 @@ export const QuizScreen = ({ simulation, onFinish, onError, finishing }: Props) 
             challenge={currentChallenge}
             orderedOptionIds={selectedOptionIds}
             onChange={setSelectedOptionIds}
-            disabled={!!feedback}
+            disabled={!!feedback || isTimedOut}
+            timedOut={isTimedOut && Boolean(feedback?.expectedOrder?.length)}
             feedback={feedback}
           />
         ) : (
           <QuizOptionsList
-            challenge={currentChallenge}
+            challenge={{ ...currentChallenge, options: displayedOptions }}
             selectedOptionIds={selectedOptionIds}
             feedback={feedback}
+            timedOut={isTimedOut}
             onSelect={handleSelectOption}
           />
         )}
 
-        {feedback && <QuizFeedbackPanel feedback={feedback} />}
+        {feedback && !isTimedOut && (
+          <div ref={feedbackPanelRef} className="scroll-mt-24">
+            <QuizFeedbackPanel feedback={feedback} />
+          </div>
+        )}
 
-        <QuizActionsFooter
-          feedback={feedback}
-          selectedCount={selectedOptionIds.length}
-          submitting={submitting}
-          isLastQuestion={currentIndex + 1 >= simulation.challenges.length}
-          onSubmit={handleSubmitAnswer}
-          onNext={handleNext}
-        />
+        {(!isTimedOut || timeoutError) && (
+          <QuizActionsFooter
+            feedback={feedback}
+            selectedCount={selectedOptionIds.length}
+            submitting={submitting}
+            timedOut={isTimedOut}
+            timeoutError={timeoutError}
+            isLastQuestion={currentIndex + 1 >= simulation.challenges.length}
+            onSubmit={() => {
+              if (timeoutError) {
+                setTimeoutError(false);
+                timeoutSubmittedRef.current = false;
+              }
+              void handleSubmitAnswer(isTimedOut || timeoutError);
+            }}
+            onNext={handleNext}
+          />
+        )}
       </div>
     </div>
   );
