@@ -231,6 +231,7 @@ public class SimulationService {
                                 : null,
                         null,
                         null,
+                        sc.getChallenge().getEstimatedTimeSeconds(),
                         presentationOptions(sc.getChallenge())
                 ))
                 .toList();
@@ -276,12 +277,6 @@ public class SimulationService {
             );
         }
 
-        // Raisonnement séquentiel : la réponse est une permutation complète des
-        // étapes — traitement dédié (notation par position, ordre attendu).
-        if (simChallenge.getChallenge().getType() == ChallengeType.SEQUENTIAL_REASONING) {
-            return submitSequentialAnswer(simChallenge, request);
-        }
-
         if (simulation.getMode() == ChallengeType.ARCHITECTURE) {
             SimulationChallenge expectedChallenge = simulation.getSimulationChallenges().stream()
                     .filter(challenge -> challenge.getAnswer() == null)
@@ -294,6 +289,15 @@ public class SimulationService {
                         "Les étapes Architecture doivent être répondues dans l'ordre."
                 );
             }
+        }
+
+        if (request.selectedOptionIds().isEmpty()) {
+            return recordTimedOutAnswer(simChallenge, request.responseTimeMs());
+        }
+
+        // Raisonnement séquentiel : réponse = permutation complète des étapes.
+        if (simChallenge.getChallenge().getType() == ChallengeType.SEQUENTIAL_REASONING) {
+            return submitSequentialAnswer(simChallenge, request);
         }
 
         if (simChallenge.getChallenge().getSelectionType() == SelectionType.SINGLE_CHOICE
@@ -356,6 +360,33 @@ public class SimulationService {
                         selectedOptionIds),
                 null // expectedOrder : réservé au raisonnement séquentiel
         );
+    }
+
+    private SubmitAnswerResponse recordTimedOutAnswer(
+            SimulationChallenge simChallenge,
+            Long responseTimeMs) {
+        Simulation simulation = simChallenge.getSimulation();
+        Challenge challenge = simChallenge.getChallenge();
+        Set<ChallengeOption> emptySelection = new LinkedHashSet<>();
+        List<Long> expectedOrder = challenge.getType() == ChallengeType.SEQUENTIAL_REASONING
+                ? challenge.getOptions().stream()
+                    .sorted(Comparator.comparingInt(ChallengeOption::getDisplayOrder))
+                    .map(ChallengeOption::getId).toList()
+                : null;
+
+        SimulationAnswer answer = new SimulationAnswer();
+        answer.setSimulationChallenge(simChallenge);
+        answer.setSelectedOptions(emptySelection);
+        answer.setCorrect(false);
+        answer.setScore(0);
+        answer.setResponseTimeMs(responseTimeMs);
+        simChallenge.setAnswer(answer);
+        simulationAnswerRepository.save(answer);
+
+        return new SubmitAnswerResponse(answer.getId(), false, 0,
+                simulation.getTotalScore(), "Temps écoulé : aucune réponse n'a été enregistrée.", null,
+                null, null,
+                ChallengeCorrectionDTO.forOptions(challenge.getOptions(), Set.of()), expectedOrder);
     }
 
     // ===== Raisonnement séquentiel =====
@@ -507,10 +538,26 @@ public class SimulationService {
                 .map(SimulationChallenge::getAnswer)
                 .filter(answer -> answer != null)
                 .toList();
+        int totalQuestions = simulation.getSimulationChallenges().size();
 
-        List<SimulationResultDTO.QuestionSummaryDTO> questionSummaries = answers.stream()
-                .map(answer -> {
-                    Challenge challenge = answer.getSimulationChallenge().getChallenge();
+        List<SimulationResultDTO.QuestionSummaryDTO> questionSummaries = simulation.getSimulationChallenges().stream()
+                .sorted(Comparator.comparingInt(SimulationChallenge::getDisplayOrder))
+                .map(simulationChallenge -> {
+                    SimulationAnswer answer = simulationChallenge.getAnswer();
+                    Challenge challenge = simulationChallenge.getChallenge();
+                    SimulationResultDTO.QuestionStatus status = answer == null
+                            ? SimulationResultDTO.QuestionStatus.UNANSWERED
+                            : answer.getSelectedOptions().isEmpty()
+                                    ? SimulationResultDTO.QuestionStatus.TIMED_OUT
+                                    : SimulationResultDTO.QuestionStatus.ANSWERED;
+                    String selectedContent = answer == null || answer.getSelectedOptions().isEmpty()
+                            ? null
+                            : answer.getSelectedOptions().stream()
+                                    .map(ChallengeOption::getContent)
+                                    .collect(java.util.stream.Collectors.joining(", "));
+                    boolean isCorrect = answer != null && answer.isCorrect();
+                    int score = answer != null && answer.getScore() != null ? answer.getScore() : 0;
+                    Long responseTimeMs = answer == null ? null : answer.getResponseTimeMs();
 
                     // Toutes les bonnes options (et non plus la première seule) :
                     // un QCM multiple doit afficher l'intégralité de la bonne réponse.
@@ -526,14 +573,13 @@ public class SimulationService {
                             challenge.getTitle(),
                             challenge.getContext(),
                             challenge.getQuestion(),
-                            answer.getSelectedOptions().stream()
-                                    .map(ChallengeOption::getContent)
-                                    .collect(java.util.stream.Collectors.joining(", ")),
+                            selectedContent,
                             !correctContent.isBlank() ? correctContent : "Inconnue",
-                            answer.isCorrect(),
+                            isCorrect,
+                            status,
                             challenge.getExplanation(),
-                            answer.getScore(),
-                            answer.getResponseTimeMs()
+                            score,
+                            responseTimeMs
                     );
                 })
                 .toList();
@@ -542,8 +588,9 @@ public class SimulationService {
                 .mapToInt(answer -> answer.getScore() != null ? answer.getScore() : 0)
                 .sum();
 
-        int maxScore = answers.stream()
-                .mapToInt(answer -> answer.getSimulationChallenge().getChallenge().getPoints())
+        int maxScore = simulation.getSimulationChallenges().stream()
+                .map(SimulationChallenge::getChallenge)
+                .mapToInt(challenge -> challenge.getPoints() != null ? challenge.getPoints() : 0)
                 .sum();
 
         int correctAnswersCount = (int) answers.stream()
@@ -559,9 +606,9 @@ public class SimulationService {
         // Taux de réussite = bonnes réponses / nombre total de questions
         // (invariant métier). Le ratio points/points reste affiché
         // séparément via totalScore / maxPossibleScore.
-        double successPercentage = answers.isEmpty()
+        double successPercentage = totalQuestions == 0
                 ? 0.0
-                : ((double) correctAnswersCount / answers.size()) * 100;
+                : ((double) correctAnswersCount / totalQuestions) * 100;
 
         // Breakdown par compétence, fondé sur les données existantes
         // (Challenge.skills / Challenge.categories × réponse) : aucun nouveau calcul de scoring.
@@ -621,7 +668,7 @@ public class SimulationService {
                 maxScore,
                 Math.round(successPercentage * 100.0) / 100.0,
                 totalTimeSpentSeconds,
-                answers.size(),
+                simulation.getSimulationChallenges().size(),
                 correctAnswersCount,
                 simulation.getMode(),
                 simulation.getDifficulty(),

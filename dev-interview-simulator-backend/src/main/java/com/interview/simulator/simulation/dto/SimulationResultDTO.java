@@ -28,6 +28,7 @@ public record SimulationResultDTO(
         String userSelectedOptionContent,
         String correctOptionContent,
         Boolean isCorrect,
+        QuestionStatus status,
         String explanation,
         Integer pointsEarned,
         Long timeSpentMs
@@ -38,6 +39,8 @@ public record SimulationResultDTO(
      * correct / total sur les questions répondues de la simulation.
      */
     public record CompetencyResult(Long id, String name, Integer correct, Integer total) {}
+
+    public enum QuestionStatus { ANSWERED, TIMED_OUT, UNANSWERED }
 
     /**
      * Axe du breakdown retourné : SKILL si au moins la moitié des questions
