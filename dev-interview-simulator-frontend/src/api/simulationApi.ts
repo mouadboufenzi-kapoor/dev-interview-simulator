@@ -32,33 +32,51 @@ export const simulationApi = {
   // Soumettre une réponse à une question
   submitAnswer: async (
     simulationId: number,
-    request: SubmitAnswerRequest
+    request: SubmitAnswerRequest,
+    guestAccessToken?: string | null
   ): Promise<SubmitAnswerResponse> => {
     const response = await apiClient.post<SubmitAnswerResponse>(
       `/simulations/${simulationId}/answers`,
-      request
+      request,
+      guestAccessToken ? { headers: { 'X-Guest-Access-Token': guestAccessToken } } : undefined
     );
     return response.data;
   },
 
-    getSimulationResult: async (simulationId: number): Promise<SimulationResultDTO> => {
-        const response = await apiClient.get<SimulationResultDTO>(`/simulations/${simulationId}/result`);
+    getSimulationResult: async (
+      simulationId: number,
+      guestAccessToken?: string | null
+    ): Promise<SimulationResultDTO> => {
+        const response = await apiClient.get<SimulationResultDTO>(
+          `/simulations/${simulationId}/result`,
+          guestAccessToken ? { headers: { 'X-Guest-Access-Token': guestAccessToken } } : undefined
+        );
         return response.data;
   },
 
   // Clore une session (statut COMPLETED) — indispensable pour que les
   // compteurs « simulations terminées » du dashboard soient cohérents.
-  completeSimulation: async (simulationId: number): Promise<SimulationSummaryResponse> => {
+  completeSimulation: async (
+    simulationId: number,
+    guestAccessToken?: string | null
+  ): Promise<SimulationSummaryResponse> => {
     const response = await apiClient.post<SimulationSummaryResponse>(
-      `/simulations/${simulationId}/complete`
+      `/simulations/${simulationId}/complete`,
+      undefined,
+      guestAccessToken ? { headers: { 'X-Guest-Access-Token': guestAccessToken } } : undefined
     );
     return response.data;
   },
 
   // Marquer une session quittée en cours de route comme ABANDONNÉE.
-  abandonSimulation: async (simulationId: number): Promise<SimulationSummaryResponse> => {
+  abandonSimulation: async (
+    simulationId: number,
+    guestAccessToken?: string | null
+  ): Promise<SimulationSummaryResponse> => {
     const response = await apiClient.post<SimulationSummaryResponse>(
-      `/simulations/${simulationId}/abandon`
+      `/simulations/${simulationId}/abandon`,
+      undefined,
+      guestAccessToken ? { headers: { 'X-Guest-Access-Token': guestAccessToken } } : undefined
     );
     return response.data;
   },

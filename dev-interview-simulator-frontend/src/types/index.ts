@@ -55,6 +55,7 @@ export interface SimulationResponse {
   totalScore: number;
   startedAt: string;
   challenges: SimulationChallengeResponse[];
+  guestAccessToken?: string | null;
 }
 
 export interface StartSimulationRequest {
@@ -121,6 +122,8 @@ export interface QuestionSummary {
   explanation: string | null;
   pointsEarned: number;
   timeSpentMs: number | null;
+  categories?: string[];
+  skills?: string[];
 }
 
 export type CompetencySource = 'SKILL' | 'CATEGORY';

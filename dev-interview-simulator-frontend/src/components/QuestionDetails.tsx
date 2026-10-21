@@ -21,6 +21,19 @@ export const QuestionDetails = ({ question: q }: Props) => {
       </div>
     )}
 
+      {((q.categories?.length ?? 0) + (q.skills?.length ?? 0)) > 0 && (
+        <div className="flex flex-wrap gap-2" aria-label="Axes évalués">
+          {[...(q.categories ?? []), ...(q.skills ?? [])].map((axis, index) => (
+            <span
+              key={`${axis}-${index}`}
+              className="inline-flex rounded-full border border-border-subtle bg-surface px-2.5 py-1 text-xs font-medium text-ink-secondary"
+            >
+              {axis}
+            </span>
+          ))}
+        </div>
+      )}
+
       {/* Question Prompt */}
       <div>
         <span className="text-[10px] font-mono uppercase tracking-wider text-crimson-700 font-semibold block mb-1">

@@ -242,7 +242,7 @@ export const QuizScreen = ({ simulation, onFinish, onError, finishing }: Props) 
         simulationChallengeId: currentChallenge.simulationChallengeId,
         selectedOptionIds: timedOut ? [] : selectedOptionIds,
         responseTimeMs,
-      });
+      }, simulation.guestAccessToken ?? undefined);
       setTimeoutError(false);
       if (timedOut) {
         timeoutSubmittedRef.current = true;

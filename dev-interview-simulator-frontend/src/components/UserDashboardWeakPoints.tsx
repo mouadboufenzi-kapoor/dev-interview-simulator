@@ -4,6 +4,8 @@ import { Button } from './common/Button';
 import { panelCard } from '../styles/ui';
 import type { UserStats } from '../api/userStatsApi';
 
+const MIN_ANSWERS_FOR_RELIABLE_RATE = 3;
+
 interface Props {
   weakPoints: UserStats['weakPoints'];
   onRevise?: (filters: { categoryIds?: number[]; skillIds?: number[] }) => void;
@@ -54,6 +56,11 @@ export const UserDashboardWeakPoints = ({ weakPoints, onRevise }: Props) => {
                 </span>{' '}
                 · {category.correct}/{category.answered} correctes
               </p>
+              {category.answered < MIN_ANSWERS_FOR_RELIABLE_RATE && (
+                <span className="mt-1 inline-flex rounded-full border border-border-subtle bg-surface-elevated px-2 py-0.5 text-[10px] font-medium text-ink-muted">
+                  À confirmer
+                </span>
+              )}
             </div>
             {onRevise && (
               <Button

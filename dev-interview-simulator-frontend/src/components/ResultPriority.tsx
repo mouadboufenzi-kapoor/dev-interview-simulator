@@ -53,8 +53,12 @@ export const ResultPriority = ({ weaknesses, summary, loading, onStart, showCta 
         </PageTitle>
       </div>
 
-      {/* Liste compacte : nom + % ; la priorité principale est marquée par une
-          pastille, pas par un paragraphe dédié. */}
+      {isTied && (
+        <span className="inline-flex text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded bg-navy-100 border border-navy-200 text-navy-900">
+          {tiedPriorityCount} axes à égalité · {priority.pct} %
+        </span>
+      )}
+
       <ul className="space-y-2.5">
         {visible.map((c, index) => (
           <li key={`${c.source}-${c.id}`} className="flex items-center justify-between gap-3">
@@ -63,11 +67,6 @@ export const ResultPriority = ({ weaknesses, summary, loading, onStart, showCta 
               {index === 0 && !isTied && (
                 <span className="flex-shrink-0 text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded bg-navy-100 border border-navy-200 text-navy-900">
                   Priorité principale
-                </span>
-              )}
-              {isTied && c.pct === priority.pct && (
-                <span className="flex-shrink-0 text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded bg-navy-100 border border-navy-200 text-navy-900">
-                  Priorité
                 </span>
               )}
             </div>
@@ -105,8 +104,8 @@ export const ResultPriority = ({ weaknesses, summary, loading, onStart, showCta 
           <p className="text-xs text-ink-secondary leading-relaxed">
             {isTied ? (
               <>
-                <span className="font-semibold text-ink">{joinedNames}</span> sont au même niveau
-                ({priority.pct} %) sur cette simulation — commencez par l'un de ces axes.
+                <span className="font-semibold text-ink">{joinedNames}</span> ont le même résultat
+                sur cette simulation — commencez par l'un de ces axes.
               </>
             ) : (
               <>

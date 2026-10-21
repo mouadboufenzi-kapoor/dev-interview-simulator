@@ -114,11 +114,11 @@ export default function App() {
       // si la clôture échoue, le bilan reste affichable (/result ne dépend
       // pas du statut).
       try {
-        await simulationApi.completeSimulation(simulation.id);
+        await simulationApi.completeSimulation(simulation.id, simulation.guestAccessToken ?? undefined);
       } catch (completeErr) {
         console.error('Clôture de la simulation impossible', completeErr);
       }
-      const data = await simulationApi.getSimulationResult(simulation.id);
+      const data = await simulationApi.getSimulationResult(simulation.id, simulation.guestAccessToken ?? undefined);
       setSummary(data);
       setScreen('RESULT');
       if (!user) {
@@ -146,7 +146,7 @@ export default function App() {
   // sessions encore IN_PROGRESS basculent (jamais un bilan déjà consulté).
   const handleQuit = () => {
     if (screen === 'QUIZ' && simulation?.status === 'IN_PROGRESS') {
-      simulationApi.abandonSimulation(simulation.id).catch((err) => {
+      simulationApi.abandonSimulation(simulation.id, simulation.guestAccessToken).catch((err) => {
         console.error('Abandon de la simulation impossible', err);
       });
     }
