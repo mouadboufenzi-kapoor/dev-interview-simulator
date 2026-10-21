@@ -5,6 +5,7 @@ interface Props {
   challenge: SimulationChallengeResponse;
   selectedOptionIds: number[];
   feedback: SubmitAnswerResponse | null;
+  timedOut?: boolean;
   onSelect: (optionId: number) => void;
 }
 
@@ -16,7 +17,7 @@ const getOptionLetter = (idx: number) => {
 // décalée). Sélection = fond --color-selected, la bordure ne change PAS de
 // couleur (spec §10). Après validation : success/error tokens + indicateurs
 // icônes (spec §12 — jamais la couleur seule).
-export const QuizOptionsList = ({ challenge, selectedOptionIds, feedback, onSelect }: Props) => (
+export const QuizOptionsList = ({ challenge, selectedOptionIds, feedback, timedOut = false, onSelect }: Props) => (
   <div className="space-y-3 pt-2">
     {challenge.options.map((option, idx) => {
       const isSelected = selectedOptionIds.includes(option.id);
@@ -65,11 +66,11 @@ export const QuizOptionsList = ({ challenge, selectedOptionIds, feedback, onSele
       return (
         <div
           key={option.id}
-          onClick={() => onSelect(option.id)}
+          onClick={() => { if (!timedOut || feedback) onSelect(option.id); }}
           className={`relative flex items-start gap-4 p-4 sm:p-5 rounded border-2 transition-all duration-150 select-none min-h-11 ${
             feedback
               ? 'cursor-default'
-              : 'cursor-pointer active:scale-[0.995]'
+              : timedOut ? 'cursor-default' : 'cursor-pointer active:scale-[0.995]'
           } ${cardStyle}`}
         >
           {/* Index / Checkbox indicator */}

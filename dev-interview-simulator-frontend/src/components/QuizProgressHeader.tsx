@@ -6,8 +6,10 @@ interface Props {
   challenge: SimulationChallengeResponse;
   currentIndex: number;
   totalChallenges: number;
-  secondsElapsed: number;
+  secondsRemaining: number;
+  isTimeWarning: boolean;
   score: number;
+  timerPaused: boolean;
 }
 
 const formatTime = (totalSeconds: number) => {
@@ -20,8 +22,10 @@ export const QuizProgressHeader = ({
   challenge,
   currentIndex,
   totalChallenges,
-  secondsElapsed,
+  secondsRemaining,
+  isTimeWarning,
   score,
+  timerPaused,
 }: Props) => {
   const progressPercent = Math.round(((currentIndex + 1) / totalChallenges) * 100);
 
@@ -50,9 +54,18 @@ export const QuizProgressHeader = ({
 
         {/* Timer & Live Score — minuteur en Space Mono (spec §6) */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 font-mono text-xs uppercase tracking-[0.06em] bg-card px-2.5 py-1 rounded border-2 border-border text-text">
-            <Clock className="w-3.5 h-3.5 text-text" />
-            <span>{formatTime(secondsElapsed)}</span>
+          <div
+            role="timer"
+            aria-live={isTimeWarning ? 'assertive' : 'off'}
+            aria-label={timerPaused ? `Temps écoulé, ${formatTime(secondsRemaining)}` : `Temps restant ${formatTime(secondsRemaining)}`}
+            className={`flex items-center gap-1.5 font-mono text-xs uppercase tracking-[0.06em] px-2.5 py-1 rounded border-2 ${
+              isTimeWarning
+                ? 'border-danger-border bg-danger-soft text-danger animate-pulse'
+                : 'border-border bg-card text-text'
+            }`}
+          >
+            <Clock className={`w-3.5 h-3.5 ${isTimeWarning ? 'text-danger' : 'text-text'}`} />
+            <span>{formatTime(secondsRemaining)}</span>
           </div>
 
           <div className="flex items-center gap-1.5 font-mono text-xs uppercase tracking-[0.06em] bg-card px-2.5 py-1 rounded border-2 border-border text-accent font-bold">

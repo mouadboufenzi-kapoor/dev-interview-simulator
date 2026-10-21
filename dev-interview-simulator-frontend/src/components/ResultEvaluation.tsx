@@ -16,10 +16,10 @@ const formatTime = (seconds: number) => {
 export const ResultEvaluation = ({ summary }: Props) => {
   const assessment = getAssessment(summary.successPercentage);
 
-  const avgTimePerQuestion =
-    summary.totalQuestions > 0
-      ? Math.round(summary.totalTimeSpentSeconds / summary.totalQuestions)
-      : 0;
+  const questionsWithRecordedTime = summary.questions.filter(question => question.timeSpentMs != null).length;
+  const avgTimePerQuestion = questionsWithRecordedTime > 0
+    ? Math.round(summary.totalTimeSpentSeconds / questionsWithRecordedTime)
+    : 0;
 
   return (
     <section className="bg-surface border-[0.5px] border-card-border rounded-2xl p-6 shadow-elevated space-y-5">

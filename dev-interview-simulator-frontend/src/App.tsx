@@ -85,7 +85,9 @@ export default function App() {
 
       setSimulation(data);
       setScreen('QUIZ');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (!window.matchMedia('(max-width: 639px)').matches) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
       return true;
     } catch (err) {
       console.error(err);

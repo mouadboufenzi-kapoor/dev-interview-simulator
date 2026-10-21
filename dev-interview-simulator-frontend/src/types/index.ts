@@ -43,6 +43,7 @@ export interface SimulationChallengeResponse {
   totalSteps: number | null;
   revealedInformation: string | null;
   tradeoff: string | null;
+  estimatedTimeSeconds: number | null;
   options: OptionResponse[];
 }
 
@@ -105,6 +106,8 @@ export interface SimulationSummaryResponse {
   completedAt: string;
 }
 
+export type QuestionStatus = 'ANSWERED' | 'TIMED_OUT' | 'UNANSWERED';
+
 export interface QuestionSummary {
   challengeId: number;
   title: string;
@@ -113,6 +116,8 @@ export interface QuestionSummary {
   userSelectedOptionContent: string | null;
   correctOptionContent: string | null;
   isCorrect: boolean;
+  /** Optional for compatibility with historical result payloads. */
+  status?: QuestionStatus;
   explanation: string | null;
   pointsEarned: number;
   timeSpentMs: number | null;
