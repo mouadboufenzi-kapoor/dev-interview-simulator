@@ -13,7 +13,7 @@ import { UserDashboardSimulations } from './UserDashboardSimulations';
 interface Props {
   user: AuthUser;
   onStartSimulation: () => void;
-  onRevise?: (categoryIds: number[]) => void;
+  onRevise?: (filters: { categoryIds?: number[]; skillIds?: number[] }) => void;
   onOpenResult?: (simulationId: number) => void;
 }
 

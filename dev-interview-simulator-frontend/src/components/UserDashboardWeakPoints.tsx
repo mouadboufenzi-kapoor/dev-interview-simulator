@@ -1,17 +1,22 @@
-import { TrendingDown } from 'lucide-react';
+import { useState } from 'react';
+import { ChevronDown, ChevronUp, TrendingDown } from 'lucide-react';
 import { Button } from './common/Button';
 import { panelCard } from '../styles/ui';
 import type { UserStats } from '../api/userStatsApi';
 
 interface Props {
   weakPoints: UserStats['weakPoints'];
-  onRevise?: (categoryIds: number[]) => void;
+  onRevise?: (filters: { categoryIds?: number[]; skillIds?: number[] }) => void;
 }
 
 // Points faibles : lignes compactes empilées (mobile d'abord), bouton
 // « Réviser » qui lance directement une simulation ciblée sur la
 // compétence — le démarrage est géré par App (même moteur que le Setup).
-export const UserDashboardWeakPoints = ({ weakPoints, onRevise }: Props) => (
+export const UserDashboardWeakPoints = ({ weakPoints, onRevise }: Props) => {
+  const [expanded, setExpanded] = useState(false);
+  const visibleWeakPoints = expanded ? weakPoints : weakPoints.slice(0, 4);
+
+  return (
   <section className={`${panelCard} p-5 sm:p-6`}>
     <div className="flex items-center justify-between gap-4">
       <div>
@@ -30,9 +35,9 @@ export const UserDashboardWeakPoints = ({ weakPoints, onRevise }: Props) => (
       </div>
     ) : (
       <div className="mt-3 divide-y divide-border-subtle">
-        {weakPoints.map((category) => (
+        {visibleWeakPoints.map((category) => (
           <div
-            key={category.id}
+            key={`${category.source}-${category.id}`}
             className="flex items-center justify-between gap-3 py-3.5"
           >
             <div className="min-w-0">
@@ -55,7 +60,9 @@ export const UserDashboardWeakPoints = ({ weakPoints, onRevise }: Props) => (
                 type="button"
                 variant="secondary"
                 size="sm"
-                onClick={() => onRevise([category.id])}
+                onClick={() => onRevise(category.source === 'SKILL'
+                  ? { skillIds: [category.id] }
+                  : { categoryIds: [category.id] })}
                 className="flex-shrink-0"
               >
                 Réviser
@@ -65,5 +72,19 @@ export const UserDashboardWeakPoints = ({ weakPoints, onRevise }: Props) => (
         ))}
       </div>
     )}
+    {weakPoints.length > 4 && (
+      <button
+        type="button"
+        onClick={() => setExpanded((current) => !current)}
+        className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-navy-900 transition hover:text-crimson-700 cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas rounded-md"
+      >
+        {expanded ? (
+          <>Réduire <ChevronUp className="h-3.5 w-3.5" /></>
+        ) : (
+          <>Voir tous les axes ({weakPoints.length}) <ChevronDown className="h-3.5 w-3.5" /></>
+        )}
+      </button>
+    )}
   </section>
-);
+  );
+};

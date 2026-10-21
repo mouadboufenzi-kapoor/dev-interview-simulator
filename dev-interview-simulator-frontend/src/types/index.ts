@@ -144,6 +144,15 @@ export interface SimulationResultDTO {
   difficulty: DifficultyLevel | null;
   profileId: number | null;
   competencySource: CompetencySource;
+  /** Historique groupé conservé pour compatibilité avec les anciennes sessions. */
   competencyResults: CompetencyResult[];
+  /** Axes techniques sous le seuil de faiblesse, sans les maîtrises à 100 %. */
+  weakCategoryResults?: CompetencyResult[];
+  /** Skills transversaux sous le seuil de faiblesse, sans les maîtrises à 100 %. */
+  weakSkillResults?: CompetencyResult[];
+  /** Résultats par domaine technique, par exemple Java ou Spring Boot. */
+  categoryResults?: CompetencyResult[];
+  /** Résultats par compétence transversale, par exemple Debugging. */
+  skillResults?: CompetencyResult[];
   questions: QuestionSummary[];
 }

@@ -7,7 +7,7 @@ import { ResultCompetencies } from './ResultCompetencies';
 import { ResultPriority } from './ResultPriority';
 import { ResultGuestCta } from './ResultGuestCta';
 import { ResultQuestions } from './ResultQuestions';
-import { analyzeResult, buildTargetedRequest } from '../utils/resultAnalysis';
+import { analyzeResult } from '../utils/resultAnalysis';
 
 interface Props {
   summary: SimulationResultDTO;
@@ -29,24 +29,25 @@ export const ResultScreen = ({
   guestSimulationCount,
   onCreateAccount,
 }: Props) => {
-  const { strengths, weaknesses, toConsolidate, weakest } = analyzeResult(
-    summary.competencyResults ?? []
+  const categoryResults = summary.categoryResults ?? (
+    summary.competencySource === 'CATEGORY' ? summary.competencyResults ?? [] : []
   );
-
+  const skillResults = summary.skillResults ?? (
+    summary.competencySource === 'SKILL' ? summary.competencyResults ?? [] : []
+  );
+  const categoryAnalysis = analyzeResult(categoryResults);
+  const skillAnalysis = analyzeResult(skillResults);
+  const weakestCategories = analyzeResult(summary.weakCategoryResults ?? categoryAnalysis.weaknesses).weaknesses;
+  const weakestSkills = analyzeResult(summary.weakSkillResults ?? skillAnalysis.weaknesses).weaknesses;
+  const weaknesses = [
+    ...weakestCategories.map((item) => ({ ...item, source: 'CATEGORY' as const })),
+    ...weakestSkills.map((item) => ({ ...item, source: 'SKILL' as const })),
+  ].sort((a, b) => a.pct - b.pct || a.total - b.total);
+  const weakest = weaknesses[0] ?? null;
   // En Architecture, les filtres skill/catégorie sont ignorés par la requête côté backend :
   // afficher un bouton « ciblé » serait mensonger → diagnostic affiché sans CTA
   // (décision validée).
   const showTargetedCta = summary.mode !== 'ARCHITECTURE';
-
-  const handleTargetedTraining = () => {
-    if (!weakest) return;
-    const request: StartSimulationRequest = buildTargetedRequest(
-      summary,
-      weakest,
-      summary.questions.map((q) => q.challengeId)
-    );
-    onStart(request);
-  };
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8 py-4 sm:py-6">
@@ -67,31 +68,54 @@ export const ResultScreen = ({
         {weakest && (
           <ResultPriority
             weaknesses={weaknesses}
+            summary={summary}
             loading={loading}
-            onStart={handleTargetedTraining}
+            onStart={onStart}
             showCta={showTargetedCta}
           />
         )}
       </div>
 
-      {/* Points forts */}
-      {strengths.length > 0 && (
+      {/* Les domaines techniques et compétences transversales restent séparés. */}
+      {categoryAnalysis.strengths.length > 0 && (
         <ResultCompetencies
-          title="Points forts"
+          title="Domaines maîtrisés"
+          subtitle="Technologies et domaines évalués"
           icon={<Award className="w-4 h-4" />}
           iconChipClassName="bg-success-soft border-success-border text-success"
           tone="success"
-          items={strengths}
+          items={categoryAnalysis.strengths}
+        />
+      )}
+      {skillAnalysis.strengths.length > 0 && (
+        <ResultCompetencies
+          title="Compétences transversales maîtrisées"
+          subtitle="Méthodes et pratiques évaluées"
+          icon={<Award className="w-4 h-4" />}
+          iconChipClassName="bg-success-soft border-success-border text-success"
+          tone="success"
+          items={skillAnalysis.strengths}
         />
       )}
 
-      {toConsolidate.length > 0 && (
+      {categoryAnalysis.toConsolidate.length > 0 && (
         <ResultCompetencies
-          title="À consolider"
+          title="Domaines à consolider"
+          subtitle="Technologies et domaines évalués"
           icon={<Target className="w-4 h-4" />}
           iconChipClassName="bg-warning-soft border-warning-border text-navy-900"
           tone="navy"
-          items={toConsolidate}
+          items={categoryAnalysis.toConsolidate}
+        />
+      )}
+      {skillAnalysis.toConsolidate.length > 0 && (
+        <ResultCompetencies
+          title="Compétences transversales à consolider"
+          subtitle="Méthodes et pratiques évaluées"
+          icon={<Target className="w-4 h-4" />}
+          iconChipClassName="bg-warning-soft border-warning-border text-navy-900"
+          tone="navy"
+          items={skillAnalysis.toConsolidate}
         />
       )}
 

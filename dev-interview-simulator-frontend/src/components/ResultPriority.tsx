@@ -3,13 +3,16 @@ import { Target, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from './common/Button';
 import { PageTitle } from './common/PageTitle';
 import type { AnalyzedCompetency } from '../utils/resultAnalysis';
+import type { SimulationResultDTO } from '../types';
+import { buildTargetedRequest } from '../utils/resultAnalysis';
 
 interface Props {
-  /** Axes sous le seuil de vraie faiblesse, triés du plus fragile au moins fragile. */
-  weaknesses: AnalyzedCompetency[];
+  /** Axes faibles des deux familles, triés du plus fragile au moins fragile. */
+  weaknesses: Array<AnalyzedCompetency & { source: 'CATEGORY' | 'SKILL' }>;
+  summary: SimulationResultDTO;
   loading: boolean;
   /** Démarre la simulation ciblée sur la compétence prioritaire. */
-  onStart: () => void;
+  onStart: (request: ReturnType<typeof buildTargetedRequest>) => void;
   /** Faux en Architecture : diagnostic affiché, CTA masqué (filtres backend ignorés). */
   showCta: boolean;
 }
@@ -17,12 +20,14 @@ interface Props {
 /** Lignes visibles avant le dépliage « Voir les autres ». */
 const MAX_VISIBLE = 3;
 
-export const ResultPriority = ({ weaknesses, loading, onStart, showCta }: Props) => {
+export const ResultPriority = ({ weaknesses, summary, loading, onStart, showCta }: Props) => {
   const [expanded, setExpanded] = useState(false);
 
   const priority = weaknesses[0];
   const hiddenCount = weaknesses.length - MAX_VISIBLE;
   const visible = expanded ? weaknesses : weaknesses.slice(0, MAX_VISIBLE);
+
+  if (!priority) return null;
 
   // Égalité en tête (ex. deux axes à 0 %) : le badge « Priorité principale »
   // serait arbitraire → badge « Priorité » partagé + phrase d'égalité.
@@ -52,7 +57,7 @@ export const ResultPriority = ({ weaknesses, loading, onStart, showCta }: Props)
           pastille, pas par un paragraphe dédié. */}
       <ul className="space-y-2.5">
         {visible.map((c, index) => (
-          <li key={c.id} className="flex items-center justify-between gap-3">
+          <li key={`${c.source}-${c.id}`} className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2 min-w-0">
               <span className="font-semibold text-sm text-ink truncate">{c.name}</span>
               {index === 0 && !isTied && (
@@ -118,7 +123,7 @@ export const ResultPriority = ({ weaknesses, loading, onStart, showCta }: Props)
             size="lg"
             loading={loading}
             rightIcon={<Target className="w-4 h-4" />}
-            onClick={onStart}
+            onClick={() => onStart(buildTargetedRequest(summary, priority, summary.questions.map((q) => q.challengeId), priority.source))}
             className="w-full sm:w-auto px-8"
           >
             S'entraîner sur {priority.name}
