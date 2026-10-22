@@ -1,22 +1,17 @@
 package com.interview.simulator.user.service;
 
-import com.interview.simulator.category.entity.Category;
-import com.interview.simulator.skill.entity.Skill;
-import com.interview.simulator.simulation.entity.Simulation;
-import com.interview.simulator.simulation.entity.SimulationAnswer;
-import com.interview.simulator.simulation.entity.SimulationChallenge;
-import com.interview.simulator.simulation.entity.SimulationStatus;
 import com.interview.simulator.simulation.repository.SimulationRepository;
 import com.interview.simulator.user.dto.UserStatsResponse;
 import com.interview.simulator.user.entity.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Service
 public class UserStatsService {
@@ -37,269 +32,186 @@ public class UserStatsService {
     public UserStatsResponse getStats(int page, int size) {
         User user = userResolver.currentOrNull().orElse(null);
         if (user == null) {
-            return emptyStats(page, size);
+            return emptyStats(size);
         }
 
-        // Tri par startedAt DESC côté requête
-        List<Simulation> simulations = simulationRepository.findAllByUserIdWithChallenges(user.getId());
+        Long userId = user.getId();
+        Object[] simulationCounts = unwrapRow(simulationRepository.findUserSimulationCounts(userId));
+        Object[] answerCounts = unwrapRow(simulationRepository.findUserAnswerCounts(userId));
+        long totalSimulations = number(simulationCounts[0]);
+        long completedSimulations = number(simulationCounts[1]);
+        long totalAnswers = number(answerCounts[0]);
+        long correctAnswers = number(answerCounts[1]);
 
-        long totalSimulations = simulations.size();
-        long completedSimulations = simulations.stream()
-                .filter(s -> s.getStatus() == SimulationStatus.COMPLETED)
-                .count();
-
-        long totalAnswers = 0;
-        long correctAnswers = 0;
-        Map<Long, long[]> byCategory = new HashMap<>();   // categoryId -> [answered, correct]
-        Map<Long, String> categoryNames = new HashMap<>();
-        Map<Long, long[]> bySkill = new HashMap<>();       // skillId -> [answered, correct]
-        Map<Long, String> skillNames = new HashMap<>();
-        Map<String, long[]> byType = new HashMap<>();     // type -> [answered, correct]
-
-        for (Simulation simulation : simulations) {
-            for (SimulationChallenge sc : simulation.getSimulationChallenges()) {
-                SimulationAnswer answer = sc.getAnswer();
-                if (answer == null) {
-                    continue;
-                }
-                totalAnswers++;
-                boolean correct = answer.isCorrect();
-                if (correct) {
-                    correctAnswers++;
-                }
-
-                String type = sc.getChallenge().getType().name();
-                long[] typeStats = byType.computeIfAbsent(type, k -> new long[2]);
-                typeStats[0]++;
-                if (correct) {
-                    typeStats[1]++;
-                }
-
-                for (Category category : sc.getChallenge().getCategories()) {
-                    long[] categoryStats = byCategory.computeIfAbsent(category.getId(), k -> new long[2]);
-                    categoryStats[0]++;
-                    if (correct) {
-                        categoryStats[1]++;
-                    }
-                    categoryNames.put(category.getId(), category.getName());
-                }
-                for (Skill skill : sc.getChallenge().getSkills()) {
-                    long[] skillStats = bySkill.computeIfAbsent(skill.getId(), k -> new long[2]);
-                    skillStats[0]++;
-                    if (correct) {
-                        skillStats[1]++;
-                    }
-                    skillNames.put(skill.getId(), skill.getName());
-                }
-            }
-        }
-
-        Double globalRate = rate(correctAnswers, totalAnswers);
-
-        // Tendance : 3 dernières simulations terminées vs les 3 précédentes
-        List<Simulation> completed = simulations.stream()
-                .filter(s -> s.getStatus() == SimulationStatus.COMPLETED)
+        List<UserStatsResponse.StatEntry> categories = toStatEntries(
+                unwrapRows(simulationRepository.findUserCategoryStats(userId)));
+        List<UserStatsResponse.StatEntry> skills = toStatEntries(
+                unwrapRows(simulationRepository.findUserSkillStats(userId)));
+        List<UserStatsResponse.TypeStat> byType = unwrapRows(
+                simulationRepository.findUserTypeStats(userId)).stream()
+                .map(row -> new UserStatsResponse.TypeStat(
+                        (String) row[0], (int) number(row[1]), (int) number(row[2]),
+                        rate(number(row[2]), number(row[1]))))
+                .sorted((first, second) -> compareRates(
+                        first.successRate(), first.answered(), second.successRate(), second.answered()))
                 .toList();
+
         Double recentRate = null;
         Double previousRate = null;
         String trend = null;
-        if (completed.size() > RECENT_WINDOW) {
-            recentRate = averageRate(completed.subList(0, RECENT_WINDOW));
-            previousRate = averageRate(
-                    completed.subList(RECENT_WINDOW, Math.min(completed.size(), 2 * RECENT_WINDOW)));
+        List<Object[]> recentCompleted = unwrapRows(
+                simulationRepository.findRecentCompletedSimulationRates(userId));
+        if (recentCompleted.size() > RECENT_WINDOW) {
+            recentRate = averageRate(recentCompleted.subList(0, RECENT_WINDOW));
+            previousRate = averageRate(recentCompleted.subList(RECENT_WINDOW, 2 * RECENT_WINDOW));
             if (recentRate != null && previousRate != null) {
                 double delta = recentRate - previousRate;
                 trend = delta >= 2 ? "UP" : delta <= -2 ? "DOWN" : "STABLE";
             }
         }
 
-        // Score de session : moyenne et meilleur taux par session TERMINÉE
-        // (macro par session, contrairement au taux global qui est par réponse).
-        Double averageSuccessRate = null;
-        Double bestSuccessRate = null;
-        if (!completed.isEmpty()) {
-            double sumRates = 0;
-            double bestRate = 0;
-            for (Simulation simulation : completed) {
-                int totalQuestions = simulation.getSimulationChallenges().size();
-                int correctCount = (int) simulation.getSimulationChallenges().stream()
-                        .filter(sc -> sc.getAnswer() != null && sc.getAnswer().isCorrect())
-                        .count();
-                double sessionRate = totalQuestions == 0 ? 0 : (correctCount * 100.0) / totalQuestions;
-                sumRates += sessionRate;
-                bestRate = Math.max(bestRate, sessionRate);
-            }
-            averageSuccessRate = Math.round(sumRates / completed.size() * 10.0) / 10.0;
-            bestSuccessRate = Math.round(bestRate * 10.0) / 10.0;
-        }
+        Object[] rateSummary = unwrapRow(simulationRepository.findCompletedSimulationRateSummary(userId));
+        Double averageSuccessRate = rateSummary[0] == null ? null : round(number(rateSummary[0]));
+        Double bestSuccessRate = rateSummary[1] == null ? null : round(number(rateSummary[1]));
 
-        // Par catégorie : uniquement les catégories pratiquées,
-        // triées du plus faible au plus fort taux (les points faibles d'abord)
-        List<UserStatsResponse.StatEntry> byCategoryEntries = new ArrayList<>();
-        for (Map.Entry<Long, long[]> entry : byCategory.entrySet()) {
-            long answered = entry.getValue()[0];
-            long correct = entry.getValue()[1];
-            Double categoryRate = rate(correct, answered);
-            if (categoryRate != null) {
-                byCategoryEntries.add(new UserStatsResponse.StatEntry(
-                        entry.getKey(),
-                        categoryNames.get(entry.getKey()),
-                        (int) answered,
-                        (int) correct,
-                        categoryRate
-                ));
-            }
-        }
-        byCategoryEntries.sort((a, b) -> {
-            int byRate = Double.compare(a.successRate(), b.successRate());
-            return byRate != 0 ? byRate : Integer.compare(b.answered(), a.answered());
-        });
-
-        // Points faibles par domaine et par skill. Une entrée n'est une vraie
-        // priorité qu'à partir de 3 réponses ; sinon son score reste visible dans
-        // byCategory/bySkill mais n'est pas présenté comme fiable.
-        List<UserStatsResponse.WeakPointEntry> reliableWeakPoints = new ArrayList<>();
-        byCategoryEntries.stream()
-                .filter(entry -> entry.answered() >= MIN_ANSWERS_FOR_RELIABLE_RATE
-                        && entry.successRate() < 100)
-                .map(entry -> new UserStatsResponse.WeakPointEntry(
-                        entry.id(), entry.name(), entry.answered(), entry.correct(),
-                        entry.successRate(), "CATEGORY"))
-                .forEach(reliableWeakPoints::add);
-        bySkill.entrySet().stream()
-                .filter(entry -> entry.getValue()[0] >= MIN_ANSWERS_FOR_RELIABLE_RATE
-                        && entry.getValue()[1] < entry.getValue()[0])
-                .map(entry -> new UserStatsResponse.WeakPointEntry(
-                        entry.getKey(), skillNames.get(entry.getKey()),
-                        (int) entry.getValue()[0], (int) entry.getValue()[1],
-                        rate(entry.getValue()[1], entry.getValue()[0]), "SKILL"))
-                .forEach(reliableWeakPoints::add);
-        reliableWeakPoints.sort((a, b) -> {
-            int byRate = Double.compare(a.successRate(), b.successRate());
-            return byRate != 0 ? byRate : Integer.compare(b.answered(), a.answered());
-        });
-        List<UserStatsResponse.WeakPointEntry> weakPoints = new ArrayList<>(reliableWeakPoints);
-        byCategoryEntries.stream()
-                .filter(entry -> entry.successRate() < 100)
-                .map(entry -> new UserStatsResponse.WeakPointEntry(
-                        entry.id(), entry.name(), entry.answered(), entry.correct(),
-                        entry.successRate(), "CATEGORY"))
-                .forEach(weakPoints::add);
-        bySkill.entrySet().stream()
-                .filter(entry -> entry.getValue()[1] < entry.getValue()[0])
-                .map(entry -> new UserStatsResponse.WeakPointEntry(
-                        entry.getKey(), skillNames.get(entry.getKey()),
-                        (int) entry.getValue()[0], (int) entry.getValue()[1],
-                        rate(entry.getValue()[1], entry.getValue()[0]), "SKILL"))
-                .forEach(weakPoints::add);
-        weakPoints = weakPoints.stream()
-                .distinct()
-                .sorted((a, b) -> {
-                    int byReliability = Boolean.compare(
-                            b.answered() >= MIN_ANSWERS_FOR_RELIABLE_RATE,
-                            a.answered() >= MIN_ANSWERS_FOR_RELIABLE_RATE);
-                    if (byReliability != 0) return byReliability;
-                    int byRate = Double.compare(a.successRate(), b.successRate());
-                    return byRate != 0 ? byRate : Integer.compare(b.answered(), a.answered());
-                })
-                .toList();
-
-        // Par type de format, même tri (plus faible en premier)
-        List<UserStatsResponse.TypeStat> byTypeEntries = new ArrayList<>();
-        for (Map.Entry<String, long[]> entry : byType.entrySet()) {
-            long answered = entry.getValue()[0];
-            long correct = entry.getValue()[1];
-            Double typeRate = rate(correct, answered);
-            if (typeRate != null) {
-                byTypeEntries.add(new UserStatsResponse.TypeStat(
-                        entry.getKey(), (int) answered, (int) correct, typeRate));
-            }
-        }
-        byTypeEntries.sort((a, b) -> {
-            int byRate = Double.compare(a.successRate(), b.successRate());
-            return byRate != 0 ? byRate : Integer.compare(b.answered(), a.answered());
-        });
-
-        // Historique paginé : simulations les plus récentes d'abord (tri de la requête)
-        long totalElements = simulations.size();
-        int totalPages = (int) Math.ceil((double) totalElements / size);
-        int safePage = totalPages == 0 ? 0 : Math.min(Math.max(page, 0), totalPages - 1);
-        int fromIndex = safePage * size;
-        int toIndex = Math.min(fromIndex + size, simulations.size());
-        List<UserStatsResponse.RecentSimulation> pageContent = simulations.subList(fromIndex, toIndex).stream()
+        Page<Object[]> simulations = simulationRepository.findRecentSimulationsByUserId(
+                userId, PageRequest.of(Math.max(page, 0), size));
+        List<UserStatsResponse.RecentSimulation> recentSimulations = simulations.getContent().stream()
+                .map(this::unwrapRow)
                 .map(this::toRecentSimulation)
                 .toList();
         UserStatsResponse.PagedSimulations pagedSimulations = new UserStatsResponse.PagedSimulations(
-                pageContent, safePage, size, totalElements, totalPages);
+                recentSimulations,
+                simulations.getNumber(),
+                size,
+                simulations.getTotalElements(),
+                simulations.getTotalPages());
 
         return new UserStatsResponse(
                 totalSimulations,
                 completedSimulations,
                 totalAnswers,
                 correctAnswers,
-                globalRate,
+                rate(correctAnswers, totalAnswers),
                 recentRate,
                 previousRate,
                 trend,
                 averageSuccessRate,
                 bestSuccessRate,
-                byCategoryEntries,
-                byTypeEntries,
-                weakPoints,
-                pagedSimulations
-        );
+                categories,
+                byType,
+                weakPoints(categories, skills),
+                pagedSimulations);
     }
 
-    private UserStatsResponse.RecentSimulation toRecentSimulation(Simulation simulation) {
-        int answered = 0;
-        int correct = 0;
-        for (SimulationChallenge sc : simulation.getSimulationChallenges()) {
-            SimulationAnswer answer = sc.getAnswer();
-            if (answer != null) {
-                answered++;
-                if (answer.isCorrect()) {
-                    correct++;
-                }
-            }
-        }
+    private List<UserStatsResponse.StatEntry> toStatEntries(List<Object[]> rows) {
+        return rows.stream()
+                .map(row -> new UserStatsResponse.StatEntry(
+                        number(row[0]), (String) row[1], (int) number(row[2]),
+                        (int) number(row[3]), rate(number(row[3]), number(row[2]))))
+                .sorted((first, second) -> compareRates(
+                        first.successRate(), first.answered(), second.successRate(), second.answered()))
+                .toList();
+    }
+
+    private List<UserStatsResponse.WeakPointEntry> weakPoints(
+            List<UserStatsResponse.StatEntry> categories,
+            List<UserStatsResponse.StatEntry> skills) {
+        List<UserStatsResponse.WeakPointEntry> reliable = new ArrayList<>();
+        categories.stream()
+                .filter(entry -> entry.answered() >= MIN_ANSWERS_FOR_RELIABLE_RATE && entry.successRate() < 100)
+                .map(entry -> weakPoint(entry, "CATEGORY"))
+                .forEach(reliable::add);
+        skills.stream()
+                .filter(entry -> entry.answered() >= MIN_ANSWERS_FOR_RELIABLE_RATE && entry.successRate() < 100)
+                .map(entry -> weakPoint(entry, "SKILL"))
+                .forEach(reliable::add);
+        reliable.sort((first, second) -> compareRates(
+                first.successRate(), first.answered(), second.successRate(), second.answered()));
+
+        List<UserStatsResponse.WeakPointEntry> all = new ArrayList<>(reliable);
+        categories.stream()
+                .filter(entry -> entry.successRate() < 100)
+                .map(entry -> weakPoint(entry, "CATEGORY"))
+                .forEach(all::add);
+        skills.stream()
+                .filter(entry -> entry.successRate() < 100)
+                .map(entry -> weakPoint(entry, "SKILL"))
+                .forEach(all::add);
+        return all.stream()
+                .distinct()
+                .sorted((first, second) -> {
+                    int reliability = Boolean.compare(
+                            second.answered() >= MIN_ANSWERS_FOR_RELIABLE_RATE,
+                            first.answered() >= MIN_ANSWERS_FOR_RELIABLE_RATE);
+                    return reliability != 0 ? reliability : compareRates(
+                            first.successRate(), first.answered(), second.successRate(), second.answered());
+                })
+                .toList();
+    }
+
+    private UserStatsResponse.WeakPointEntry weakPoint(
+            UserStatsResponse.StatEntry entry,
+            String source) {
+        return new UserStatsResponse.WeakPointEntry(
+                entry.id(), entry.name(), entry.answered(), entry.correct(), entry.successRate(), source);
+    }
+
+    private UserStatsResponse.RecentSimulation toRecentSimulation(Object[] row) {
+        LocalDateTime startedAt = row[7] instanceof LocalDateTime dateTime
+                ? dateTime
+                : row[7] instanceof java.sql.Timestamp timestamp ? timestamp.toLocalDateTime() : null;
         return new UserStatsResponse.RecentSimulation(
-                simulation.getId(),
-                simulation.getMode() != null ? simulation.getMode().name() : null,
-                simulation.getDifficulty() != null ? simulation.getDifficulty().name() : null,
-                simulation.getSimulationChallenges().size(),
-                correct,
-                simulation.getTotalScore() != null ? simulation.getTotalScore() : 0,
-                simulation.getStatus() != null ? simulation.getStatus().name() : null,
-                simulation.getStartedAt() != null ? simulation.getStartedAt().format(DATE_TIME_FORMAT) : null
-        );
+                number(row[0]),
+                (String) row[1],
+                (String) row[2],
+                (int) number(row[3]),
+                (int) number(row[4]),
+                (int) number(row[5]),
+                (String) row[6],
+                startedAt == null ? null : startedAt.format(DATE_TIME_FORMAT));
+    }
+
+    private Double averageRate(List<Object[]> rows) {
+        long answered = 0;
+        long correct = 0;
+        for (Object[] row : rows) {
+            answered += number(row[0]);
+            correct += number(row[1]);
+        }
+        return rate(correct, answered);
+    }
+
+    private int compareRates(double firstRate, int firstAnswered, double secondRate, int secondAnswered) {
+        int byRate = Double.compare(firstRate, secondRate);
+        return byRate != 0 ? byRate : Integer.compare(secondAnswered, firstAnswered);
+    }
+
+    private Object[] unwrapRow(Object[] row) {
+        return row.length == 1 && row[0] instanceof Object[] nested ? nested : row;
+    }
+
+    private List<Object[]> unwrapRows(List<Object[]> rows) {
+        return rows.stream().map(this::unwrapRow).toList();
+    }
+
+    private long number(Object value) {
+        return value == null ? 0 : ((Number) value).longValue();
+    }
+
+    private double round(double value) {
+        return Math.round(value * 10.0) / 10.0;
     }
 
     private Double rate(long correct, long answered) {
         return answered == 0 ? null : Math.round((correct * 1000.0) / answered) / 10.0;
     }
 
-    private Double averageRate(List<Simulation> simulations) {
-        long answered = 0;
-        long correct = 0;
-        for (Simulation simulation : simulations) {
-            for (SimulationChallenge sc : simulation.getSimulationChallenges()) {
-                if (sc.getAnswer() != null) {
-                    answered++;
-                    if (sc.getAnswer().isCorrect()) {
-                        correct++;
-                    }
-                }
-            }
-        }
-        return rate(correct, answered);
-    }
-
-    private UserStatsResponse emptyStats(int page, int size) {
+    private UserStatsResponse emptyStats(int size) {
         return new UserStatsResponse(
                 0, 0, 0, 0,
                 null, null, null, null, null, null,
                 List.of(), List.of(), List.of(),
-                new UserStatsResponse.PagedSimulations(List.of(), 0, size, 0, 0)
-        );
+                new UserStatsResponse.PagedSimulations(List.of(), 0, size, 0, 0));
     }
 }

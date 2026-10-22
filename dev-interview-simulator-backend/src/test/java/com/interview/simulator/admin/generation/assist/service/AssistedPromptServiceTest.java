@@ -114,6 +114,7 @@ class AssistedPromptServiceTest {
             ImportedQuestion question = parsed.questions().get(0);
             assertEquals(type, question.type());
             assertEquals(DifficultyLevel.INTERMEDIATE, question.difficulty());
+            assertEquals(type == ChallengeType.SITUATIONAL_QCM ? 70 : 90, question.estimatedTimeSeconds());
             assertNull(question.externalId());
             assertTrue(question.categories().containsAll(List.of("Java", "React")));
             assertTrue(question.skills().contains("Tests unitaires"));
@@ -122,6 +123,7 @@ class AssistedPromptServiceTest {
                     "exemple invalide pour " + type + " : " + registry.get(type).validate(question));
 
             if (type == ChallengeType.ARCHITECTURE) {
+                assertEquals(4, question.options().size());
                 assertNotNull(question.scenario());
                 assertEquals(1, question.stepOrder());
                 assertNotNull(question.revealedInformation());

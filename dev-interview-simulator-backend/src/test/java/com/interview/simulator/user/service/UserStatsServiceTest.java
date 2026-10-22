@@ -1,24 +1,19 @@
 package com.interview.simulator.user.service;
 
-import com.interview.simulator.category.entity.Category;
-import com.interview.simulator.challenge.entity.Challenge;
-import com.interview.simulator.challenge.entity.ChallengeType;
-import com.interview.simulator.simulation.entity.Simulation;
-import com.interview.simulator.simulation.entity.SimulationAnswer;
-import com.interview.simulator.simulation.entity.SimulationChallenge;
-import com.interview.simulator.simulation.entity.SimulationStatus;
 import com.interview.simulator.simulation.repository.SimulationRepository;
-import com.interview.simulator.skill.entity.Skill;
 import com.interview.simulator.user.dto.UserStatsResponse;
 import com.interview.simulator.user.entity.User;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class UserStatsServiceTest {
@@ -28,27 +23,27 @@ class UserStatsServiceTest {
     @Test
     void reportsWeakPointsByCategoryAndSkillWithVolume() {
         User user = new User("tester", "tester@example.com");
+        ReflectionTestUtils.setField(user, "id", 7L);
         when(userResolver.currentOrNull()).thenReturn(Optional.of(user));
 
-        Category java = category(1L, "Java");
-        Category spring = category(2L, "Spring Boot");
-        Skill debugging = skill(3L, "Debugging");
-        Skill problemSolving = skill(4L, "Problem Solving");
-
-        Simulation simulation = new Simulation();
-        simulation.setMode(ChallengeType.SITUATIONAL_QCM);
-        simulation.setStatus(SimulationStatus.COMPLETED);
-        for (int i = 0; i < 3; i++) {
-            simulation.getSimulationChallenges().add(
-                    challenge(simulation, i, java, debugging, i < 2));
-            simulation.getSimulationChallenges().add(
-                    challenge(simulation, i + 3, spring, problemSolving, false));
-        }
-        simulation.getSimulationChallenges().add(
-                challenge(simulation, 6, java, debugging, false));
-
         SimulationRepository repository = mock(SimulationRepository.class);
-        when(repository.findAllByUserIdWithChallenges(null)).thenReturn(List.of(simulation));
+        when(repository.findUserSimulationCounts(7L)).thenAnswer(
+                invocation -> new Object[]{new Object[]{2L, 2L}});
+        when(repository.findUserAnswerCounts(7L)).thenAnswer(
+                invocation -> new Object[]{new Object[]{10L, 7L}});
+        when(repository.findUserCategoryStats(7L)).thenReturn(java.util.Arrays.asList(
+                new Object[]{new Object[]{2L, "Spring Boot", 3L, 0L}},
+                new Object[]{new Object[]{1L, "Java", 4L, 2L}}));
+        when(repository.findUserSkillStats(7L)).thenReturn(java.util.Arrays.asList(
+                new Object[]{new Object[]{4L, "Problem Solving", 3L, 0L}},
+                new Object[]{new Object[]{3L, "Debugging", 4L, 3L}}));
+        when(repository.findUserTypeStats(7L)).thenReturn(java.util.Collections.singletonList(
+                new Object[]{new Object[]{"SITUATIONAL_QCM", 7L, 3L}}));
+        when(repository.findRecentCompletedSimulationRates(7L)).thenReturn(List.of());
+        when(repository.findCompletedSimulationRateSummary(7L)).thenAnswer(
+                invocation -> new Object[]{new Object[]{42.5, 75.0}});
+        when(repository.findRecentSimulationsByUserId(org.mockito.ArgumentMatchers.eq(7L), any()))
+                .thenReturn(new PageImpl<>(List.of(), org.springframework.data.domain.PageRequest.of(0, 5), 0));
         UserStatsService service = new UserStatsService(userResolver, repository);
 
         UserStatsResponse stats = service.getStats(0, 5);
@@ -65,40 +60,9 @@ class UserStatsServiceTest {
         assertEquals("Java", stats.weakPoints().get(2).name());
         assertEquals(2, stats.weakPoints().get(2).correct());
         assertEquals(4, stats.weakPoints().get(2).answered());
-    }
-
-    private SimulationChallenge challenge(
-            Simulation simulation, int order, Category category, Skill skill, boolean correct) {
-        Challenge challenge = new Challenge();
-        challenge.setType(ChallengeType.SITUATIONAL_QCM);
-        challenge.getCategories().add(category);
-        challenge.getSkills().add(skill);
-
-        SimulationChallenge simulationChallenge = new SimulationChallenge();
-        simulationChallenge.setSimulation(simulation);
-        simulationChallenge.setChallenge(challenge);
-        simulationChallenge.setDisplayOrder(order);
-
-        SimulationAnswer answer = new SimulationAnswer();
-        answer.setCorrect(correct);
-        answer.setScore(correct ? 10 : 0);
-        answer.setSelectedOptions(Set.of());
-        answer.setSimulationChallenge(simulationChallenge);
-        simulationChallenge.setAnswer(answer);
-        return simulationChallenge;
-    }
-
-    private Category category(Long id, String name) {
-        Category category = mock(Category.class);
-        when(category.getId()).thenReturn(id);
-        when(category.getName()).thenReturn(name);
-        return category;
-    }
-
-    private Skill skill(Long id, String name) {
-        Skill skill = mock(Skill.class);
-        when(skill.getId()).thenReturn(id);
-        when(skill.getName()).thenReturn(name);
-        return skill;
+        assertEquals(70.0, stats.globalSuccessRate());
+        assertEquals(42.0, stats.averageSuccessRate());
+        assertEquals(75.0, stats.bestSuccessRate());
+        verify(repository).findRecentSimulationsByUserId(org.mockito.ArgumentMatchers.eq(7L), any());
     }
 }

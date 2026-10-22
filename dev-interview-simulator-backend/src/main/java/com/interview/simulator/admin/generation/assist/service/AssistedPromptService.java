@@ -6,6 +6,7 @@ import com.interview.simulator.category.repository.CategoryRepository;
 import com.interview.simulator.challenge.entity.ChallengeType;
 import com.interview.simulator.challenge.entity.OptionSeverity;
 import com.interview.simulator.challenge.entity.SelectionType;
+import com.interview.simulator.challenge.service.ChallengeTimePolicy;
 import com.interview.simulator.exception.ApiException;
 import com.interview.simulator.profile.entity.Profile;
 import com.interview.simulator.profile.repository.ProfileRepository;
@@ -47,7 +48,7 @@ public class AssistedPromptService {
                   "explanation": "Explication utile et concise de la réponse.",
                   "revealedInformation": %s,
                   "tradeoff": %s,
-                  "estimatedTimeSeconds": 90,
+                  "estimatedTimeSeconds": %d,
                   "points": 10,
                   "categories": %s,
                   "skills": %s,
@@ -104,9 +105,13 @@ public class AssistedPromptService {
         prompt.append("- N'invente JAMAIS de profil, catégorie ou compétence : recopie exactement une ou plusieurs des valeurs listées ci-dessus dans les champs « categories » (noms), « skills » (noms) et « profiles » (codes).\n");
         prompt.append("- Ne mets PAS de champ « externalId » : le serveur en attribue un à chaque question.\n");
         prompt.append("- Chaque question est originale : aucune répétition ni reformulation d'une autre question du lot.\n");
-        prompt.append("- Rédige en français, ton professionnel, sans emoji, lisible sur mobile (phrases courtes, une idée par phrase).\n");
-        prompt.append("- Titre court et direct (< 120 caractères) ; mise en situation compacte (2 à 5 phrases courtes) ; options courtes ; explication utile et concise.\n");
-        prompt.append("- « estimatedTimeSeconds » > 0 (ex. 30 à 180) et « points » entre 1 et 10.\n");
+        prompt.append("- Rédige en français clair et professionnel, sans emoji ; une idée par phrase, vocabulaire adapté au niveau, lisible sur mobile.\n");
+        prompt.append("- Titre direct (< 120 caractères) ; contexte compact mais suffisant ; question explicite ; explication correcte, pédagogique et concise.\n");
+        prompt.append("- Chaque question évalue une compétence principale, dans un contexte réaliste ; évite les ambiguïtés, les doubles négations, les détails décoratifs et les connaissances hors sujet.\n");
+        prompt.append("- Les options restent plausibles et de longueur, ton et construction comparables ; aucune ne révèle la bonne réponse par sa précision, sa formulation, un absolu ou la reprise de l'énoncé.\n");
+        prompt.append("- Pour éviter les indices de position dans le lot, répartis les bonnes réponses entre les displayOrder disponibles ; ne place pas systématiquement la bonne réponse au même rang.\n");
+        prompt.append(ChallengeTimePolicy.promptRule(request.type()));
+        prompt.append("- « points » entre 1 et 10.\n");
         prompt.append("- Format exact de chaque question (aucun autre champ) : {\"title\": string, \"type\": \"")
                 .append(request.type())
                 .append("\", \"difficulty\": \"").append(request.difficulty())
@@ -135,6 +140,7 @@ public class AssistedPromptService {
                 codeLanguageJson(request.type()),
                 revealedInformationJson(request.type()),
                 tradeoffJson(request.type()),
+                ChallengeTimePolicy.normalize(request.type(), ChallengeTimePolicy.DEFAULT_SECONDS),
                 jsonArray(categoryNames),
                 jsonArray(skillNames),
                 jsonArray(profileCodes),
@@ -168,7 +174,7 @@ public class AssistedPromptService {
                     Règles du type ARCHITECTURE : scenario et stepOrder sont obligatoires (jamais null) ; \
                     toutes les questions du lot forment les étapes d'un même scénario ; chaque question porte \
                     le même titre de scénario dans « scenario » et un stepOrder unique et consécutif commençant à 1 ; \
-                    selectionType vaut SINGLE_CHOICE ; exactement 2 options dont exactement une avec correct=true ; \
+                    selectionType vaut SINGLE_CHOICE ; exactement 4 options dont exactement une avec correct=true ; \
                     revealedInformation (repère concret) et tradeoff (compromis assumé) sont obligatoires \
                     et ne doivent jamais être null.\n
                     """;
@@ -247,19 +253,19 @@ public class AssistedPromptService {
 
     private String situationalQcmOptions() {
         return "["
-                + option("La bonne réponse, réaliste et justifiée.", true, null, "Pourquoi c'est la bonne réponse.", 0)
-                + ", " + option("Première réponse fausse mais plausible.", false, null, null, 1)
-                + ", " + option("Deuxième réponse fausse.", false, null, null, 2)
-                + ", " + option("Troisième réponse fausse.", false, null, null, 3)
+                + option("Première proposition plausible.", false, null, null, 0)
+                + ", " + option("Deuxième proposition, correcte dans la situation.", true, null, "Justification courte et factuelle.", 1)
+                + ", " + option("Troisième proposition plausible.", false, null, null, 2)
+                + ", " + option("Quatrième proposition plausible.", false, null, null, 3)
                 + "]";
     }
 
     private String problemSolvingOptions() {
         return "["
-                + option("La démarche qui résout le problème durablement.", true, null, "Pourquoi cette démarche fonctionne.", 0)
-                + ", " + option("Un contournement qui masque le symptôme.", false, null, null, 1)
-                + ", " + option("Une piste hors sujet.", false, null, null, 2)
-                + ", " + option("Une piste qui aggrave le problème.", false, null, null, 3)
+                + option("Une piste plausible mais non vérifiée.", false, null, null, 0)
+                + ", " + option("Une démarche de diagnostic puis de correction ciblée.", true, null, "Elle traite la cause avant de modifier le système.", 1)
+                + ", " + option("Un contournement plausible qui masque le symptôme.", false, null, null, 2)
+                + ", " + option("Une modification plausible mais sans lien avec les faits.", false, null, null, 3)
                 + "]";
     }
 
@@ -282,6 +288,10 @@ public class AssistedPromptService {
                         "Réduit le couplage entre les équipes.", 0)
                 + ", " + option("Conserver un service unique avec des paquets internes.", false, null,
                         "Renforce le couplage global.", 1)
+                + ", " + option("Extraire chaque fonction dans un microservice distinct sans besoin de montée en charge.", false, null,
+                        "Ajoute des coûts opérationnels sans bénéfice établi.", 2)
+                + ", " + option("Choisir le stockage avant de clarifier les contraintes de cohérence.", false, null,
+                        "Le choix ne découle pas des besoins exprimés.", 3)
                 + "]";
     }
 

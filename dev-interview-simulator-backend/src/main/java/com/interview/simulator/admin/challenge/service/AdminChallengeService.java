@@ -10,6 +10,7 @@ import com.interview.simulator.challenge.entity.*;
 import com.interview.simulator.challenge.repository.ChallengeRepository;
 import com.interview.simulator.challenge.repository.InterviewScenarioRepository;
 import com.interview.simulator.challenge.service.ChallengeIdentityService;
+import com.interview.simulator.challenge.service.ChallengeTimePolicy;
 import com.interview.simulator.profile.entity.Profile;
 import com.interview.simulator.profile.repository.ProfileRepository;
 import com.interview.simulator.skill.entity.Skill;
@@ -185,7 +186,8 @@ public class AdminChallengeService {
         challenge.setTradeoff(request.tradeoff());
         applyScenario(challenge, request);
         challenge.setExplanation(request.explanation());
-        challenge.setEstimatedTimeSeconds(request.estimatedTimeSeconds());
+        challenge.setEstimatedTimeSeconds(
+                ChallengeTimePolicy.normalize(request.type(), request.estimatedTimeSeconds()));
         challenge.setPoints(request.points() == null ? 10 : request.points());
 
         challenge.getCategories().clear();

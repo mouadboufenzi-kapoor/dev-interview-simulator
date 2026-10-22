@@ -53,15 +53,14 @@ class ChallengeGenerationServiceTest {
 
     private static final String VALID_ANSWER = """
             {"questions":[
-              {"title":"T1","type":"SITUATIONAL_QCM","difficulty":"ADVANCED",
-               "selectionType":"SINGLE_CHOICE","context":"ctx","question":"Q1 ?",
-               "explanation":"e1","points":10,
-               "categories":["Inventée"],"skills":[],"profiles":["HACK"],
-               "options":[{"content":"a","correct":true,"displayOrder":0},
-                          {"content":"b","correct":false,"displayOrder":1}]},
-              {"title":"T2","type":"SITUATIONAL_QCM","difficulty":"JUNIOR",
-               "selectionType":"SINGLE_CHOICE","context":"ctx","question":"Q2 ?",
-               "explanation":"e2","points":10,"options":[]}
+              {"title":"T1","type":"SITUATIONAL_QCM","difficulty":"JUNIOR",
+               "selectionType":"SINGLE_CHOICE","context":"Une situation de test.","question":"Q1 ?",
+               "explanation":"e1","estimatedTimeSeconds":90,"points":10,
+               "categories":["Java"],"skills":["Spring"],
+               "options":[{"content":"a","correct":false,"displayOrder":0},
+                          {"content":"b","correct":true,"displayOrder":1},
+                          {"content":"c","correct":false,"displayOrder":2},
+                          {"content":"d","correct":false,"displayOrder":3}]}
             ]}
             """;
 
@@ -142,6 +141,8 @@ class ChallengeGenerationServiceTest {
         when(geminiGenerationClient.isConfigured()).thenReturn(true);
         when(profileRepository.findAllById(Set.of(3L))).thenReturn(List.of(inactive));
 
+        when(categoryRepository.findAllById(Set.of(1L))).thenReturn(List.of(new Category("Java", null)));
+        when(skillRepository.findAllById(Set.of(2L))).thenReturn(List.of(new Skill("Spring", null)));
         ApiException exception = assertThrows(ApiException.class,
                 () -> challengeGenerationService.generate(request(1, null, null, Set.of(3L))));
 
@@ -151,8 +152,38 @@ class ChallengeGenerationServiceTest {
     }
 
     @Test
+    void generate_ShouldRejectMissingCategoryOrSkillBeforeCallingProvider() {
+        when(geminiGenerationClient.isConfigured()).thenReturn(true);
+
+        when(skillRepository.findAllById(Set.of(2L))).thenReturn(List.of(new Skill("Spring", null)));
+        when(profileRepository.findAllById(Set.of(3L)))
+                .thenReturn(List.of(new Profile("DEVELOPER", "Développeur", null)));
+        ApiException exception = assertThrows(ApiException.class,
+                () -> challengeGenerationService.generate(request(1, Set.of(), Set.of(2L), Set.of(3L))));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        assertTrue(exception.getMessage().contains("catégorie"));
+        verify(geminiGenerationClient, never()).generateText(anyString());
+    }
+
+    @Test
+    void generate_ShouldRejectWrongQuestionCountWithoutImporting() {
+        when(geminiGenerationClient.isConfigured()).thenReturn(true);
+        stubDefaultTaxonomy();
+        when(geminiGenerationClient.generateText(anyString())).thenReturn(VALID_ANSWER);
+
+        ApiException exception = assertThrows(ApiException.class,
+                () -> challengeGenerationService.generate(request(2, null, null, null)));
+
+        assertEquals(HttpStatus.BAD_GATEWAY, exception.getStatus());
+        assertTrue(exception.getMessage().contains("exactement 2 questions"));
+        verifyNoInteractions(challengeImportService);
+    }
+
+    @Test
     void generate_ShouldRejectMalformedProviderJsonWithoutImporting() {
         when(geminiGenerationClient.isConfigured()).thenReturn(true);
+        stubDefaultTaxonomy();
         when(geminiGenerationClient.generateText(anyString())).thenReturn("{tronqué");
 
         ApiException exception = assertThrows(ApiException.class,
@@ -188,6 +219,7 @@ class ChallengeGenerationServiceTest {
         assertEquals("admin-généré", question.externalId());
         assertEquals(ChallengeType.SITUATIONAL_QCM, question.type());
         assertEquals(DifficultyLevel.JUNIOR, question.difficulty());
+        assertEquals(70, question.estimatedTimeSeconds());
         assertEquals(Set.of("Java"), question.categories());
         assertEquals(Set.of("Spring"), question.skills());
         assertEquals(Set.of("DEVELOPER"), question.profiles());
@@ -203,7 +235,8 @@ class ChallengeGenerationServiceTest {
         when(skillRepository.findAllById(Set.of(2L, 3L))).thenReturn(List.of(fundamentals, testsUnitaires));
         when(profileRepository.findAllById(Set.of(3L)))
                 .thenReturn(List.of(new Profile("DEVELOPER", "Développeur", null)));
-        when(geminiGenerationClient.generateText(anyString())).thenReturn(VALID_ANSWER);
+        when(geminiGenerationClient.generateText(anyString())).thenReturn(
+                VALID_ANSWER.replace("Spring", "Tests unitaires"));
         when(challengeIdentityService.generateExternalId()).thenReturn("admin-généré");
         when(challengeImportService.importQuestions(anyList(), eq(ContentStatus.DRAFT), eq(false)))
                 .thenReturn(report());
@@ -212,7 +245,7 @@ class ChallengeGenerationServiceTest {
 
         verify(geminiGenerationClient).generateText(promptCaptor.capture());
         String prompt = promptCaptor.getValue();
-        assertTrue(prompt.contains("Compétences ciblées (nom exact — description)"));
+        assertTrue(prompt.contains("Compétences autorisées (choisis les pertinentes et recopie les noms exacts dans « skills »)"));
         assertTrue(prompt.contains("- Fundamentals — Maîtrise des concepts de base et de la théorie"));
         assertTrue(prompt.contains("- Tests unitaires — Conception de tests : stratégie, cas limites, mocking, TDD"));
         assertTrue(prompt.contains(
@@ -222,8 +255,12 @@ class ChallengeGenerationServiceTest {
     @Test
     void generate_PasDeRegleFundamentals_SansLeSkillFundamentals() {
         when(geminiGenerationClient.isConfigured()).thenReturn(true);
+        when(categoryRepository.findAllById(Set.of(1L)))
+                .thenReturn(List.of(new Category("Java", null)));
         when(skillRepository.findAllById(Set.of(2L)))
                 .thenReturn(List.of(new Skill("Spring", "Framework applicatif Java")));
+        when(profileRepository.findAllById(Set.of(3L)))
+                .thenReturn(List.of(new Profile("DEVELOPER", "Développeur", null)));
         when(geminiGenerationClient.generateText(anyString())).thenReturn(VALID_ANSWER);
         when(challengeIdentityService.generateExternalId()).thenReturn("admin-généré");
         when(challengeImportService.importQuestions(anyList(), eq(ContentStatus.DRAFT), eq(false)))
@@ -241,6 +278,7 @@ class ChallengeGenerationServiceTest {
     void generate_ShouldPropagateProviderQuotaError() {
         ApiException quota = new ApiException(HttpStatus.TOO_MANY_REQUESTS, "Quota épuisé.");
         when(geminiGenerationClient.isConfigured()).thenReturn(true);
+        stubDefaultTaxonomy();
         when(geminiGenerationClient.generateText(anyString())).thenThrow(quota);
 
         ApiException exception = assertThrows(ApiException.class,
@@ -256,8 +294,19 @@ class ChallengeGenerationServiceTest {
             Set<Long> skillIds,
             Set<Long> profileIds) {
         return new ChallengeGenerationRequest(
-                profileIds, categoryIds, skillIds,
+                profileIds == null ? Set.of(3L) : profileIds,
+                categoryIds == null ? Set.of(1L) : categoryIds,
+                skillIds == null ? Set.of(2L) : skillIds,
                 DifficultyLevel.JUNIOR, ChallengeType.SITUATIONAL_QCM, count, null, null, null);
+    }
+
+    private void stubDefaultTaxonomy() {
+        when(categoryRepository.findAllById(Set.of(1L)))
+                .thenReturn(List.of(new Category("Java", null)));
+        when(skillRepository.findAllById(Set.of(2L)))
+                .thenReturn(List.of(new Skill("Spring", null)));
+        when(profileRepository.findAllById(Set.of(3L)))
+                .thenReturn(List.of(new Profile("DEVELOPER", "Développeur", null)));
     }
 
     private Skill mockSkill(String name, String description) {

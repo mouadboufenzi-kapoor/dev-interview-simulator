@@ -172,7 +172,19 @@ class AdminChallengeServiceTest {
         AdminChallengeResponse response = adminChallengeService.create(request());
 
         assertEquals(ContentStatus.DRAFT, response.status());
+        assertEquals(70, response.estimatedTimeSeconds());
         verify(challengeRepository, times(1)).save(any(Challenge.class));
+    }
+
+    @Test
+    void create_OtherChallenge_DurationIsCappedAtTwoMinutes() {
+        when(challengeIdentityService.contentHash(any(Challenge.class))).thenReturn("hash-duree");
+        when(challengeRepository.findByContentHash("hash-duree")).thenReturn(List.of());
+        when(challengeRepository.save(any(Challenge.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        AdminChallengeResponse response = adminChallengeService.create(request(ChallengeType.PROBLEM_SOLVING, 180));
+
+        assertEquals(120, response.estimatedTimeSeconds());
     }
 
     private Challenge challengeWithId(Long id, String title) {
@@ -188,13 +200,17 @@ class AdminChallengeServiceTest {
     }
 
     private AdminChallengeRequest request() {
+        return request(ChallengeType.SITUATIONAL_QCM, 90);
+    }
+
+    private AdminChallengeRequest request(ChallengeType type, Integer estimatedTimeSeconds) {
         AdminChallengeOptionRequest correct = new AdminChallengeOptionRequest(
                 null, "Bonne réponse", true, null, null, 0);
         AdminChallengeOptionRequest wrong = new AdminChallengeOptionRequest(
                 null, "Mauvaise réponse", false, null, null, 1);
         return new AdminChallengeRequest(
                 "Titre importé",
-                ChallengeType.SITUATIONAL_QCM,
+                type,
                 DifficultyLevel.JUNIOR,
                 SelectionType.SINGLE_CHOICE,
                 "Contexte",
@@ -206,7 +222,7 @@ class AdminChallengeServiceTest {
                 null,
                 null,
                 "Explication",
-                90,
+                estimatedTimeSeconds,
                 10,
                 Set.of(),
                 Set.of(),
