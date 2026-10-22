@@ -301,6 +301,7 @@ export default function App() {
               activeMode={selectedDashboardMode}
               initialCategoryIds={reviseCategoryIds ?? undefined}
               initialSkillIds={reviseSkillIds ?? undefined}
+              skipProfileSelection={user !== null}
             />
           )}
 
