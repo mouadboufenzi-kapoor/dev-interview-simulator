@@ -3,6 +3,8 @@ package com.interview.simulator.admin.generation.assist.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.interview.simulator.challenge.repository.InterviewScenarioRepository;
 import com.interview.simulator.challenge.entity.ContentStatus;
+import com.interview.simulator.admin.challenge.dto.ChallengeImportReport;
+import com.interview.simulator.admin.challenge.dto.ChallengeImportRequest.ImportedQuestion;
 import com.interview.simulator.admin.challenge.service.ChallengeImportService;
 import com.interview.simulator.admin.challenge.validation.ArchitectureValidator;
 import com.interview.simulator.admin.challenge.validation.ChallengeTypeValidatorRegistry;
@@ -36,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -172,7 +175,7 @@ class AssistedGenerationServiceTest {
         when(categoryRepository.findAll()).thenReturn(List.of(
                 new Category("Java", null),
                 new Category("SQL", null)));
-        String json = questionJson("""
+        String json = qcmQuestionJson("""
                 "categories":["Inconnu"]""");
 
         AssistedAnalysisResponse response = service(importService()).analyze(json);
@@ -189,7 +192,7 @@ class AssistedGenerationServiceTest {
         when(categoryRepository.findByNameIn(any())).thenReturn(Set.of(new Category("Java", null)));
         when(skillRepository.findByNameIn(any())).thenReturn(Set.of());
         when(skillRepository.findAll()).thenReturn(List.of(new Skill("Tests unitaires", null)));
-        String json = questionJson("""
+        String json = qcmQuestionJson("""
                 "categories":["Java"],"skills":["CapaciteInconnue"]""");
 
         AssistedAnalysisResponse response = service(importService()).analyze(json);
@@ -205,7 +208,7 @@ class AssistedGenerationServiceTest {
         when(skillRepository.findByNameIn(any())).thenReturn(Set.of(new Skill("Tests unitaires", null)));
         when(profileRepository.findByCodeIn(any())).thenReturn(Set.of());
         when(profileRepository.findAll()).thenReturn(List.of(new Profile("DEV", "Développeur", null)));
-        String json = questionJson("""
+        String json = qcmQuestionJson("""
                 "categories":["Java"],"skills":["Tests unitaires"],"profiles":["NOPE"]""");
 
         AssistedAnalysisResponse response = service(importService()).analyze(json);
@@ -220,7 +223,7 @@ class AssistedGenerationServiceTest {
         when(categoryRepository.findByNameIn(any())).thenReturn(Set.of(new Category("Java", null)));
         when(skillRepository.findByNameIn(any())).thenReturn(Set.of(new Skill("Tests unitaires", null)));
         when(profileRepository.findByCodeIn(any())).thenReturn(Set.of(new Profile("DEV", "Développeur", null)));
-        String json = questionJson("""
+        String json = qcmQuestionJson("""
                 "codeSnippet":"if (a \\@ b) {\\n  c();\\n}","codeLanguage":"java",
                 "categories":["Java"],"skills":["Tests unitaires"],"profiles":["DEV"]""");
 
@@ -241,13 +244,22 @@ class AssistedGenerationServiceTest {
                 "difficulty":"JUNIOR","selectionType":"SINGLE_CHOICE","question":"Question ?",
                 "estimatedTimeSeconds":60,"points":5,"categories":["Java"],
                 "skills":["Tests unitaires"],"profiles":["DEV"],
-                "options":[{"content":"ok","correct":true,"displayOrder":0}]}]}""";
+                "options":[{"content":"wrong A","correct":false,"displayOrder":0},
+                {"content":"right","correct":true,"displayOrder":1},
+                {"content":"wrong B","correct":false,"displayOrder":2},
+                {"content":"wrong C","correct":false,"displayOrder":3}]}]}""";
 
-        AssistedAnalysisResponse response = service(importService()).analyze(json);
+        ChallengeImportService importService = mock(ChallengeImportService.class);
+        when(importService.importQuestions(anyList(), eq(ContentStatus.DRAFT), eq(true))).thenReturn(
+                new ChallengeImportReport(true, new ChallengeImportReport.PlannedCounts(0, 0),
+                        new ChallengeImportReport.ExecutedCounts(0, 0), List.of(), List.of(), List.of()));
+        AssistedAnalysisResponse response = service(importService).analyze(json);
 
         AssistedAnalysisResponse.QuestionPreview preview = response.questions().get(0);
         assertEquals("VALID", preview.status(), preview.reason());
         assertEquals("Le dev écrit \"TODO\" partout", preview.title());
+        verify(importService).importQuestions(argThat((List<ImportedQuestion> questions) ->
+                questions.get(0).estimatedTimeSeconds() == 70), eq(ContentStatus.DRAFT), eq(true));
     }
 
     @Test
@@ -285,12 +297,26 @@ class AssistedGenerationServiceTest {
         assertFalse(message.contains("com.fasterxml"), message);
     }
 
+    private String qcmQuestionJson(String extraFields) {
+        return "{\"questions\":[{\"title\":\"Question\",\"type\":\"SITUATIONAL_QCM\","
+                + "\"difficulty\":\"JUNIOR\",\"selectionType\":\"SINGLE_CHOICE\","
+                + "\"question\":\"Question ?\",\"estimatedTimeSeconds\":60,\"points\":5,"
+                + extraFields + ","
+                + "\"options\":[{\"content\":\"wrong A\",\"correct\":false,\"displayOrder\":0},"
+                + "{\"content\":\"right\",\"correct\":true,\"displayOrder\":1},"
+                + "{\"content\":\"wrong B\",\"correct\":false,\"displayOrder\":2},"
+                + "{\"content\":\"wrong C\",\"correct\":false,\"displayOrder\":3}]}]}";
+    }
+
     private String questionJson(String extraFields) {
         return "{\"questions\":[{\"title\":\"Question\",\"type\":\"SITUATIONAL_QCM\","
                 + "\"difficulty\":\"JUNIOR\",\"selectionType\":\"SINGLE_CHOICE\","
                 + "\"question\":\"Question ?\",\"estimatedTimeSeconds\":60,\"points\":5,"
                 + extraFields + ","
-                + "\"options\":[{\"content\":\"ok\",\"correct\":true,\"displayOrder\":0}]}]}";
+                + "\"options\":[{\"content\":\"wrong A\",\"correct\":false,\"displayOrder\":0},"
+                + "{\"content\":\"right\",\"correct\":true,\"displayOrder\":1},"
+                + "{\"content\":\"wrong B\",\"correct\":false,\"displayOrder\":2},"
+                + "{\"content\":\"wrong C\",\"correct\":false,\"displayOrder\":3}]}]}";
     }
 
     private AssistedGenerationService parseOnlyService() {

@@ -1,4 +1,4 @@
-import { BriefcaseBusiness, Cloud, ClipboardCheck, ShieldCheck, Database, KanbanSquare } from 'lucide-react';
+import { BriefcaseBusiness, Cloud, ClipboardCheck } from 'lucide-react';
 import { PageTitle } from './common/PageTitle';
 
 export interface ProfileCardConfig {
@@ -6,6 +6,7 @@ export interface ProfileCardConfig {
   title: string;
   description: string;
   icon: typeof BriefcaseBusiness;
+  available: boolean;
 }
 
 export const PROFILES: ProfileCardConfig[] = [
@@ -14,36 +15,21 @@ export const PROFILES: ProfileCardConfig[] = [
     title: 'Développeur',
     description: 'Code, conception et résolution de problèmes techniques.',
     icon: BriefcaseBusiness,
+    available: true,
   },
   {
     id: 'devops-cloud',
     title: 'DevOps / Cloud',
     description: 'Infrastructure, déploiement et fiabilité des services.',
     icon: Cloud,
+    available: false,
   },
   {
     id: 'qa-testing',
     title: 'QA / Testing',
     description: 'Qualité logicielle, automatisation et stratégies de test.',
     icon: ClipboardCheck,
-  },
-  {
-    id: 'cybersecurity',
-    title: 'Cybersécurité',
-    description: 'Sécurité applicative, risques et protection des systèmes.',
-    icon: ShieldCheck,
-  },
-  {
-    id: 'data',
-    title: 'Data',
-    description: 'Données, analyse et mise en place de solutions pertinentes.',
-    icon: Database,
-  },
-  {
-    id: 'it-project-manager',
-    title: 'Chef de projet IT',
-    description: 'Pilotage, coordination et livraison de projets numériques.',
-    icon: KanbanSquare,
+    available: false,
   },
 ];
 
@@ -60,16 +46,15 @@ export const SetupProfileStep = ({ selectedProfile, onSelect }: Props) => (
           InterviewLab
         </p>
         <PageTitle size="hero">
-          Vous êtes quel profil ?
+          Choisissez votre profil
         </PageTitle>
         <p className="text-sm sm:text-base text-muted font-sans max-w-lg mx-auto leading-relaxed">
-          Choisissez votre domaine pour commencer une simulation adaptée à
-          votre parcours.
+          Entraînez-vous avec une bibliothèque de plus de 2 000 questions d’entretien, enrichie en continu.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 text-left">
-        {PROFILES.map((profile, index) => {
+      <div className="grid w-full max-w-5xl grid-cols-1 items-stretch gap-6 text-left lg:grid-cols-2">
+        {PROFILES.filter((profile) => profile.available).map((profile) => {
           const isSelected = selectedProfile === profile.id;
           const Icon = profile.icon;
 
@@ -79,7 +64,7 @@ export const SetupProfileStep = ({ selectedProfile, onSelect }: Props) => (
               type="button"
               onClick={() => onSelect(profile.id)}
               aria-pressed={isSelected}
-              className={`group relative min-h-36 rounded border-2 p-5 text-left transition-all duration-150 cursor-pointer focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-bg ${
+              className={`group w-full min-h-36 rounded border-2 p-5 text-left transition-all duration-150 cursor-pointer focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-bg ${
                 isSelected
                   ? 'bg-selected border-border shadow-elevated'
                   : 'bg-card border-border hover:border-brand hover:shadow-card'
@@ -95,18 +80,13 @@ export const SetupProfileStep = ({ selectedProfile, onSelect }: Props) => (
                 >
                   <Icon className="w-4 h-4 stroke-[2]" />
                 </div>
-                {/* Numéro de carte en mono (spec §10) */}
-                <span className="font-mono text-[11px] uppercase tracking-[0.06em] text-muted">
-                  {String(index + 1).padStart(2, '0')}
+                <span className="rounded border border-border bg-selected px-2 py-1 font-mono text-[10px] uppercase tracking-[0.06em] text-text">
+                  Disponible
                 </span>
               </div>
 
-              <div className="space-y-1.5 mt-6">
-                <h2
-                  className={`font-serif text-xl font-bold transition-colors ${
-                    isSelected ? 'text-text' : 'text-text'
-                  }`}
-                >
+              <div className="space-y-1.5 mt-5">
+                <h2 className="font-serif text-xl font-bold text-text">
                   {profile.title}
                 </h2>
                 <p className="text-xs text-muted leading-relaxed">
@@ -116,6 +96,36 @@ export const SetupProfileStep = ({ selectedProfile, onSelect }: Props) => (
             </button>
           );
         })}
+
+        <section aria-labelledby="upcoming-profiles-title" className="space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <h2 id="upcoming-profiles-title" className="font-serif text-base font-bold text-text">
+              D’autres profils arrivent
+            </h2>
+            <span className="font-mono text-[10px] uppercase tracking-[0.06em] text-muted">
+              Bientôt
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-1">
+            {PROFILES.filter((profile) => !profile.available).map((profile) => {
+              const Icon = profile.icon;
+
+              return (
+                <div key={profile.id} className="min-h-28 rounded border-2 border-border bg-card p-3 opacity-75">
+                  <div className="flex items-center gap-2">
+                    <Icon className="w-4 h-4 shrink-0 text-muted" />
+                    <h3 className="font-serif text-sm font-bold leading-tight text-text">
+                      {profile.title}
+                    </h3>
+                  </div>
+                  <p className="mt-2 text-xs leading-relaxed text-muted">
+                    {profile.description}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </section>
       </div>
     </div>
   </div>

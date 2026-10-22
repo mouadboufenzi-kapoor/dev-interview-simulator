@@ -41,22 +41,24 @@ interface Props {
 }
 
 export const SetupModeCards = ({ selectedMode, onSelect }: Props) => (
-  <div className="grid grid-cols-1 gap-4 sm:gap-5 text-left md:grid-cols-2 lg:grid-cols-4">
+  <div className="grid grid-cols-1 gap-2.5 text-left md:grid-cols-2 md:gap-3 lg:grid-cols-4 lg:gap-4">
     {MODES.map((mode, index) => {
       const isSelected = selectedMode === mode.id;
       const Icon = mode.icon;
 
       return (
-        <div
+        <button
           key={mode.id}
+          type="button"
           onClick={() => onSelect(mode.id)}
-          className={`group relative rounded border-2 p-6 transition-all duration-150 cursor-pointer focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-bg flex flex-col justify-between select-none min-h-11 ${
+          aria-pressed={isSelected}
+          className={`group relative w-full rounded border-2 p-4 text-left transition-all duration-150 cursor-pointer focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-bg flex flex-col justify-between select-none min-h-11 ${
             isSelected
               ? 'bg-selected border-border shadow-elevated'
               : 'bg-card border-border hover:border-brand hover:shadow-card'
           }`}
         >
-          <div className="space-y-4">
+          <div className="space-y-3">
             {/* Icône monochrome + numéro de carte (mono, spec §10) */}
             <div className="flex items-center justify-between">
               <div
@@ -74,8 +76,8 @@ export const SetupModeCards = ({ selectedMode, onSelect }: Props) => (
               </span>
             </div>
 
-            <div className="space-y-1.5">
-              <h3 className="font-serif text-xl font-bold text-text">
+            <div className="space-y-1">
+              <h3 className="font-serif text-lg font-bold text-text">
                 {mode.title}
               </h3>
               <p className="text-xs text-muted leading-relaxed">
@@ -83,7 +85,7 @@ export const SetupModeCards = ({ selectedMode, onSelect }: Props) => (
               </p>
             </div>
           </div>
-        </div>
+        </button>
       );
     })}
   </div>

@@ -15,6 +15,7 @@ import com.interview.simulator.challenge.entity.ChallengeType;
 import com.interview.simulator.challenge.entity.ContentStatus;
 import com.interview.simulator.challenge.entity.DifficultyLevel;
 import com.interview.simulator.challenge.service.ChallengeIdentityService;
+import com.interview.simulator.challenge.service.ChallengeTimePolicy;
 import com.interview.simulator.exception.ApiException;
 import com.interview.simulator.profile.entity.Profile;
 import com.interview.simulator.profile.repository.ProfileRepository;
@@ -43,10 +44,13 @@ public class ChallengeGenerationService {
                     + "\"context\": string|null, \"question\": string, \"codeSnippet\": string|null, "
                     + "\"codeLanguage\": string|null, \"explanation\": string, \"revealedInformation\": string|null, "
                     + "\"tradeoff\": string|null, \"estimatedTimeSeconds\": int, \"points\": int, "
+                    + "\"categories\": [noms exacts autorisés], \"skills\": [noms exacts autorisés], "
                     + "\"scenario\": string|null, \"stepOrder\": int|null, \"options\": "
                     + "[{\"content\": string, \"correct\": bool, \"severity\": string|null, "
                     + "\"explanation\": string|null, \"displayOrder\": int}]}. "
-                    + "N'inclus JAMAIS les champs externalId, categories, skills ni profiles : le serveur les injecte. "
+                    + "Chaque question doit inclure categories et skills : choisis pour chacun au moins une valeur exacte parmi les listes autorisées. "
+                    + "N'inclus JAMAIS les champs externalId ni profiles : le serveur attribue ces valeurs. "
+                    + "Ne recopie que les catégories et compétences réellement pertinentes pour la question ; n'ajoute aucune valeur absente des listes. "
                     + "Ne mets un scenario et un stepOrder que si le type est ARCHITECTURE.";
     private static final String LANGUAGE_INSTRUCTION = "Rédige tout en français, ton professionnel, sans emojis.";
     private static final String FUNDAMENTALS_SKILL_NAME = "Fundamentals";
@@ -89,11 +93,16 @@ public class ChallengeGenerationService {
             identifiable ; si plusieurs notions sont nécessaires, elles restent naturellement liées au \
             problème posé.\n""";
     private static final String OPTIONS_RULE = """
-            Règles des options de QCM : chacune est compréhensible seule, concise, suffisamment précise \
-            pour distinguer les choix et formulée naturellement — jamais un long paragraphe. Ne répète pas \
-            dans les options des informations déjà données dans la mise en situation. Les distracteurs \
-            restent crédibles et de longueur raisonnablement comparable : la bonne réponse ne doit pas \
-            se repérer uniquement parce qu'elle est plus longue ou plus détaillée que les autres.\n""";
+            Règles des options : chacune est compréhensible seule, concise, précise et formulée naturellement — jamais \
+            un long paragraphe. Les propositions répondent directement à la question et restent indépendantes. \
+            Pour une sélection unique, les distracteurs sont crédibles et représentent des erreurs ou compromis \
+            plausibles, pas des réponses manifestement absurdes. Pour une sélection multiple, chaque bonne réponse \
+            identifie un constat distinct et chaque mauvaise proposition reste plausible mais objectivement incorrecte. \
+            Garde une longueur, un niveau de détail, une structure grammaticale et un ton comparables entre les options. \
+            Ne rends jamais la bonne réponse reconnaissable parce qu'elle est plus longue, plus nuancée, plus précise, \
+            mieux rédigée ou seule à contenir une justification. Évite les indices de forme (absolus comme « toujours » \
+            ou « jamais », reprise littérale de l'énoncé, accord grammatical ou détail technique réservé à une option). \
+            N'ajoute aucune information qui ne sert pas à départager les choix.\n""";
     private static final String FINAL_CHECK_RULE = """
             Avant de rendre chaque question, vérifie mentalement : le titre est-il court et compréhensible ; \
             la mise en situation contient-elle uniquement les informations utiles ; le problème est-il \
@@ -144,6 +153,7 @@ public class ChallengeGenerationService {
                     "La génération automatique n'est pas configurée : renseignez la clé du fournisseur de génération actif ou activez app.generation.enabled.");
         }
         Relations relations = resolveRelations(request);
+        requireGenerationTaxonomy(relations);
         String prompt = buildPrompt(request, relations);
         List<ImportedQuestion> questions = bind(parseQuestions(prompt, request.count(), target), request, relations);
         return challengeImportService.importQuestions(questions, ContentStatus.DRAFT, false);
@@ -205,6 +215,14 @@ public class ChallengeGenerationService {
                 profiles.stream().map(Profile::getCode).collect(Collectors.toCollection(LinkedHashSet::new)));
     }
 
+    private void requireGenerationTaxonomy(Relations relations) {
+        if (relations.categoryNames().isEmpty() || relations.skillNames().isEmpty()
+                || relations.profileCodes().isEmpty()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST,
+                    "La génération API exige au moins une catégorie, une compétence et un profil sélectionnés.");
+        }
+    }
+
     private Map<String, String> skillDescriptions(Set<Skill> skills) {
         return skills.stream()
                 .sorted(Comparator.comparing(Skill::getName))
@@ -228,8 +246,12 @@ public class ChallengeGenerationService {
         prompt.append("Génère exactement ").append(request.count())
                 .append(" questions de type ").append(request.type())
                 .append(" de niveau ").append(request.difficulty()).append(".\n");
+        prompt.append("Chaque question évalue une compétence principale, dans un contexte réaliste et adapté au niveau ; "
+                + "rédige une consigne sans ambiguïté, une réponse défendable et une explication factuelle.\n");
+        prompt.append("Répartis les bonnes réponses entre les displayOrder disponibles ; ne place pas systématiquement la bonne réponse au même rang.\n");
         appendTopics(prompt, relations);
         prompt.append(typeRules(request.type()));
+        prompt.append(ChallengeTimePolicy.promptRule(request.type()));
         prompt.append("Chaque question doit exploiter un angle ou un piège différent des autres.\n");
         prompt.append(editorialRules(request.difficulty()));
         prompt.append(LANGUAGE_INSTRUCTION).append('\n');
@@ -245,10 +267,11 @@ public class ChallengeGenerationService {
 
     private void appendTopics(StringBuilder prompt, Relations relations) {
         if (!relations.categoryNames().isEmpty()) {
-            prompt.append("Catégories techniques : ").append(String.join(", ", relations.categoryNames())).append(".\n");
+            prompt.append("Catégories autorisées (recopie les noms exacts pertinents dans « categories ») : ")
+                    .append(String.join(", ", relations.categoryNames())).append(".\n");
         }
         if (!relations.skillNames().isEmpty()) {
-            prompt.append("Compétences ciblées (nom exact — description) :\n");
+            prompt.append("Compétences autorisées (choisis les pertinentes et recopie les noms exacts dans « skills ») :\n");
             relations.skillDescriptions().forEach((name, description) ->
                     prompt.append("- ").append(skillLine(name, description)).append('\n'));
             if (relations.skillNames().contains(FUNDAMENTALS_SKILL_NAME)) {
@@ -279,7 +302,7 @@ public class ChallengeGenerationService {
             case ARCHITECTURE -> """
                     Règles du type ARCHITECTURE : les questions forment les étapes d'un même scénario ; \
                     chaque question porte le même champ scenario (titre du scénario) et un stepOrder unique \
-                    et consécutif commençant à 1 ; selectionType vaut SINGLE_CHOICE ; exactement 2 options \
+                    et consécutif commençant à 1 ; selectionType vaut SINGLE_CHOICE ; exactement 4 options \
                     dont exactement une avec correct=true ; revealedInformation apporte un repère concret et \
                     tradeoff un compromis assumé, tous deux obligatoires.\n""";
             case SEQUENTIAL_REASONING -> """
@@ -342,7 +365,12 @@ public class ChallengeGenerationService {
             throw new ApiException(HttpStatus.BAD_GATEWAY,
                     "La réponse du fournisseur de génération ne contient aucune question.");
         }
-        return questions.size() > count ? questions.subList(0, count) : questions;
+        if (questions.size() != count) {
+            throw new ApiException(HttpStatus.BAD_GATEWAY,
+                    "Le fournisseur de génération devait produire exactement " + count
+                            + " questions, mais en a retourné " + questions.size() + ". Aucune question n'a été importée.");
+        }
+        return questions;
     }
 
     private List<ImportedQuestion> bind(List<ImportedQuestion> questions, ChallengeGenerationRequest request, Relations relations) {
@@ -352,6 +380,7 @@ public class ChallengeGenerationService {
     }
 
     private ImportedQuestion bindOne(ImportedQuestion question, ChallengeGenerationRequest request, Relations relations) {
+        requireAllowedTaxonomy(question, relations);
         return new ImportedQuestion(
                 challengeIdentityService.generateExternalId(),
                 question.title(),
@@ -365,14 +394,27 @@ public class ChallengeGenerationService {
                 question.explanation(),
                 question.revealedInformation(),
                 question.tradeoff(),
-                question.estimatedTimeSeconds(),
+                ChallengeTimePolicy.normalize(request.type(), question.estimatedTimeSeconds()),
                 question.points(),
-                relations.categoryNames(),
-                relations.skillNames(),
+                question.categories(),
+                question.skills(),
                 relations.profileCodes(),
                 question.scenario(),
                 question.stepOrder(),
                 question.options());
+    }
+
+    private void requireAllowedTaxonomy(ImportedQuestion question, Relations relations) {
+        Set<String> categories = question.categories() == null ? Set.of() : question.categories();
+        Set<String> skills = question.skills() == null ? Set.of() : question.skills();
+        if (categories.isEmpty() || skills.isEmpty()) {
+            throw new ApiException(HttpStatus.BAD_GATEWAY,
+                    "Chaque question générée doit inclure au moins une catégorie et une compétence.");
+        }
+        if (!relations.categoryNames().containsAll(categories) || !relations.skillNames().containsAll(skills)) {
+            throw new ApiException(HttpStatus.BAD_GATEWAY,
+                    "Une question générée contient une catégorie ou une compétence non sélectionnée. Aucune question n'a été importée.");
+        }
     }
 
     private String skillLine(String name, String description) {

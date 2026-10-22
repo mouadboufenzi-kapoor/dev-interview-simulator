@@ -20,7 +20,6 @@ interface TopicsProps {
 }
 
 interface Props {
-  selectedProfileLabel?: string;
   onBack: () => void;
   loading: boolean;
   onSubmit: (e: FormEvent) => void;
@@ -42,7 +41,6 @@ const DIFFICULTIES: { id: DifficultyLevel; label: string }[] = [
 const MOBILE_MAX_WIDTH_QUERY = '(max-width: 767px)';
 
 export const SetupConfigStep = ({
-  selectedProfileLabel,
   onBack,
   loading,
   onSubmit,
@@ -86,23 +84,17 @@ export const SetupConfigStep = ({
         </button>
 
         {/* Brand & Main Headline */}
-        <div className="space-y-4">
-          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted font-semibold">
-            InterviewLab
-          </p>
-          <PageTitle size="hero-compact">
-            Préparez votre prochain <br className="hidden sm:inline" />
-            entretien technique.
-          </PageTitle>
-          <p className="text-sm sm:text-base text-muted font-sans max-w-md mx-auto leading-relaxed">
-            {selectedProfileLabel
-              ? `Configurez votre entraînement ${selectedProfileLabel.toLowerCase()} en conditions réelles.`
-              : "Choisissez un mode d'évaluation pour vous entraîner en conditions réelles."}
-          </p>
-        </div>
+        <PageTitle size="hero-compact">
+          Configurez votre session
+        </PageTitle>
 
         <form onSubmit={onSubmit} className="space-y-10 sm:space-y-12">
-          <SetupModeCards selectedMode={selectedMode} onSelect={handleSelectMode} />
+          <section aria-labelledby="simulation-mode-heading" className="space-y-4">
+            <h2 id="simulation-mode-heading" className="text-sm font-semibold text-text">
+              Format de simulation
+            </h2>
+            <SetupModeCards selectedMode={selectedMode} onSelect={handleSelectMode} />
+          </section>
 
           {/* Minimalist Configuration Bar (Level + Options) */}
           <div className="flex flex-col items-center justify-between gap-6 pt-2">
@@ -110,10 +102,10 @@ export const SetupConfigStep = ({
               ref={levelSectionRef}
               className="scroll-mt-14 sm:scroll-mt-16 flex flex-wrap items-center justify-center gap-2 text-xs font-sans"
             >
-              <span className="text-muted font-mono uppercase tracking-[0.06em] mr-2">Niveau attendu :</span>
+              <span id="difficulty-heading" className="text-muted font-mono uppercase tracking-[0.06em] mr-2">Niveau visé :</span>
               {/* Sélecteur de niveau Contraste (spec §11) : boutons bordés,
                   gap 8px, actif = fond brand + texte cta-text + ombre 2px. */}
-              <div className="inline-flex gap-2">
+              <div role="group" aria-labelledby="difficulty-heading" className="inline-flex gap-2">
                 {DIFFICULTIES.map((diff) => {
                   const isDiffSelected = selectedDifficulty === diff.id;
                   return (
@@ -121,6 +113,7 @@ export const SetupConfigStep = ({
                       key={diff.id}
                       type="button"
                       onClick={() => handleSelectDifficulty(diff.id)}
+                      aria-pressed={isDiffSelected}
                       className={`px-3.5 py-2 min-h-11 rounded border-2 text-xs font-semibold transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-bg ${
                         isDiffSelected
                           ? 'bg-brand text-cta-text border-border shadow-[2px_2px_0_var(--color-shadow)]'
@@ -142,7 +135,7 @@ export const SetupConfigStep = ({
             {/* Architecture step options (discreetly visible if ARCHITECTURE) */}
             {selectedMode === 'ARCHITECTURE' && (
               <div className="inline-flex items-center gap-3 text-xs font-sans text-muted bg-card border-2 border-border px-4 py-2 rounded">
-                <span>Scénario :</span>
+                <span>Étapes du scénario :</span>
                 <div className="flex items-center gap-1">
                   {[3, 4, 5].map((count) => (
                     <button
@@ -173,7 +166,7 @@ export const SetupConfigStep = ({
                 rightIcon={<ArrowRight className="w-4 h-4" />}
                 className="px-9 py-3 text-base font-semibold tracking-wide"
               >
-                Commencer l'entraînement
+                Lancer ma simulation
               </Button>
             </div>
           </div>

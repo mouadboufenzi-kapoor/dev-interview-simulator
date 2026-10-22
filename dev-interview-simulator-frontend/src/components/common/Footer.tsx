@@ -16,12 +16,9 @@ export const Footer: React.FC = () => {
           <span className="text-[11px] sm:text-xs">Simulation d'entretiens techniques</span>
         </div>
 
-        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1 text-[12px] font-mono text-nav-muted">
-          <div className="flex items-center gap-1.5">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-success" />
-            <span>1000+ QUESTIONS POUR PROGRESSER</span>
-          </div>
-        </div>
+        <p className="text-center text-[11px] font-mono text-nav-muted">
+          +2000 Questions/Situations actualisées et enrichies en continu.
+        </p>
       </div>
     </footer>
   );

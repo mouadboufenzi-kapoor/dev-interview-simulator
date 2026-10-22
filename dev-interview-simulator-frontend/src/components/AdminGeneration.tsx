@@ -123,6 +123,7 @@ export const AdminGeneration = () => {
   if (countValue === null) missingFields.push(`le nombre de questions (${MIN_COUNT} à ${MAX_COUNT})`);
   if ((form.profileIds ?? []).length === 0) missingFields.push('au moins un profil');
   if ((form.categoryIds ?? []).length === 0) missingFields.push('au moins une catégorie');
+  if ((form.skillIds ?? []).length === 0) missingFields.push('au moins une compétence');
   if (optionsError !== null || optionsLoading) missingFields.push('le catalogue des fournisseurs');
   else if (!selectedProvider) missingFields.push('un fournisseur de génération valide');
   else if (!selectedProvider.configured) missingFields.push('un fournisseur de génération configuré');
@@ -336,8 +337,10 @@ export const AdminGeneration = () => {
               onChange={(ids) => setField('skillIds', ids)}
               emptyMessage="Aucune compétence disponible."
             />
-            {skills.length > 0 && form.skillIds && form.skillIds.length === 0 && (
-              <p className="text-xs text-ink-muted">{counterHint(form.skillIds)}</p>
+            {skills.length > 0 && (form.skillIds ?? []).length === 0 && (
+              <p className="text-xs text-ink-muted">
+                Sélection obligatoire : au moins une compétence par question pour sa validation et son usage en simulation.
+              </p>
             )}
           </div>
 

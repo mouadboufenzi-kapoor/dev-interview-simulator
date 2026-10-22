@@ -23,6 +23,7 @@ import com.interview.simulator.challenge.entity.DifficultyLevel;
 import com.interview.simulator.challenge.entity.OptionSeverity;
 import com.interview.simulator.challenge.entity.SelectionType;
 import com.interview.simulator.challenge.service.ChallengeIdentityService;
+import com.interview.simulator.challenge.service.ChallengeTimePolicy;
 import com.interview.simulator.exception.ApiException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -286,7 +287,7 @@ public class AssistedGenerationService {
                     question.explanation(),
                     question.revealedInformation(),
                     question.tradeoff(),
-                    question.estimatedTimeSeconds(),
+                    ChallengeTimePolicy.normalize(question.type(), question.estimatedTimeSeconds()),
                     question.points(),
                     question.categories(),
                     question.skills(),

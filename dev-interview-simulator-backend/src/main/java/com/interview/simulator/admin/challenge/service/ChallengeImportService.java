@@ -22,6 +22,7 @@ import com.interview.simulator.challenge.entity.InterviewScenario;
 import com.interview.simulator.challenge.repository.ChallengeRepository;
 import com.interview.simulator.challenge.repository.InterviewScenarioRepository;
 import com.interview.simulator.challenge.service.ChallengeIdentityService;
+import com.interview.simulator.challenge.service.ChallengeTimePolicy;
 import com.interview.simulator.exception.ApiException;
 import com.interview.simulator.profile.entity.Profile;
 import com.interview.simulator.profile.repository.ProfileRepository;
@@ -429,7 +430,8 @@ public class ChallengeImportService {
         challenge.setExplanation(question.explanation());
         challenge.setRevealedInformation(question.revealedInformation());
         challenge.setTradeoff(question.tradeoff());
-        challenge.setEstimatedTimeSeconds(question.estimatedTimeSeconds());
+        challenge.setEstimatedTimeSeconds(
+                ChallengeTimePolicy.normalize(question.type(), question.estimatedTimeSeconds()));
         challenge.setPoints(question.points() == null ? DEFAULT_POINTS : question.points());
         challenge.setScenario(scenario);
         challenge.setStepOrder(question.type() == ChallengeType.ARCHITECTURE ? question.stepOrder() : null);

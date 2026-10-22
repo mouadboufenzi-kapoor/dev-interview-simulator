@@ -27,9 +27,9 @@ class ChallengeTypeValidatorsTest {
         ImportedQuestion oneCorrect = question(ChallengeType.SITUATIONAL_QCM, SelectionType.SINGLE_CHOICE,
                 List.of(option("A", true, 0), option("B", false, 1)));
 
-        assertEquals(1, qcmValidator.validate(twoCorrect).size());
-        assertTrue(qcmValidator.validate(twoCorrect).get(0).contains("exactement une bonne réponse"));
-        assertTrue(qcmValidator.validate(oneCorrect).isEmpty());
+        assertTrue(qcmValidator.validate(twoCorrect).stream()
+                .anyMatch(problem -> problem.contains("exactement une bonne réponse")));
+        assertTrue(qcmValidator.validate(oneCorrect).contains("Le type SITUATIONAL_QCM nécessite exactement 4 options ; 2 reçue(s)."));
     }
 
     @Test
@@ -39,8 +39,10 @@ class ChallengeTypeValidatorsTest {
         ImportedQuestion oneCorrect = question(ChallengeType.PROBLEM_SOLVING, SelectionType.MULTIPLE_CHOICE,
                 List.of(option("A", true, 0), option("B", false, 1)));
 
-        assertEquals(1, problemSolvingValidator.validate(noneCorrect).size());
-        assertTrue(problemSolvingValidator.validate(oneCorrect).isEmpty());
+        assertTrue(problemSolvingValidator.validate(noneCorrect).stream()
+                .anyMatch(problem -> problem.contains("bonne réponse")));
+        assertTrue(problemSolvingValidator.validate(oneCorrect).stream()
+                .anyMatch(problem -> problem.contains("4 options")));
     }
 
     @Test
@@ -49,22 +51,29 @@ class ChallengeTypeValidatorsTest {
                 List.of(option("A", true, 0)), "Un scénario", 1);
 
         List<String> problems = codeReviewValidator.validate(withScenario);
-        assertEquals(1, problems.size());
-        assertTrue(problems.get(0).contains("ARCHITECTURE"));
+        assertTrue(problems.stream().anyMatch(problem -> problem.contains("ARCHITECTURE")));
     }
 
     @Test
     void architectureExigeScenarioEtStepOrderValide() {
         ImportedQuestion missingEverything = question(ChallengeType.ARCHITECTURE, SelectionType.SINGLE_CHOICE,
-                List.of(option("A", true, 0)));
+                List.of(option("A", true, 0), option("B", false, 1),
+                        option("C", false, 2), option("D", false, 3)));
         ImportedQuestion zeroStepOrder = questionWithScenario(ChallengeType.ARCHITECTURE, SelectionType.SINGLE_CHOICE,
-                List.of(option("A", true, 0)), "Scénario", 0);
+                architectureOptions(), "Scénario", 0);
         ImportedQuestion complete = questionWithScenario(ChallengeType.ARCHITECTURE, SelectionType.SINGLE_CHOICE,
-                List.of(option("A", true, 0)), "Scénario", 1);
+                architectureOptions(), "Scénario", 1);
 
-        assertEquals(2, architectureValidator.validate(missingEverything).size());
-        assertEquals(1, architectureValidator.validate(zeroStepOrder).size());
-        assertTrue(architectureValidator.validate(complete).isEmpty());
+        assertTrue(architectureValidator.validate(missingEverything).stream()
+                .anyMatch(problem -> problem.contains("scénario")));
+        assertTrue(architectureValidator.validate(zeroStepOrder).stream()
+                .anyMatch(problem -> problem.contains("ordre d'étape")));
+        assertTrue(architectureValidator.validate(complete).stream()
+                .noneMatch(problem -> problem.contains("scénario") || problem.contains("ordre d'étape")));
+        assertTrue(architectureValidator.validate(questionWithScenario(ChallengeType.ARCHITECTURE,
+                SelectionType.SINGLE_CHOICE, List.of(option("A", true, 0), option("B", false, 1)),
+                "Scénario", 1)).stream()
+                .anyMatch(problem -> problem.contains("exactement 4 options")));
     }
 
     @Test
@@ -72,16 +81,21 @@ class ChallengeTypeValidatorsTest {
         ImportedQuestion singleStep = question(ChallengeType.SEQUENTIAL_REASONING, SelectionType.SINGLE_CHOICE,
                 List.of(option("Étape", true, 0)));
         ImportedQuestion incorrectStep = question(ChallengeType.SEQUENTIAL_REASONING, SelectionType.SINGLE_CHOICE,
-                List.of(option("Étape 1", true, 0), option("Étape 2", false, 1)));
+                List.of(option("Étape 1", true, 0), option("Étape 2", false, 1),
+                        option("Étape 3", true, 2), option("Étape 4", true, 3), option("Étape 5", true, 4)));
         ImportedQuestion wrongPositions = question(ChallengeType.SEQUENTIAL_REASONING, SelectionType.SINGLE_CHOICE,
-                List.of(option("Étape 1", true, 1), option("Étape 2", true, 2)));
+                List.of(option("Étape 1", true, 1), option("Étape 2", true, 2),
+                        option("Étape 3", true, 3), option("Étape 4", true, 4), option("Étape 5", true, 5)));
         ImportedQuestion valid = question(ChallengeType.SEQUENTIAL_REASONING, SelectionType.SINGLE_CHOICE,
-                List.of(option("Étape 1", true, 0), option("Étape 2", true, 1)));
+                List.of(option("Étape 1", true, 0), option("Étape 2", true, 1),
+                        option("Étape 3", true, 2), option("Étape 4", true, 3), option("Étape 5", true, 4)));
 
         assertEquals(1, sequentialReasoningValidator.validate(singleStep).size());
-        assertTrue(sequentialReasoningValidator.validate(singleStep).get(0).contains("au moins 2 étapes"));
-        assertEquals(1, sequentialReasoningValidator.validate(incorrectStep).size());
-        assertEquals(1, sequentialReasoningValidator.validate(wrongPositions).size());
+        assertTrue(sequentialReasoningValidator.validate(singleStep).get(0).contains("exactement 5 étapes"));
+        assertTrue(sequentialReasoningValidator.validate(incorrectStep).stream()
+                .anyMatch(problem -> problem.contains("Toutes les étapes")));
+        assertTrue(sequentialReasoningValidator.validate(wrongPositions).stream()
+                .anyMatch(problem -> problem.contains("positions des étapes")));
         assertTrue(sequentialReasoningValidator.validate(valid).isEmpty());
     }
 
@@ -105,6 +119,11 @@ class ChallengeTypeValidatorsTest {
                 "ext-1", "Titre", type, DifficultyLevel.JUNIOR, selectionType,
                 "Contexte", "Question ?", null, null, null, null, null, null, null,
                 null, null, null, scenario, stepOrder, options);
+    }
+
+    private List<ImportedOption> architectureOptions() {
+        return List.of(option("A", true, 0), option("B", false, 1),
+                option("C", false, 2), option("D", false, 3));
     }
 
     private ImportedOption option(String content, boolean correct, int displayOrder) {

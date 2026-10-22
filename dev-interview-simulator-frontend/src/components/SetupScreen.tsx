@@ -7,7 +7,7 @@ import type {
   StartSimulationRequest,
 } from '../types';
 import { simulationApi } from '../api/simulationApi';
-import { SetupProfileStep, PROFILES } from './SetupProfileStep';
+import { SetupProfileStep } from './SetupProfileStep';
 import { SetupConfigStep } from './SetupConfigStep';
 
 interface Props {
@@ -16,6 +16,7 @@ interface Props {
   activeMode?: ChallengeType;
   initialCategoryIds?: number[];
   initialSkillIds?: number[];
+  skipProfileSelection?: boolean;
 }
 
 export const SetupScreen = ({
@@ -24,9 +25,10 @@ export const SetupScreen = ({
   activeMode,
   initialCategoryIds,
   initialSkillIds,
+  skipProfileSelection = false,
 }: Props) => {
   const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
-  const [showConfiguration, setShowConfiguration] = useState(false);
+  const [showConfiguration, setShowConfiguration] = useState(skipProfileSelection);
   const [selectedMode, setSelectedMode] = useState<ChallengeType>(
     activeMode || 'SITUATIONAL_QCM'
   );
@@ -107,10 +109,6 @@ export const SetupScreen = ({
     setSelectedSkillIds([]);
   };
 
-  const selectedProfileLabel = PROFILES.find(
-    (profile) => profile.id === selectedProfile
-  )?.title;
-
   // Clic sur une carte profil → navigation immédiate vers la configuration.
   const handleProfileSelect = (profileId: string) => {
     setSelectedProfile(profileId);
@@ -130,7 +128,6 @@ export const SetupScreen = ({
   return (
     <SetupConfigStep
       key="config"
-      selectedProfileLabel={selectedProfileLabel}
       onBack={() => setShowConfiguration(false)}
       loading={loading}
       onSubmit={handleSubmit}

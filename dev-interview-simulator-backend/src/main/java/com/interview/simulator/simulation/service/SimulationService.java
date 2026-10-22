@@ -3,6 +3,7 @@ package com.interview.simulator.simulation.service;
 import com.interview.simulator.challenge.entity.Challenge;
 import com.interview.simulator.challenge.entity.ChallengeOption;
 import com.interview.simulator.challenge.entity.ChallengeType;
+import com.interview.simulator.challenge.service.ChallengeTimePolicy;
 import com.interview.simulator.challenge.entity.ContentStatus;
 import com.interview.simulator.challenge.entity.InterviewScenario;
 import com.interview.simulator.challenge.entity.SelectionType;
@@ -249,7 +250,8 @@ public class SimulationService {
                                 : null,
                         null,
                         null,
-                        sc.getChallenge().getEstimatedTimeSeconds(),
+                        ChallengeTimePolicy.normalize(
+                                sc.getChallenge().getType(), sc.getChallenge().getEstimatedTimeSeconds()),
                         presentationOptions(sc.getChallenge())
                 ))
                 .toList();
