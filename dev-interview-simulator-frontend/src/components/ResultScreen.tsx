@@ -39,11 +39,8 @@ export const ResultScreen = ({
   const skillAnalysis = analyzeResult(skillResults);
   const weakestCategories = analyzeResult(summary.weakCategoryResults ?? categoryAnalysis.weaknesses).weaknesses;
   const weakestSkills = analyzeResult(summary.weakSkillResults ?? skillAnalysis.weaknesses).weaknesses;
-  const weaknesses = [
-    ...weakestCategories.map((item) => ({ ...item, source: 'CATEGORY' as const })),
-    ...weakestSkills.map((item) => ({ ...item, source: 'SKILL' as const })),
-  ].sort((a, b) => a.pct - b.pct || a.total - b.total);
-  const weakest = weaknesses[0] ?? null;
+  const technicalWeaknesses = weakestCategories.map((item) => ({ ...item, source: 'CATEGORY' as const }));
+  const transversalWeaknesses = weakestSkills.map((item) => ({ ...item, source: 'SKILL' as const }));
   // En Architecture, les filtres skill/catégorie sont ignorés par la requête côté backend :
   // afficher un bouton « ciblé » serait mensonger → diagnostic affiché sans CTA
   // (décision validée).
@@ -53,28 +50,18 @@ export const ResultScreen = ({
     <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8 py-4 sm:py-6">
       <ResultHeader mode={summary.mode} difficulty={summary.difficulty} />
 
-      {/* Évaluation globale + Votre priorité côte à côte (desktop) —
-          empilement naturel en mobile-first via grid-cols-1.
-          Sans point faible, l'évaluation garde toute la largeur. */}
-      <div
-        className={
-          weakest
-            ? 'grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch'
-            : 'grid grid-cols-1 gap-6'
-        }
-      >
-        <ResultEvaluation summary={summary} />
+      <ResultEvaluation summary={summary} />
 
-        {weakest && (
-          <ResultPriority
-            weaknesses={weaknesses}
-            summary={summary}
-            loading={loading}
-            onStart={onStart}
-            showCta={showTargetedCta}
-          />
-        )}
-      </div>
+      {(technicalWeaknesses.length > 0 || transversalWeaknesses.length > 0) && (
+        <ResultPriority
+          technicalWeaknesses={technicalWeaknesses}
+          transversalWeaknesses={transversalWeaknesses}
+          summary={summary}
+          loading={loading}
+          onStart={onStart}
+          showCta={showTargetedCta}
+        />
+      )}
 
       {/* Les domaines techniques et compétences transversales restent séparés. */}
       {categoryAnalysis.strengths.length > 0 && (
@@ -87,17 +74,6 @@ export const ResultScreen = ({
           items={categoryAnalysis.strengths}
         />
       )}
-      {skillAnalysis.strengths.length > 0 && (
-        <ResultCompetencies
-          title="Compétences transversales maîtrisées"
-          subtitle="Méthodes et pratiques évaluées"
-          icon={<Award className="w-4 h-4" />}
-          iconChipClassName="bg-success-soft border-success-border text-success"
-          tone="success"
-          items={skillAnalysis.strengths}
-        />
-      )}
-
       {categoryAnalysis.toConsolidate.length > 0 && (
         <ResultCompetencies
           title="Domaines à consolider"

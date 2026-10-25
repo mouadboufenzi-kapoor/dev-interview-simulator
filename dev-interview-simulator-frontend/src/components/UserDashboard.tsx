@@ -68,9 +68,9 @@ export const UserDashboard = ({ user, onStartSimulation, onRevise, onOpenResult 
           </div>
         )}
 
-        {stats && !loading && !error && stats.byCategory.length > 0 && (
+        {stats && !loading && !error && (stats.byCategory.length > 0 || (stats.bySkill?.length ?? 0) > 0) && (
           <div className="order-2 lg:order-1">
-            <UserDashboardSkills byCategory={stats.byCategory} />
+            <UserDashboardSkills byCategory={stats.byCategory} bySkill={stats.bySkill ?? []} />
           </div>
         )}
       </div>
