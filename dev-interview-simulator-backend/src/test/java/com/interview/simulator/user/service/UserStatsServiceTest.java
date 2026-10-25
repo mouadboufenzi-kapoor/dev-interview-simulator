@@ -48,7 +48,9 @@ class UserStatsServiceTest {
 
         UserStatsResponse stats = service.getStats(0, 5);
 
-        assertEquals(4, stats.weakPoints().size());
+        assertEquals(2, stats.byCategory().size());
+        assertEquals(2, stats.bySkill().size());
+        assertEquals("Problem Solving", stats.bySkill().get(0).name());
         assertEquals("Spring Boot", stats.weakPoints().get(0).name());
         assertEquals("CATEGORY", stats.weakPoints().get(0).source());
         assertEquals(0, stats.weakPoints().get(0).correct());

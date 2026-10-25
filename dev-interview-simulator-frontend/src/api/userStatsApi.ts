@@ -50,6 +50,7 @@ export interface UserStats {
   averageSuccessRate?: number | null;
   bestSuccessRate?: number | null;
   byCategory: UserStatEntry[];
+  bySkill?: UserStatEntry[];
   byType: UserTypeStat[];
   weakPoints: UserWeakPointEntry[];
   simulations: PagedSimulations;

@@ -99,6 +99,7 @@ public class UserStatsService {
                 averageSuccessRate,
                 bestSuccessRate,
                 categories,
+                skills,
                 byType,
                 weakPoints(categories, skills),
                 pagedSimulations);
@@ -211,7 +212,7 @@ public class UserStatsService {
         return new UserStatsResponse(
                 0, 0, 0, 0,
                 null, null, null, null, null, null,
-                List.of(), List.of(), List.of(),
+                List.of(), List.of(), List.of(), List.of(),
                 new UserStatsResponse.PagedSimulations(List.of(), 0, size, 0, 0));
     }
 }

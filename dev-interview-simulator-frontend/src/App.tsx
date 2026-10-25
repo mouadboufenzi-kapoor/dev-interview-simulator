@@ -150,6 +150,16 @@ export default function App() {
         console.error('Abandon de la simulation impossible', err);
       });
     }
+
+    if (screen === 'QUIZ' && user) {
+      setSimulation(null);
+      setSummary(null);
+      setError(null);
+      setScreen('DASHBOARD');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     handleRestart();
   };
 
