@@ -14,6 +14,7 @@ public record UserStatsResponse(
         Double averageSuccessRate,
         Double bestSuccessRate,
         List<StatEntry> byCategory,
+        List<StatEntry> bySkill,
         List<TypeStat> byType,
         List<WeakPointEntry> weakPoints,
         PagedSimulations simulations
