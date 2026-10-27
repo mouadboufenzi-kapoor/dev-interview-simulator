@@ -13,6 +13,7 @@ public interface LLMGenerationProvider {
      */
     boolean isConfigured();
 
+
     /**
      * Envoie le prompt au fournisseur et renvoie la reponse textuelle brute.
      *
@@ -27,4 +28,8 @@ public interface LLMGenerationProvider {
      * fournisseur, soit exactement generateText(prompt).
      */
     String generateText(String prompt, String model);
+
+    default String providerName() {
+        return getClass().getSimpleName();
+    }
 }

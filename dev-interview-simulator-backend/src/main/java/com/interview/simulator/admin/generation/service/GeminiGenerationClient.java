@@ -64,6 +64,11 @@ public class GeminiGenerationClient implements LLMGenerationProvider {
         return enabled && apiKey != null && !apiKey.isBlank();
     }
 
+    @Override
+    public String providerName() {
+        return "gemini";
+    }
+
     public String generateText(String prompt) {
         return generateText(prompt, null);
     }

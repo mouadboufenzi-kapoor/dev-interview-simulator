@@ -30,11 +30,14 @@ public class GenerationProviderRegistry {
     public GenerationProviderRegistry(
             GeminiGenerationClient gemini,
             GroqGenerationProvider groq,
+            OpenRouterGenerationProvider openRouter,
             @Value("${app.generation.provider:gemini}") String defaultProviderId,
             @Value("${app.generation.gemini.models:gemini-3.8-flash}") List<String> geminiModels,
-            @Value("${app.generation.groq.models:openai/gpt-oss-120b}") List<String> groqModels) {
+            @Value("${app.generation.groq.models:openai/gpt-oss-120b}") List<String> groqModels,
+            @Value("${app.generation.openrouter.models:openai/gpt-oss-120b}") List<String> openRouterModels) {
         this.entries.put("gemini", new Entry(gemini, "Gemini", clean(geminiModels)));
         this.entries.put("groq", new Entry(groq, "Groq", clean(groqModels)));
+        this.entries.put("openrouter", new Entry(openRouter, "OpenRouter", clean(openRouterModels)));
         this.defaultProviderId = defaultProviderId == null || defaultProviderId.isBlank()
                 ? "gemini"
                 : defaultProviderId.trim().toLowerCase(Locale.ROOT);
