@@ -50,6 +50,7 @@ app:
     # Generation LLM des questions (admin). Sans cle, la fonctionnalite repond
     # 503 sans appel au fournisseur ; l'application demarre normalement.
     enabled: ${GENERATION_ENABLED:true}
+    max-retries: ${GENERATION_MAX_RETRIES:2}
     # Fournisseur LLM actif (defaut : gemini). Une valeur inconnue fait echouer
     # le demarrage avec un message clair ; aucun basculement automatique.
     provider: ${GENERATION_PROVIDER:gemini}
@@ -68,3 +69,8 @@ app:
       # Idem pour Groq (virgules) : modele par defaut GROQ_MODEL + modeles selectionnables.
       models: ${GROQ_MODELS:openai/gpt-oss-120b,openai/gpt-oss-20b,qwen/qwen3.8-27b}
       base-url: ${GROQ_BASE_URL:https://api.groq.com/openai/v1}
+    openrouter:
+      api-key: ${OPENROUTER_API_KEY:}
+      model: ${OPENROUTER_MODEL:openai/gpt-oss-120b}
+      models: ${OPENROUTER_MODELS:openai/gpt-oss-120b}
+      base-url: ${OPENROUTER_BASE_URL:https://openrouter.ai/api/v1}

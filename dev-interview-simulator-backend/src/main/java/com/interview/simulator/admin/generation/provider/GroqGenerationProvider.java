@@ -73,6 +73,11 @@ public class GroqGenerationProvider implements LLMGenerationProvider {
         return enabled && apiKey != null && !apiKey.isBlank();
     }
 
+    @Override
+    public String providerName() {
+        return "groq";
+    }
+
     public String generateText(String prompt) {
         return generateText(prompt, null);
     }

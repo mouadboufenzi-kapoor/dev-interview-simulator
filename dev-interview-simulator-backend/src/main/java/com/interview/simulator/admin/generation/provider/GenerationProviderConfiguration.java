@@ -38,7 +38,7 @@ public class GenerationProviderConfiguration {
 
     private static final String DEFAULT_PROVIDER = "gemini";
 
-    private static final String SUPPORTED_PROVIDERS = "gemini, groq";
+    private static final String SUPPORTED_PROVIDERS = "gemini, groq, openrouter";
 
     @Bean
     @Primary
@@ -53,6 +53,7 @@ public class GenerationProviderConfiguration {
         return switch (provider) {
             case "gemini" -> requireBean(applicationContext, GeminiGenerationClient.class, provider);
             case "groq" -> requireBean(applicationContext, GroqGenerationProvider.class, provider);
+            case "openrouter" -> requireBean(applicationContext, OpenRouterGenerationProvider.class, provider);
             default -> throw new IllegalStateException(
                     "Fournisseur LLM inconnu pour app.generation.provider : '" + providerName
                             + "'. Valeurs disponibles : " + SUPPORTED_PROVIDERS

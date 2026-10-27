@@ -1,6 +1,7 @@
 package com.interview.simulator.admin.generation.dto;
 
 import com.interview.simulator.challenge.entity.ChallengeType;
+import com.interview.simulator.challenge.entity.ContentStatus;
 import com.interview.simulator.challenge.entity.DifficultyLevel;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -17,7 +18,8 @@ public record ChallengeGenerationRequest(
         @NotNull ChallengeType type,
         @Min(1) @Max(10) int count,
         String instructions,
-        // Fournisseur LLM facultatif ("gemini" | "groq") : defaut = fournisseur du serveur.
+        ContentStatus status,
+        // Fournisseur LLM facultatif ("gemini" | "groq" | "openrouter") : defaut = fournisseur du serveur.
         String provider,
         // modele facultatif : valide cote backend contre la liste autorisee du fournisseur.
         String model

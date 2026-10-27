@@ -21,19 +21,28 @@ import com.interview.simulator.profile.entity.Profile;
 import com.interview.simulator.profile.repository.ProfileRepository;
 import com.interview.simulator.skill.entity.Skill;
 import com.interview.simulator.skill.repository.SkillRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Service
 public class ChallengeGenerationService {
+
+    private static final Logger logger = LoggerFactory.getLogger(ChallengeGenerationService.class);
 
     private static final String JSON_ONLY_INSTRUCTION =
             "Réponds UNIQUEMENT avec un objet JSON de forme {\"questions\": [...]} : "
@@ -49,11 +58,15 @@ public class ChallengeGenerationService {
                     + "[{\"content\": string, \"correct\": bool, \"severity\": string|null, "
                     + "\"explanation\": string|null, \"displayOrder\": int}]}. "
                     + "Chaque question doit inclure categories et skills : choisis pour chacun au moins une valeur exacte parmi les listes autorisées. "
+                    + "Recopie chaque nom autorisé à l'identique, caractère par caractère, sans traduction, reformulation, ajout ni omission ; pour skills, recopie uniquement le nom, pas sa description. "
+                    + "Si une seule catégorie ou une seule compétence est autorisée, utilise obligatoirement cette valeur dans chaque question. "
                     + "N'inclus JAMAIS les champs externalId ni profiles : le serveur attribue ces valeurs. "
                     + "Ne recopie que les catégories et compétences réellement pertinentes pour la question ; n'ajoute aucune valeur absente des listes. "
                     + "Ne mets un scenario et un stepOrder que si le type est ARCHITECTURE.";
     private static final String LANGUAGE_INSTRUCTION = "Rédige tout en français, ton professionnel, sans emojis.";
     private static final String FUNDAMENTALS_SKILL_NAME = "Fundamentals";
+    private static final int MIN_GENERATION_RETRIES = 1;
+    private static final int MAX_GENERATION_RETRIES = 2;
     private static final String FUNDAMENTALS_RULE =
             "Règle Fundamentals : question de connaissance ou de théorie sans scénario à diagnostiquer, "
                     + "optimiser ou concevoir ; dès qu'une situation est à résoudre, choisir une autre compétence.";
@@ -126,6 +139,7 @@ public class ChallengeGenerationService {
     private final ProfileRepository profileRepository;
     private final ObjectMapper objectMapper;
     private final GenerationProviderRegistry generationProviderRegistry;
+    private final int maxRetries;
 
     public ChallengeGenerationService(
             LLMGenerationProvider generationProvider,
@@ -135,7 +149,8 @@ public class ChallengeGenerationService {
             SkillRepository skillRepository,
             ProfileRepository profileRepository,
             ObjectMapper objectMapper,
-            GenerationProviderRegistry generationProviderRegistry) {
+            GenerationProviderRegistry generationProviderRegistry,
+            @Value("${app.generation.max-retries:2}") int maxRetries) {
         this.generationProvider = generationProvider;
         this.challengeImportService = challengeImportService;
         this.challengeIdentityService = challengeIdentityService;
@@ -144,19 +159,32 @@ public class ChallengeGenerationService {
         this.profileRepository = profileRepository;
         this.objectMapper = objectMapper;
         this.generationProviderRegistry = generationProviderRegistry;
+        if (maxRetries < MIN_GENERATION_RETRIES || maxRetries > MAX_GENERATION_RETRIES) {
+            throw new IllegalArgumentException("app.generation.max-retries doit être compris entre 1 et 2.");
+        }
+        this.maxRetries = maxRetries;
     }
 
     public ChallengeImportReport generate(ChallengeGenerationRequest request) {
+        ContentStatus status = request.status() == null ? ContentStatus.DRAFT : request.status();
+        if (status != ContentStatus.DRAFT && status != ContentStatus.VALIDATED) {
+            throw new ApiException(HttpStatus.BAD_REQUEST,
+                    "Le statut de génération doit être DRAFT ou VALIDATED.");
+        }
         GenerationProviderRegistry.Resolved target = resolveTarget(request);
         if (!target.provider().isConfigured()) {
+            String provider = providerName(request, target);
+            if ("openrouter".equals(provider)) {
+                throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE,
+                        "Le fournisseur OpenRouter n'est pas configuré : renseignez OPENROUTER_API_KEY ou activez app.generation.enabled.");
+            }
             throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE,
                     "La génération automatique n'est pas configurée : renseignez la clé du fournisseur de génération actif ou activez app.generation.enabled.");
         }
         Relations relations = resolveRelations(request);
         requireGenerationTaxonomy(relations);
         String prompt = buildPrompt(request, relations);
-        List<ImportedQuestion> questions = bind(parseQuestions(prompt, request.count(), target), request, relations);
-        return challengeImportService.importQuestions(questions, ContentStatus.DRAFT, false);
+        return generateAndImport(prompt, request, relations, status, target);
     }
 
     /**
@@ -267,11 +295,11 @@ public class ChallengeGenerationService {
 
     private void appendTopics(StringBuilder prompt, Relations relations) {
         if (!relations.categoryNames().isEmpty()) {
-            prompt.append("Catégories autorisées (recopie les noms exacts pertinents dans « categories ») : ")
+            prompt.append("Catégories autorisées (recopie dans « categories » le ou les noms pertinents exactement comme écrits ici) : ")
                     .append(String.join(", ", relations.categoryNames())).append(".\n");
         }
         if (!relations.skillNames().isEmpty()) {
-            prompt.append("Compétences autorisées (choisis les pertinentes et recopie les noms exacts dans « skills ») :\n");
+            prompt.append("Compétences autorisées (recopie dans « skills » le ou les noms pertinents exactement comme écrits avant « — » ; n'inclus pas leur description) :\n");
             relations.skillDescriptions().forEach((name, description) ->
                     prompt.append("- ").append(skillLine(name, description)).append('\n'));
             if (relations.skillNames().contains(FUNDAMENTALS_SKILL_NAME)) {
@@ -349,10 +377,80 @@ public class ChallengeGenerationService {
         };
     }
 
-    private List<ImportedQuestion> parseQuestions(String prompt, int count, GenerationProviderRegistry.Resolved target) {
-        String answer = target.model() == null
-                ? target.provider().generateText(prompt)
-                : target.provider().generateText(prompt, target.model());
+    private ChallengeImportReport generateAndImport(
+            String prompt,
+            ChallengeGenerationRequest request,
+            Relations relations,
+            ContentStatus status,
+            GenerationProviderRegistry.Resolved target) {
+        String providerName = providerName(request, target);
+        String modelName = modelName(target);
+        ApiException lastEmptyResult = null;
+        for (int attempt = 1; attempt <= maxRetries + 1; attempt++) {
+            String answer;
+            try {
+                answer = target.model() == null
+                        ? target.provider().generateText(prompt)
+                        : target.provider().generateText(prompt, target.model());
+            } catch (ApiException exception) {
+                logAttempt(attempt, providerName, modelName, "inconnu", 0);
+                throw exception;
+            }
+            List<ImportedQuestion> receivedQuestions;
+            try {
+                receivedQuestions = parseQuestions(answer);
+            } catch (ApiException exception) {
+                logAttempt(attempt, providerName, modelName, "inconnu", 0);
+                lastEmptyResult = exception;
+                if (attempt <= maxRetries) {
+                    continue;
+                }
+                throw exception;
+            }
+            int receivedCount = receivedQuestions.size();
+            List<ImportedQuestion> questions = receivedQuestions.stream()
+                    .limit(request.count())
+                    .filter(Objects::nonNull)
+                    .toList();
+            if (questions.isEmpty()) {
+                logAttempt(attempt, providerName, modelName, String.valueOf(receivedCount), 0);
+                lastEmptyResult = new ApiException(HttpStatus.BAD_GATEWAY,
+                        "Le fournisseur de génération n'a fourni aucune question exploitable. Aucune question n'a été importée.");
+                if (attempt <= maxRetries) {
+                    continue;
+                }
+                throw lastEmptyResult;
+            }
+            List<ChallengeImportReport.ImportWarning> taxonomyWarnings = new ArrayList<>();
+            List<ImportedQuestion> boundQuestions;
+            try {
+                boundQuestions = bind(questions, request, relations, taxonomyWarnings);
+            } catch (ApiException exception) {
+                logAttempt(attempt, providerName, modelName, String.valueOf(receivedCount), 0);
+                throw exception;
+            }
+            ChallengeImportReport report = challengeImportService.importQuestions(boundQuestions, status, false);
+            int validCount = validQuestionCount(report);
+            logAttempt(attempt, providerName, modelName, String.valueOf(receivedCount), validCount);
+            if (validCount == 0) {
+                lastEmptyResult = new ApiException(HttpStatus.BAD_GATEWAY,
+                        "Le fournisseur de génération n'a fourni aucune question exploitable. Aucune question n'a été importée.");
+                if (attempt <= maxRetries) {
+                    continue;
+                }
+                throw lastEmptyResult;
+            }
+            ChallengeImportReport generationReport = addGenerationWarnings(report, request.count(), receivedCount);
+            return addWarnings(generationReport, taxonomyWarnings);
+        }
+        throw lastEmptyResult;
+    }
+
+    private List<ImportedQuestion> parseQuestions(String answer) {
+        if (answer == null || answer.isBlank()) {
+            throw new ApiException(HttpStatus.BAD_GATEWAY,
+                    "La réponse du fournisseur de génération n'est pas un JSON valide : aucune question n'a été importée.");
+        }
         ChallengeImportRequest importRequest;
         try {
             importRequest = objectMapper.readValue(answer, ChallengeImportRequest.class);
@@ -360,27 +458,89 @@ public class ChallengeGenerationService {
             throw new ApiException(HttpStatus.BAD_GATEWAY,
                     "La réponse du fournisseur de génération n'est pas un JSON valide : aucune question n'a été importée.");
         }
-        List<ImportedQuestion> questions = importRequest.questions();
-        if (questions == null || questions.isEmpty()) {
-            throw new ApiException(HttpStatus.BAD_GATEWAY,
-                    "La réponse du fournisseur de génération ne contient aucune question.");
-        }
-        if (questions.size() != count) {
-            throw new ApiException(HttpStatus.BAD_GATEWAY,
-                    "Le fournisseur de génération devait produire exactement " + count
-                            + " questions, mais en a retourné " + questions.size() + ". Aucune question n'a été importée.");
-        }
-        return questions;
+        return importRequest == null || importRequest.questions() == null
+                ? List.of()
+                : importRequest.questions();
     }
 
-    private List<ImportedQuestion> bind(List<ImportedQuestion> questions, ChallengeGenerationRequest request, Relations relations) {
-        return questions.stream()
-                .map(question -> bindOne(question, request, relations))
+    private String providerName(ChallengeGenerationRequest request, GenerationProviderRegistry.Resolved target) {
+        if (request.provider() != null && !request.provider().isBlank()) {
+            return request.provider().trim().toLowerCase(Locale.ROOT);
+        }
+        String providerName = target.provider().providerName();
+        if (providerName != null && !providerName.isBlank()) {
+            return providerName;
+        }
+        String defaultProvider = generationProviderRegistry.defaultProviderId();
+        return defaultProvider == null || defaultProvider.isBlank()
+                ? target.provider().getClass().getSimpleName()
+                : defaultProvider;
+    }
+
+    private String modelName(GenerationProviderRegistry.Resolved target) {
+        if (target.model() != null && !target.model().isBlank()) {
+            return target.model();
+        }
+        return generationProviderRegistry.options().stream()
+                .filter(option -> option.id().equals(target.provider().providerName()))
+                .flatMap(option -> option.models().stream())
+                .findFirst()
+                .orElse("par défaut");
+    }
+
+    private void logAttempt(int attempt, String provider, String model, String received, int valid) {
+        logger.info("Tentative de génération numéro={} provider={} model={} reçu={} valide={}",
+                attempt, provider, model, received, valid);
+    }
+
+    private int validQuestionCount(ChallengeImportReport report) {
+        return report.planned().created() + report.planned().updated() + report.duplicates().size();
+    }
+
+    private ChallengeImportReport addGenerationWarnings(
+            ChallengeImportReport report,
+            int requestedCount,
+            int receivedCount) {
+        int createdCount = report.executed().created();
+        int successfulCount = report.planned().created() + report.planned().updated() + report.duplicates().size();
+        if (receivedCount == requestedCount && successfulCount == requestedCount
+                && report.errors().isEmpty() && report.duplicates().isEmpty()) {
+            return report;
+        }
+        List<ChallengeImportReport.ImportWarning> warnings = new ArrayList<>(report.warnings());
+        String message;
+        if (receivedCount > requestedCount) {
+            message = "Le fournisseur a retourné " + receivedCount + " questions pour " + requestedCount
+                    + " demandées : seules les " + requestedCount + " premières ont été conservées. ";
+        } else if (receivedCount < requestedCount) {
+            message = "Le fournisseur devait produire " + requestedCount + " questions, mais en a retourné "
+                    + receivedCount + ". ";
+        } else {
+            message = "Certaines questions générées ont été rejetées ou détectées comme doublons. ";
+        }
+        message += requestedCount + " demandées, " + createdCount + " réellement créées.";
+        warnings.add(new ChallengeImportReport.ImportWarning(0, "Génération", message));
+        return new ChallengeImportReport(
+                report.dryRun(), report.planned(), report.executed(), report.duplicates(), report.errors(), warnings);
+    }
+
+    private List<ImportedQuestion> bind(
+            List<ImportedQuestion> questions,
+            ChallengeGenerationRequest request,
+            Relations relations,
+            List<ChallengeImportReport.ImportWarning> taxonomyWarnings) {
+        return IntStream.range(0, questions.size())
+                .mapToObj(index -> bindOne(questions.get(index), request, relations, index, taxonomyWarnings))
                 .toList();
     }
 
-    private ImportedQuestion bindOne(ImportedQuestion question, ChallengeGenerationRequest request, Relations relations) {
-        requireAllowedTaxonomy(question, relations);
+    private ImportedQuestion bindOne(
+            ImportedQuestion question,
+            ChallengeGenerationRequest request,
+            Relations relations,
+            int index,
+            List<ChallengeImportReport.ImportWarning> taxonomyWarnings) {
+        ResolvedTaxonomy taxonomy = resolveTaxonomy(question, relations, index, taxonomyWarnings);
         return new ImportedQuestion(
                 challengeIdentityService.generateExternalId(),
                 question.title(),
@@ -396,25 +556,66 @@ public class ChallengeGenerationService {
                 question.tradeoff(),
                 ChallengeTimePolicy.normalize(request.type(), question.estimatedTimeSeconds()),
                 question.points(),
-                question.categories(),
-                question.skills(),
+                taxonomy.categoryNames(),
+                taxonomy.skillNames(),
                 relations.profileCodes(),
                 question.scenario(),
                 question.stepOrder(),
                 question.options());
     }
 
-    private void requireAllowedTaxonomy(ImportedQuestion question, Relations relations) {
-        Set<String> categories = question.categories() == null ? Set.of() : question.categories();
-        Set<String> skills = question.skills() == null ? Set.of() : question.skills();
-        if (categories.isEmpty() || skills.isEmpty()) {
-            throw new ApiException(HttpStatus.BAD_GATEWAY,
-                    "Chaque question générée doit inclure au moins une catégorie et une compétence.");
-        }
-        if (!relations.categoryNames().containsAll(categories) || !relations.skillNames().containsAll(skills)) {
+    private ResolvedTaxonomy resolveTaxonomy(
+            ImportedQuestion question,
+            Relations relations,
+            int index,
+            List<ChallengeImportReport.ImportWarning> taxonomyWarnings) {
+        Set<String> receivedCategories = question.categories() == null ? Set.of() : question.categories();
+        Set<String> receivedSkills = question.skills() == null ? Set.of() : question.skills();
+        Set<String> categories = resolveSingleSelection(receivedCategories, relations.categoryNames());
+        Set<String> skills = resolveSingleSelection(receivedSkills, relations.skillNames());
+        if (categories.isEmpty() || skills.isEmpty()
+                || !relations.categoryNames().containsAll(categories)
+                || !relations.skillNames().containsAll(skills)) {
+            logger.warn(
+                    "Question générée rejetée pour taxonomie : titre={}, catégories reçues={}, catégories sélectionnées={}, compétences reçues={}, compétences sélectionnées={}",
+                    question.title(), sortedNames(receivedCategories), sortedNames(relations.categoryNames()),
+                    sortedNames(receivedSkills), sortedNames(relations.skillNames()));
             throw new ApiException(HttpStatus.BAD_GATEWAY,
                     "Une question générée contient une catégorie ou une compétence non sélectionnée. Aucune question n'a été importée.");
         }
+        List<String> differences = new ArrayList<>();
+        if (relations.categoryNames().size() == 1 && !relations.categoryNames().equals(receivedCategories)) {
+            differences.add("catégorie");
+        }
+        if (relations.skillNames().size() == 1 && !relations.skillNames().equals(receivedSkills)) {
+            differences.add("compétence");
+        }
+        if (!differences.isEmpty()) {
+            taxonomyWarnings.add(new ChallengeImportReport.ImportWarning(
+                    index, question.title(), "Valeur(s) de " + String.join(" et ", differences)
+                            + " remplacée(s) par la sélection unique de l'administrateur."));
+        }
+        return new ResolvedTaxonomy(categories, skills);
+    }
+
+    private ChallengeImportReport addWarnings(
+            ChallengeImportReport report,
+            List<ChallengeImportReport.ImportWarning> additionalWarnings) {
+        if (additionalWarnings.isEmpty()) {
+            return report;
+        }
+        List<ChallengeImportReport.ImportWarning> warnings = new ArrayList<>(report.warnings());
+        warnings.addAll(additionalWarnings);
+        return new ChallengeImportReport(
+                report.dryRun(), report.planned(), report.executed(), report.duplicates(), report.errors(), warnings);
+    }
+
+    private Set<String> resolveSingleSelection(Set<String> received, Set<String> selected) {
+        return selected.size() == 1 ? selected : received;
+    }
+
+    private List<String> sortedNames(Set<String> names) {
+        return names.stream().sorted().toList();
     }
 
     private String skillLine(String name, String description) {
@@ -426,5 +627,8 @@ public class ChallengeGenerationService {
             Set<String> skillNames,
             Map<String, String> skillDescriptions,
             Set<String> profileCodes) {
+    }
+
+    private record ResolvedTaxonomy(Set<String> categoryNames, Set<String> skillNames) {
     }
 }
