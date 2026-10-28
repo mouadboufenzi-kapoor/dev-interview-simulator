@@ -49,7 +49,7 @@ export const SetupProfileStep = ({ selectedProfile, onSelect }: Props) => (
           Choisissez votre profil
         </PageTitle>
         <p className="text-sm sm:text-base text-muted font-sans max-w-lg mx-auto leading-relaxed">
-          Entraînez-vous avec une bibliothèque de plus de 2 000 questions d’entretien, enrichie en continu.
+          Entraînez-vous avec une bibliothèque de plus de 4 000 questions d’entretien, enrichie en continu.
         </p>
       </div>
 

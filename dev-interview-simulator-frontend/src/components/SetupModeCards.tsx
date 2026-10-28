@@ -23,7 +23,7 @@ const MODES: ModeCardConfig[] = [
   },
   {
     id: 'ARCHITECTURE',
-    title: 'Architecture',
+    title: 'Mise en situation',
     description: 'Résolvez des problèmes de conception de systèmes.',
     icon: Layers,
   },
