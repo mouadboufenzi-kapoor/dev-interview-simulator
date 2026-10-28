@@ -17,7 +17,7 @@ export const Footer: React.FC = () => {
         </div>
 
         <p className="text-center text-[11px] font-mono text-nav-muted">
-          +2000 Questions/Situations actualisées et enrichies en continu.
+          +4 000 Questions/Situations actualisées et enrichies en continu.
         </p>
       </div>
     </footer>
