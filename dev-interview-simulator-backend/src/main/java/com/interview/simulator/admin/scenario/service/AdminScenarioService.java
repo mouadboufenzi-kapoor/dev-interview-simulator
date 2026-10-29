@@ -11,6 +11,9 @@ import com.interview.simulator.challenge.repository.InterviewScenarioRepository;
 import com.interview.simulator.exception.ApiException;
 import com.interview.simulator.exception.ResourceNotFoundException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,10 +34,13 @@ public class AdminScenarioService {
     }
 
     @Transactional(readOnly = true)
-    public List<AdminScenarioResponse> getActiveScenarios() {
-        return interviewScenarioRepository.findByActiveTrueOrderByTitleAsc().stream()
-                .map(this::toResponse)
-                .toList();
+    public Page<AdminScenarioResponse> getScenarios(int page, int size) {
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.max(1, Math.min(size, 100));
+        return interviewScenarioRepository.findByModeOrderByTitleAscIdAsc(
+                        ChallengeType.ARCHITECTURE,
+                        PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.ASC, "title", "id")))
+                .map(this::toResponse);
     }
 
     @Transactional

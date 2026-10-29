@@ -33,8 +33,7 @@ class SimulationSecurityTest {
                 null,                            // profileId
                 Set.of(),                        // categoryIds
                 Set.of(),                        // skillIds
-                null,                            // excludeChallengeIds
-                5
+                null                             // excludeChallengeIds
         );
 
         SimulationResponse response = simulationService.startSimulation(request);
