@@ -170,9 +170,6 @@ public class SimulationService {
             if (selectedChallenges.size() > 10) {
                 selectedChallenges = selectedChallenges.subList(0, 10);
             }
-        } else if (request.questionCount() != null
-                && request.questionCount() < selectedChallenges.size()) {
-            selectedChallenges = selectedChallenges.subList(0, request.questionCount());
         }
 
         // 4. Créer la simulation

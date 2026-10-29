@@ -2,6 +2,8 @@ package com.interview.simulator.challenge.repository;
 
 import com.interview.simulator.challenge.entity.ChallengeType;
 import com.interview.simulator.challenge.entity.InterviewScenario;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -22,4 +24,8 @@ public interface InterviewScenarioRepository extends JpaRepository<InterviewScen
     boolean existsByModeAndActiveTrue(ChallengeType mode);
 
     List<InterviewScenario> findByActiveTrueOrderByTitleAsc();
+
+    Page<InterviewScenario> findByModeOrderByTitleAscIdAsc(ChallengeType mode, Pageable pageable);
+
+    Page<InterviewScenario> findByModeAndActiveTrueOrderByTitleAscIdAsc(ChallengeType mode, Pageable pageable);
 }

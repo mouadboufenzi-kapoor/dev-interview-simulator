@@ -6,6 +6,7 @@ import com.interview.simulator.admin.scenario.dto.AdminScenarioStepResponse;
 import com.interview.simulator.admin.scenario.service.AdminScenarioService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -25,8 +26,10 @@ public class AdminScenarioController {
     }
 
     @GetMapping
-    public List<AdminScenarioResponse> getActiveScenarios() {
-        return adminScenarioService.getActiveScenarios();
+    public Page<AdminScenarioResponse> getScenarios(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return adminScenarioService.getScenarios(page, size);
     }
 
     @GetMapping("/{id}/steps")
