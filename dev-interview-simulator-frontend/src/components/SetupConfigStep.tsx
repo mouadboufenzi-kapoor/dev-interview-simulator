@@ -27,8 +27,6 @@ interface Props {
   onSelectMode: (mode: ChallengeType) => void;
   selectedDifficulty: DifficultyLevel;
   onSelectDifficulty: (difficulty: DifficultyLevel) => void;
-  questionCount: number;
-  onQuestionCountChange: (count: number) => void;
   topics: TopicsProps;
 }
 
@@ -48,8 +46,6 @@ export const SetupConfigStep = ({
   onSelectMode,
   selectedDifficulty,
   onSelectDifficulty,
-  questionCount,
-  onQuestionCountChange,
   topics,
 }: Props) => {
   const levelSectionRef = useRef<HTMLDivElement>(null);
@@ -131,30 +127,6 @@ export const SetupConfigStep = ({
                 les afficher serait trompeur. QCM, Code Review et Raisonnement
                 séquentiel, eux, filtrent réellement le contenu. */}
             {selectedMode !== 'ARCHITECTURE' && <SetupTopics {...topics} />}
-
-            {/* Architecture step options (discreetly visible if ARCHITECTURE) */}
-            {selectedMode === 'ARCHITECTURE' && (
-              <div className="inline-flex items-center gap-3 text-xs font-sans text-muted bg-card border-2 border-border px-4 py-2 rounded">
-                <span>Étapes du scénario :</span>
-                <div className="flex items-center gap-1">
-                  {[3, 4, 5].map((count) => (
-                    <button
-                      key={count}
-                      type="button"
-                      onClick={() => onQuestionCountChange(count)}
-                      className={`w-8 h-8 rounded-sm text-xs font-mono font-bold transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-bg ${
-                        questionCount === count
-                          ? 'bg-brand text-cta-text'
-                          : 'text-muted hover:bg-selected'
-                      }`}
-                    >
-                      {count}
-                    </button>
-                  ))}
-                  <span className="text-[11px] font-mono uppercase tracking-[0.06em] text-muted ml-1">étapes</span>
-                </div>
-              </div>
-            )}
 
             {/* Prominent Action Button (Rosewood Accent: crimson-700) */}
             <div ref={startButtonRef} className="scroll-mt-14 sm:scroll-mt-16 pt-2">
