@@ -6,6 +6,8 @@ import { fieldInputSmall, fieldLabel, panel, panelToolbar, panelForm, emptyState
 import { IconButton } from './common/IconButton';
 import { Plus, ListOrdered } from 'lucide-react';
 
+const PAGE_SIZE = 10;
+
 interface Props {
   onAddStep: (scenarioId: number) => void;
 }
@@ -13,6 +15,9 @@ interface Props {
 export const AdminScenarioPanel = ({ onAddStep }: Props) => {
   const [scenarios, setScenarios] = useState<AdminScenario[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [stepsByScenario, setStepsByScenario] = useState<Record<number, AdminScenarioStep[]>>({});
   const [creating, setCreating] = useState(false);
@@ -24,9 +29,14 @@ export const AdminScenarioPanel = ({ onAddStep }: Props) => {
   const loadScenarios = async () => {
     setLoading(true);
     try {
-      setScenarios(await scenarioApi.getScenarios());
+      const result = await scenarioApi.getScenarios({ page, size: PAGE_SIZE });
+      setScenarios(result.content ?? []);
+      setTotalPages(result.totalPages ?? 0);
+      setTotalElements(result.totalElements ?? 0);
     } catch {
       setScenarios([]);
+      setTotalPages(0);
+      setTotalElements(0);
     } finally {
       setLoading(false);
     }
@@ -34,7 +44,7 @@ export const AdminScenarioPanel = ({ onAddStep }: Props) => {
 
   useEffect(() => {
     loadScenarios();
-  }, []);
+  }, [page]);
 
   const toggleSteps = async (id: number) => {
     if (expandedId === id) {
@@ -120,9 +130,10 @@ export const AdminScenarioPanel = ({ onAddStep }: Props) => {
 
       {loading ? (
         <div className={emptyState}>Chargement...</div>
-      ) : scenarios.length === 0 ? (
+      ) : totalElements === 0 ? (
         <div className={emptyState}>Aucun scénario Architecture pour le moment.</div>
       ) : (
+        <>
         <div className="divide-y divide-border-subtle">
           {scenarios.map(scenario => (
             <div key={scenario.id}>
@@ -167,6 +178,21 @@ export const AdminScenarioPanel = ({ onAddStep }: Props) => {
             </div>
           ))}
         </div>
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-6 py-4 border-t border-border-subtle text-xs text-ink-secondary">
+            <span>{page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, totalElements)} sur {totalElements}</span>
+            <div className="flex items-center gap-2">
+              <Button variant="secondary" size="sm" onClick={() => setPage(current => Math.max(0, current - 1))} disabled={page === 0 || loading}>
+                Précédent
+              </Button>
+              <span>Page {page + 1} / {totalPages}</span>
+              <Button variant="secondary" size="sm" onClick={() => setPage(current => Math.min(totalPages - 1, current + 1))} disabled={page >= totalPages - 1 || loading}>
+                Suivant
+              </Button>
+            </div>
+          </div>
+        )}
+        </>
       )}
     </div>
   );

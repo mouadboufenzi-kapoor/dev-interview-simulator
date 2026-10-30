@@ -33,7 +33,6 @@ export const SetupScreen = ({
     activeMode || 'SITUATIONAL_QCM'
   );
   const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyLevel>('JUNIOR');
-  const [questionCount, setQuestionCount] = useState(5);
   const [categories, setCategories] = useState<Category[]>([]);
   const [skills, setSkills] = useState<Skill[]>([]);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>(initialCategoryIds ?? []);
@@ -84,7 +83,6 @@ export const SetupScreen = ({
       difficulty: selectedDifficulty,
       categoryIds: selectedCategoryIds.length > 0 ? selectedCategoryIds : undefined,
       skillIds: selectedSkillIds.length > 0 ? selectedSkillIds : undefined,
-      questionCount: selectedMode === 'ARCHITECTURE' ? questionCount : undefined,
     });
   };
 
@@ -135,8 +133,6 @@ export const SetupScreen = ({
       onSelectMode={setSelectedMode}
       selectedDifficulty={selectedDifficulty}
       onSelectDifficulty={setSelectedDifficulty}
-      questionCount={questionCount}
-      onQuestionCountChange={setQuestionCount}
       topics={{
         categories,
         skills,

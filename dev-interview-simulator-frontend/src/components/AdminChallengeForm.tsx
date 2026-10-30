@@ -56,8 +56,8 @@ export const AdminChallengeForm = ({ challengeId, defaultScenarioId, onBack, onS
     simulationApi.getSkills()
       .then(setSkills)
       .catch(() => setSkills([]));
-    scenarioApi.getScenarios()
-      .then(setScenarios)
+    scenarioApi.getScenarios({ page: 0, size: 100 })
+      .then(result => setScenarios(result.content ?? []))
       .catch(() => setScenarios([]));
   }, []);
 

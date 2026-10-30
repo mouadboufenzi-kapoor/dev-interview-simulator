@@ -295,8 +295,8 @@ export interface AdminScenarioStep {
 }
 
 export const scenarioApi = {
-  getScenarios: async (): Promise<AdminScenario[]> => {
-    const { data } = await apiClient.get('/admin/scenarios');
+  getScenarios: async (params: { page?: number; size?: number } = {}): Promise<Page<AdminScenario>> => {
+    const { data } = await apiClient.get('/admin/scenarios', { params });
     return data;
   },
 
