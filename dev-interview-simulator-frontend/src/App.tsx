@@ -29,6 +29,9 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
+  // Après un bilan, « Lancer une nouvelle session » doit retomber sur le choix
+  // du type de challenge : le profil ne doit plus être demandé.
+  const [skipProfileStepOnSetup, setSkipProfileStepOnSetup] = useState(false);
   const [reviseCategoryIds, setReviseCategoryIds] = useState<number[] | null>(null);
   const [reviseSkillIds, setReviseSkillIds] = useState<number[] | null>(null);
   const [showAccessModal, setShowAccessModal] = useState(false);
@@ -163,13 +166,26 @@ export default function App() {
     handleRestart();
   };
 
-  const handleRestart = () => {
+  // Sur mobile, un défilement lancé avant le remplacement de l'écran (page
+  // longue → page courte) est parfois abandonné par le navigateur : on le
+  // rejoue juste après le rendu, en défilement instantané.
+  const scrollToTopAfterRender = () => {
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    });
+  };
+
+  const goToSetup = ({ skipProfile = false }: { skipProfile?: boolean } = {}) => {
     setSimulation(null);
     setSummary(null);
     setError(null);
+    setSkipProfileStepOnSetup(skipProfile);
     setScreen('SETUP');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollToTopAfterRender();
   };
+
+  // Depuis le bilan ou un abandon : toujours le choix du challenge.
+  const handleRestart = () => goToSetup({ skipProfile: true });
 
   const handleAuthenticated = (authenticatedUser: AuthUser) => {
     setUser(authenticatedUser);
@@ -180,13 +196,7 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleOpenSetup = () => {
-    setSimulation(null);
-    setSummary(null);
-    setError(null);
-    setScreen('SETUP');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  const handleOpenSetup = () => goToSetup();
 
   // Page Paramètres (profil + apparence) — accessible depuis le menu utilisateur.
   const handleOpenSettings = () => {
@@ -214,10 +224,7 @@ export default function App() {
       } else {
         setReviseCategoryIds(filters.categoryIds ?? null);
         setReviseSkillIds(filters.skillIds ?? null);
-        setSimulation(null);
-        setSummary(null);
-        setScreen('SETUP');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        goToSetup();
       }
     } finally {
       reviseInFlight.current = false;
@@ -238,7 +245,7 @@ export default function App() {
   const handleLogout = () => {
     authApi.logout();
     setUser(null);
-    handleRestart();
+    goToSetup();
   };
 
   const handleSelectNavbarMode = (mode: ChallengeType) => {
@@ -311,7 +318,7 @@ export default function App() {
               activeMode={selectedDashboardMode}
               initialCategoryIds={reviseCategoryIds ?? undefined}
               initialSkillIds={reviseSkillIds ?? undefined}
-              skipProfileSelection={user !== null}
+              skipProfileSelection={user !== null || skipProfileStepOnSetup}
             />
           )}
 
