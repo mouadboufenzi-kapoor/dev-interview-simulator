@@ -16,6 +16,7 @@ public record UserStatsResponse(
         List<StatEntry> byCategory,
         List<StatEntry> bySkill,
         List<TypeStat> byType,
+        List<DifficultyStat> byDifficulty,
         List<WeakPointEntry> weakPoints,
         PagedSimulations simulations
 ) {
@@ -38,6 +39,13 @@ public record UserStatsResponse(
 
     public record TypeStat(
             String type,
+            int answered,
+            int correct,
+            double successRate
+    ) {}
+
+    public record DifficultyStat(
+            String difficulty,
             int answered,
             int correct,
             double successRate

@@ -18,7 +18,7 @@ export const UserDashboardProfile = ({ user, onChangeProfile }: Props) => (
       <UserRound className="h-5 w-5" />
     </div>
     <div className="min-w-0">
-      <p className="text-lg text-ink-secondary">
+      <p className="text-sm text-ink-secondary sm:text-base">
         Bonjour, {user.username}
       </p>
       <p className="truncate font-serif text-xl font-bold text-navy-900 sm:text-2xl">

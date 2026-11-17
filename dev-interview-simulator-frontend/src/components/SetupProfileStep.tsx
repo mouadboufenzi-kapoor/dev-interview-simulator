@@ -1,5 +1,6 @@
 import { BriefcaseBusiness, Cloud, ClipboardCheck } from 'lucide-react';
 import { PageTitle } from './common/PageTitle';
+import { StatTiles, type StatItem } from './common/StatTiles';
 
 export interface ProfileCardConfig {
   id: string;
@@ -33,6 +34,12 @@ export const PROFILES: ProfileCardConfig[] = [
   },
 ];
 
+const STATS: StatItem[] = [
+  { value: 7000, suffix: '+', label: 'Questions' },
+  { value: 100, suffix: '+', label: 'Utilisateurs' },
+  { value: 4, label: 'Challenges' },
+];
+
 interface Props {
   selectedProfile: string | null;
   onSelect: (profileId: string) => void;
@@ -49,8 +56,9 @@ export const SetupProfileStep = ({ selectedProfile, onSelect }: Props) => (
           Choisissez votre profil
         </PageTitle>
         <p className="text-sm sm:text-base text-muted font-sans max-w-lg mx-auto leading-relaxed">
-          Entraînez-vous avec une bibliothèque de plus de 6 000 questions d’entretien, enrichie en continu.
+          Entraînez-vous, testez vos connaissances et progressez grâce à des exercices inspirés des entretiens techniques.
         </p>
+        <StatTiles items={STATS} className="my-5 sm:my-6" />
       </div>
 
       <div className="grid w-full max-w-5xl grid-cols-1 items-stretch gap-6 text-left lg:grid-cols-2">

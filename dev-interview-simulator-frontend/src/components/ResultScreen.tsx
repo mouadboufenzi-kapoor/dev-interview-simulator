@@ -46,7 +46,7 @@ export const ResultScreen = ({
     <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8 py-4 sm:py-6">
       <ResultHeader mode={summary.mode} difficulty={summary.difficulty} />
 
-      <ResultEvaluation summary={summary} />
+      <ResultEvaluation summary={summary} isGuest={isGuest} />
 
       {technicalWeaknesses.length > 0 && (
         <ResultPriority

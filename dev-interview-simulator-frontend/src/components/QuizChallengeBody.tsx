@@ -1,7 +1,7 @@
 import type { SimulationChallengeResponse } from '../types';
 import { Badge } from './common/Badge';
 import { CodeBlock } from './common/CodeBlock';
-import { Layers, Code2 } from 'lucide-react';
+import { Code2 } from 'lucide-react';
 
 interface Props {
   challenge: SimulationChallengeResponse;
@@ -12,41 +12,41 @@ export const QuizChallengeBody = ({ challenge, showMultiChoiceHint }: Props) => 
   <>
     {/* Architecture Scenario Context (if Architecture) */}
     {challenge.type === 'ARCHITECTURE' && challenge.scenarioTitle && (
-      <div className="rounded-xl border border-navy-200 bg-navy-50 p-4 sm:p-5">
-        <div className="flex items-start gap-3">
-          <div className="p-2 rounded-lg bg-surface border border-navy-200 text-navy-900 flex-shrink-0">
-            <Layers className="w-4 h-4" />
-          </div>
-          <div className="space-y-1">
-            <p className="font-serif font-bold text-base text-navy-900">
-              {challenge.scenarioTitle}
-            </p>
-            {challenge.scenarioDescription && (
-              <p className="text-xs sm:text-sm text-ink-secondary leading-relaxed">
-                {challenge.scenarioDescription}
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
+      <header className="space-y-1.5 border-b border-border-subtle pb-4">
+        <p className="font-mono text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
+          Scénario
+        </p>
+        <p className="font-serif text-xl font-bold text-ink tracking-tight leading-snug break-words sm:text-2xl">
+          {challenge.scenarioTitle}
+        </p>
+        {challenge.scenarioDescription && (
+          <p className="text-xs sm:text-sm text-ink-secondary leading-relaxed break-words">
+            {challenge.scenarioDescription}
+          </p>
+        )}
+      </header>
     )}
 
     {/* Challenge Title */}
-    <div className="space-y-3">
-      <h2 className="font-serif text-2xl sm:text-3xl font-bold text-ink tracking-tight leading-snug break-words">
-        {challenge.title}
-      </h2>
+    {(challenge.type !== 'ARCHITECTURE' || challenge.context) && (
+      <div className="space-y-3">
+        {challenge.type !== 'ARCHITECTURE' && (
+          <h2 className="font-serif text-base sm:text-lg font-bold text-ink tracking-tight leading-snug break-words">
+            {challenge.title}
+          </h2>
+        )}
 
-      {/* Context box if available */}
-      {challenge.context && (
-        <div className="p-4 rounded-xl bg-canvas-subtle border border-border text-sm text-ink-secondary leading-relaxed break-words">
-          <div className="text-[11px] font-mono text-ink-muted uppercase tracking-wider mb-1 font-semibold">
-            Mise en situation
+        {/* Context box if available */}
+        {challenge.context && (
+          <div className="p-4 rounded-xl bg-canvas-subtle border border-border text-sm text-ink-secondary leading-relaxed break-words">
+            <div className="text-[11px] font-mono text-ink-muted uppercase tracking-wider mb-1 font-semibold">
+              Mise en situation
+            </div>
+            <p className="italic text-ink font-serif text-base">{challenge.context}</p>
           </div>
-          <p className="italic text-ink font-serif text-base">{challenge.context}</p>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    )}
 
     {/* Code Snippet for Code Review */}
     {challenge.codeSnippet && (

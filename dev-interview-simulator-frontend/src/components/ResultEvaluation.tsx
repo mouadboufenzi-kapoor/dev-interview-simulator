@@ -2,9 +2,12 @@ import type { SimulationResultDTO } from '../types';
 import { Badge } from './common/Badge';
 import { CheckCircle2, Clock, Gauge } from 'lucide-react';
 import { getAssessment } from '../utils/resultAnalysis';
+import { estimateLevel } from '../utils/levelEstimation';
+import { LevelEstimate } from './LevelEstimate';
 
 interface Props {
   summary: SimulationResultDTO;
+  isGuest: boolean;
 }
 
 const formatTime = (seconds: number) => {
@@ -13,8 +16,12 @@ const formatTime = (seconds: number) => {
   return mins > 0 ? `${mins}m ${secs.toString().padStart(2, '0')}s` : `${secs}s`;
 };
 
-export const ResultEvaluation = ({ summary }: Props) => {
+export const ResultEvaluation = ({ summary, isGuest }: Props) => {
   const assessment = getAssessment(summary.successPercentage);
+  const level = estimateLevel(
+    [{ difficulty: summary.difficulty, answered: summary.totalQuestions, correct: summary.correctAnswersCount }],
+    1
+  );
 
   const questionsWithRecordedTime = summary.questions.filter(question => question.timeSpentMs != null).length;
   const avgTimePerQuestion = questionsWithRecordedTime > 0
@@ -42,6 +49,15 @@ export const ResultEvaluation = ({ summary }: Props) => {
       </div>
 
       <p className="text-sm text-ink-secondary leading-relaxed">{assessment.desc}</p>
+
+      {level && (
+        <div className="pt-1">
+          <LevelEstimate
+            level={level}
+            note={isGuest ? 'première estimation, à confirmer' : 'd’après cette simulation'}
+          />
+        </div>
+      )}
 
       <div className="grid grid-cols-3 gap-2 sm:gap-4 pt-4 border-t border-border">
         <div className="space-y-1">

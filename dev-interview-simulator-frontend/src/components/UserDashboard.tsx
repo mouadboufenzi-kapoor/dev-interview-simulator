@@ -10,6 +10,8 @@ import { UserDashboardSkills } from './UserDashboardSkills';
 import { UserDashboardWeakPoints } from './UserDashboardWeakPoints';
 import { UserDashboardSimulations } from './UserDashboardSimulations';
 
+const MOBILE_MAX_WIDTH_QUERY = '(max-width: 767px)';
+
 interface Props {
   user: AuthUser;
   onStartSimulation: () => void;
@@ -22,6 +24,14 @@ export const UserDashboard = ({ user, onStartSimulation, onRevise, onOpenResult 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [simPage, setSimPage] = useState(0);
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia(MOBILE_MAX_WIDTH_QUERY).matches);
+
+  useEffect(() => {
+    const query = window.matchMedia(MOBILE_MAX_WIDTH_QUERY);
+    const handleChange = () => setIsMobile(query.matches);
+    query.addEventListener('change', handleChange);
+    return () => query.removeEventListener('change', handleChange);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -61,16 +71,16 @@ export const UserDashboard = ({ user, onStartSimulation, onRevise, onOpenResult 
       <UserDashboardProgress stats={stats} loading={loading} error={error} />
 
       {/* Desktop : Compétences + À travailler côte à côte ; mobile : empilés */}
-      <div className="grid gap-5 lg:grid-cols-2 lg:items-start lg:gap-6">
+      <div className="grid gap-5 md:grid-cols-2 md:gap-6">
         {stats && !loading && !error && stats.totalAnswers > 0 && (
-          <div className="order-1 lg:order-2">
-            <UserDashboardWeakPoints weakPoints={stats.weakPoints} onRevise={onRevise} />
+          <div className="order-1 md:order-2">
+            <UserDashboardWeakPoints weakPoints={stats.weakPoints} onRevise={onRevise} isMobile={isMobile} />
           </div>
         )}
 
         {stats && !loading && !error && (stats.byCategory.length > 0 || (stats.bySkill?.length ?? 0) > 0) && (
-          <div className="order-2 lg:order-1">
-            <UserDashboardSkills byCategory={stats.byCategory} bySkill={stats.bySkill ?? []} />
+          <div className="order-2 md:order-1">
+            <UserDashboardSkills byCategory={stats.byCategory} bySkill={stats.bySkill ?? []} isMobile={isMobile} />
           </div>
         )}
       </div>

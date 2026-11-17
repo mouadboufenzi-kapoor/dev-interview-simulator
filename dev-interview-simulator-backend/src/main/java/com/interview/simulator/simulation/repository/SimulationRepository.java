@@ -44,6 +44,16 @@ public interface SimulationRepository extends JpaRepository<Simulation, Long> {
     List<Object[]> findUserTypeStats(@Param("userId") Long userId);
 
     @Query(value = """
+        SELECT s.difficulty, COUNT(a.id), COUNT(CASE WHEN a.is_correct THEN 1 END)
+        FROM simulations s
+        JOIN simulation_challenges sc ON sc.simulation_id = s.id
+        JOIN simulation_answers a ON a.simulation_challenge_id = sc.id
+        WHERE s.user_id = :userId AND s.status = 'COMPLETED' AND s.difficulty IS NOT NULL
+        GROUP BY s.difficulty
+        """, nativeQuery = true)
+    List<Object[]> findUserDifficultyStats(@Param("userId") Long userId);
+
+    @Query(value = """
         SELECT cat.id, cat.name, COUNT(a.id), COUNT(CASE WHEN a.is_correct THEN 1 END)
         FROM simulations s
         JOIN simulation_challenges sc ON sc.simulation_id = s.id
