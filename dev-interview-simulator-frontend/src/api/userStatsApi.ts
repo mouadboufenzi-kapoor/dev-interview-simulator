@@ -19,6 +19,13 @@ export interface UserTypeStat {
   successRate: number;
 }
 
+export interface UserDifficultyStat {
+  difficulty: string;
+  answered: number;
+  correct: number;
+  successRate: number;
+}
+
 export interface UserRecentSimulation {
   id: number;
   mode?: string;
@@ -52,6 +59,7 @@ export interface UserStats {
   byCategory: UserStatEntry[];
   bySkill?: UserStatEntry[];
   byType: UserTypeStat[];
+  byDifficulty?: UserDifficultyStat[];
   weakPoints: UserWeakPointEntry[];
   simulations: PagedSimulations;
 }

@@ -1,6 +1,8 @@
 import { BarChart3, Minus, TrendingDown, TrendingUp } from 'lucide-react';
 import { panelCard } from '../styles/ui';
 import type { UserStats } from '../api/userStatsApi';
+import { LevelEstimate } from './LevelEstimate';
+import { estimateLevel, levelPhrase } from '../utils/levelEstimation';
 
 interface Props {
   stats: UserStats | null;
@@ -34,45 +36,61 @@ const Kpi = ({ value, label }: { value: string; label: string }) => (
   </div>
 );
 
-export const UserDashboardProgress = ({ stats, loading, error }: Props) => (
-  <div className={`${panelCard} p-5 sm:p-6`}>
-    <div className="flex items-center justify-between gap-4">
-      <div className="flex items-center gap-2.5">
-        <h2 className="font-serif text-lg font-bold text-ink sm:text-xl">Votre progression</h2>
-        <BarChart3 className="hidden h-4 w-4 text-crimson-700 sm:block" />
+export const UserDashboardProgress = ({ stats, loading, error }: Props) => {
+  const level = stats ? estimateLevel(stats.byDifficulty ?? [], stats.completedSimulations) : null;
+
+  return (
+    <div className={`${panelCard} p-5 sm:p-6`}>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2.5">
+          <h2 className="font-serif text-lg font-bold text-ink sm:text-xl">Votre progression</h2>
+          <BarChart3 className="hidden h-4 w-4 text-crimson-700 sm:block" />
+        </div>
+        {stats && !loading && !error && (
+          <TrendBadge trend={stats.trend} recentRate={stats.recentSuccessRate} />
+        )}
       </div>
-      {stats && !loading && !error && (
-        <TrendBadge trend={stats.trend} recentRate={stats.recentSuccessRate} />
+
+      {loading ? (
+        <div className="mt-4 rounded-xl border border-dashed border-border bg-surface-elevated p-4 text-sm text-ink-muted">
+          Chargement de votre progression...
+        </div>
+      ) : error ? (
+        <div className="mt-4 rounded-xl border border-dashed border-border bg-surface-elevated p-4 text-sm text-ink-muted">
+          La progression n'est pas disponible pour le moment.
+        </div>
+      ) : !stats || stats.totalAnswers === 0 ? (
+        <div className="mt-4 rounded-xl border border-dashed border-border bg-surface-elevated p-4 text-sm leading-relaxed text-ink-muted">
+          Aucune réponse enregistrée pour l'instant. Lancez une simulation pour démarrer votre suivi.
+        </div>
+      ) : (
+        <>
+          <div className="mt-4 grid grid-cols-3 gap-3 sm:gap-8">
+            <Kpi
+              value={stats.averageSuccessRate != null ? `${Math.round(stats.averageSuccessRate)}%` : '—'}
+              label="Score moyen"
+            />
+            <Kpi
+              value={String(stats.completedSimulations)}
+              label={`Terminée${stats.completedSimulations > 1 ? 's' : ''}`}
+            />
+            <Kpi
+              value={stats.bestSuccessRate != null ? `${Math.round(stats.bestSuccessRate)}%` : '—'}
+              label="Meilleur score"
+            />
+          </div>
+
+          {level && (
+            <div className="mt-4 border-t border-border-subtle pt-3 sm:mt-5">
+              <LevelEstimate
+                level={level}
+                phrase={levelPhrase(level.index, stats.completedSimulations)}
+                note={level.provisional ? 'estimation initiale' : undefined}
+              />
+            </div>
+          )}
+        </>
       )}
     </div>
-
-    {loading ? (
-      <div className="mt-4 rounded-xl border border-dashed border-border bg-surface-elevated p-4 text-sm text-ink-muted">
-        Chargement de votre progression...
-      </div>
-    ) : error ? (
-      <div className="mt-4 rounded-xl border border-dashed border-border bg-surface-elevated p-4 text-sm text-ink-muted">
-        La progression n'est pas disponible pour le moment.
-      </div>
-    ) : !stats || stats.totalAnswers === 0 ? (
-      <div className="mt-4 rounded-xl border border-dashed border-border bg-surface-elevated p-4 text-sm leading-relaxed text-ink-muted">
-        Aucune réponse enregistrée pour l'instant. Lancez une simulation pour démarrer votre suivi.
-      </div>
-    ) : (
-      <div className="mt-4 grid grid-cols-3 gap-3 sm:gap-8">
-        <Kpi
-          value={stats.averageSuccessRate != null ? `${Math.round(stats.averageSuccessRate)}%` : '—'}
-          label="Score moyen"
-        />
-        <Kpi
-          value={String(stats.completedSimulations)}
-          label={`Terminée${stats.completedSimulations > 1 ? 's' : ''}`}
-        />
-        <Kpi
-          value={stats.bestSuccessRate != null ? `${Math.round(stats.bestSuccessRate)}%` : '—'}
-          label="Meilleur score"
-        />
-      </div>
-    )}
-  </div>
-);
+  );
+};
