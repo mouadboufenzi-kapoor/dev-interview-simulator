@@ -55,6 +55,12 @@ public class UserStatsService {
                 .sorted((first, second) -> compareRates(
                         first.successRate(), first.answered(), second.successRate(), second.answered()))
                 .toList();
+        List<UserStatsResponse.DifficultyStat> byDifficulty = unwrapRows(
+                simulationRepository.findUserDifficultyStats(userId)).stream()
+                .map(row -> new UserStatsResponse.DifficultyStat(
+                        (String) row[0], (int) number(row[1]), (int) number(row[2]),
+                        rate(number(row[2]), number(row[1]))))
+                .toList();
 
         Double recentRate = null;
         Double previousRate = null;
@@ -101,6 +107,7 @@ public class UserStatsService {
                 categories,
                 skills,
                 byType,
+                byDifficulty,
                 weakPoints(categories, skills),
                 pagedSimulations);
     }
@@ -212,7 +219,7 @@ public class UserStatsService {
         return new UserStatsResponse(
                 0, 0, 0, 0,
                 null, null, null, null, null, null,
-                List.of(), List.of(), List.of(), List.of(),
+                List.of(), List.of(), List.of(), List.of(), List.of(),
                 new UserStatsResponse.PagedSimulations(List.of(), 0, size, 0, 0));
     }
 }
