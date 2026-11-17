@@ -63,6 +63,12 @@
   --color-avatar-bg: #FFE88A;
   --color-avatar-text: #123C69;
   --color-highlight: #FFD23F;
+  --color-stat-1: #FFD23F;
+  --color-stat-1-text: #111111;
+  --color-stat-2: #123C69;
+  --color-stat-2-text: #FFFFFF;
+  --color-stat-3: #FF5A36;
+  --color-stat-3-text: #111111;
 
   /* ===== Anciens tokens (génèrent les utilitaires existants) =====
      Valeurs par défaut = Soleil/Clair. Re-teintés par les blocs [data-theme]
@@ -152,6 +158,12 @@
   --color-avatar-bg: var(--color-selected);
   --color-avatar-text: var(--color-brand);
   --color-highlight: var(--color-nav);
+  --color-stat-1: #FFD23F;
+  --color-stat-1-text: #111111;
+  --color-stat-2: #123C69;
+  --color-stat-2-text: #FFFFFF;
+  --color-stat-3: #FF5A36;
+  --color-stat-3-text: #111111;
 }
 
 [data-theme="soleil"][data-mode="dark"] {
@@ -184,6 +196,12 @@
   --color-avatar-bg: var(--color-selected);
   --color-avatar-text: var(--color-brand);
   --color-highlight: var(--color-nav);
+  --color-stat-1: #FFD23F;
+  --color-stat-1-text: #111111;
+  --color-stat-2: #7FA8D6;
+  --color-stat-2-text: #121212;
+  --color-stat-3: #FF7A59;
+  --color-stat-3-text: #121212;
 }
 
 [data-theme="menthe"][data-mode="light"] {
@@ -216,6 +234,12 @@
   --color-avatar-bg: var(--color-selected);
   --color-avatar-text: var(--color-brand);
   --color-highlight: var(--color-nav);
+  --color-stat-1: #8FE3C0;
+  --color-stat-1-text: #111111;
+  --color-stat-2: #123C69;
+  --color-stat-2-text: #FFFFFF;
+  --color-stat-3: #FF5A36;
+  --color-stat-3-text: #111111;
 }
 
 [data-theme="menthe"][data-mode="dark"] {
@@ -248,6 +272,12 @@
   --color-avatar-bg: var(--color-selected);
   --color-avatar-text: var(--color-brand);
   --color-highlight: var(--color-nav);
+  --color-stat-1: #8FE3C0;
+  --color-stat-1-text: #0E1A16;
+  --color-stat-2: #FF7A59;
+  --color-stat-2-text: #0E1A16;
+  --color-stat-3: #1B3A2E;
+  --color-stat-3-text: #E6F5EE;
 }
 
 [data-theme="encre"][data-mode="light"] {
@@ -280,6 +310,12 @@
   --color-avatar-bg: #F4F1EA;
   --color-avatar-text: #123C69;
   --color-highlight: #D6E2F2;
+  --color-stat-1: #123C69;
+  --color-stat-1-text: #F4F1EA;
+  --color-stat-2: #FF5A36;
+  --color-stat-2-text: #0B1F3A;
+  --color-stat-3: #D6E2F2;
+  --color-stat-3-text: #0B1F3A;
 }
 
 [data-theme="encre"][data-mode="dark"] {
@@ -312,6 +348,12 @@
   --color-avatar-bg: #F4F1EA;
   --color-avatar-text: #0F2744;
   --color-highlight: #1A2E4A;
+  --color-stat-1: #7FA8D6;
+  --color-stat-1-text: #0B1422;
+  --color-stat-2: #FF7A59;
+  --color-stat-2-text: #0B1422;
+  --color-stat-3: #1A2E4A;
+  --color-stat-3-text: #EAF1FB;
 }
 
 /* ===== Re-teintage des anciens tokens → palette canonique =====

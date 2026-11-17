@@ -16,8 +16,11 @@ export const Footer: React.FC = () => {
           <span className="text-[11px] sm:text-xs">Simulation d'entretiens techniques</span>
         </div>
 
+        <p className="text-center text-[11px] text-nav-muted">
+          La plateforme pour s'entraîner aux entretiens techniques.
+        </p>
         <p className="text-center text-[11px] font-mono text-nav-muted">
-          +6 000 Questions/Situations actualisées et enrichies en continu.
+          © 2026 Itlab.
         </p>
       </div>
     </footer>
