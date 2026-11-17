@@ -2,6 +2,7 @@ import type {
   ChallengeType,
   CompetencyResult,
   DifficultyLevel,
+  QuestionSummary,
   SimulationResultDTO,
   StartSimulationRequest,
 } from '../types';
@@ -119,6 +120,23 @@ export const analyzeResult = (results: CompetencyResult[]): ResultAnalysis => {
     toConsolidate,
     weakest: weaknesses[0] ?? null,
   };
+};
+
+export const groupSkillTagsByCategory = (
+  questions: QuestionSummary[]
+): Record<string, string[]> => {
+  const tagsByCategory = new Map<string, Set<string>>();
+  for (const question of questions) {
+    const questionSkills = question.skills ?? [];
+    for (const category of question.categories ?? []) {
+      const categoryTags = tagsByCategory.get(category) ?? new Set<string>();
+      questionSkills.forEach((skill) => categoryTags.add(skill));
+      tagsByCategory.set(category, categoryTags);
+    }
+  }
+  return Object.fromEntries(
+    [...tagsByCategory].map(([category, tags]) => [category, [...tags].sort()] as const)
+  );
 };
 
 /**

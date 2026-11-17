@@ -7,7 +7,7 @@ import { ResultCompetencies } from './ResultCompetencies';
 import { ResultPriority } from './ResultPriority';
 import { ResultGuestCta } from './ResultGuestCta';
 import { ResultQuestions } from './ResultQuestions';
-import { analyzeResult } from '../utils/resultAnalysis';
+import { analyzeResult, groupSkillTagsByCategory } from '../utils/resultAnalysis';
 
 interface Props {
   summary: SimulationResultDTO;
@@ -32,15 +32,11 @@ export const ResultScreen = ({
   const categoryResults = summary.categoryResults ?? (
     summary.competencySource === 'CATEGORY' ? summary.competencyResults ?? [] : []
   );
-  const skillResults = summary.skillResults ?? (
-    summary.competencySource === 'SKILL' ? summary.competencyResults ?? [] : []
-  );
   const categoryAnalysis = analyzeResult(categoryResults);
-  const skillAnalysis = analyzeResult(skillResults);
-  const weakestCategories = analyzeResult(summary.weakCategoryResults ?? categoryAnalysis.weaknesses).weaknesses;
-  const weakestSkills = analyzeResult(summary.weakSkillResults ?? skillAnalysis.weaknesses).weaknesses;
-  const technicalWeaknesses = weakestCategories.map((item) => ({ ...item, source: 'CATEGORY' as const }));
-  const transversalWeaknesses = weakestSkills.map((item) => ({ ...item, source: 'SKILL' as const }));
+  const technicalWeaknesses = analyzeResult(
+    summary.weakCategoryResults ?? categoryAnalysis.weaknesses
+  ).weaknesses;
+  const skillTagsByCategory = groupSkillTagsByCategory(summary.questions);
   // En Architecture, les filtres skill/catégorie sont ignorés par la requête côté backend :
   // afficher un bouton « ciblé » serait mensonger → diagnostic affiché sans CTA
   // (décision validée).
@@ -52,10 +48,10 @@ export const ResultScreen = ({
 
       <ResultEvaluation summary={summary} />
 
-      {(technicalWeaknesses.length > 0 || transversalWeaknesses.length > 0) && (
+      {technicalWeaknesses.length > 0 && (
         <ResultPriority
           technicalWeaknesses={technicalWeaknesses}
-          transversalWeaknesses={transversalWeaknesses}
+          tagsByCategory={skillTagsByCategory}
           summary={summary}
           loading={loading}
           onStart={onStart}
@@ -63,7 +59,6 @@ export const ResultScreen = ({
         />
       )}
 
-      {/* Les domaines techniques et compétences transversales restent séparés. */}
       {categoryAnalysis.strengths.length > 0 && (
         <ResultCompetencies
           title="Domaines maîtrisés"
@@ -72,6 +67,7 @@ export const ResultScreen = ({
           iconChipClassName="bg-success-soft border-success-border text-success"
           tone="success"
           items={categoryAnalysis.strengths}
+          tagsByCompetency={skillTagsByCategory}
         />
       )}
       {categoryAnalysis.toConsolidate.length > 0 && (
@@ -82,16 +78,7 @@ export const ResultScreen = ({
           iconChipClassName="bg-warning-soft border-warning-border text-navy-900"
           tone="navy"
           items={categoryAnalysis.toConsolidate}
-        />
-      )}
-      {skillAnalysis.toConsolidate.length > 0 && (
-        <ResultCompetencies
-          title="Compétences transversales à consolider"
-          subtitle="Méthodes et pratiques évaluées"
-          icon={<Target className="w-4 h-4" />}
-          iconChipClassName="bg-warning-soft border-warning-border text-navy-900"
-          tone="navy"
-          items={skillAnalysis.toConsolidate}
+          tagsByCompetency={skillTagsByCategory}
         />
       )}
 
