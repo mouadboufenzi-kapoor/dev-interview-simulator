@@ -1,18 +1,14 @@
 import { useState } from 'react';
-import { Target, ChevronDown, ChevronUp, Code2, Wrench } from 'lucide-react';
+import { Target, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from './common/Button';
 import { PageTitle } from './common/PageTitle';
 import type { AnalyzedCompetency } from '../utils/resultAnalysis';
 import type { SimulationResultDTO } from '../types';
 import { buildTargetedRequest } from '../utils/resultAnalysis';
 
-interface PriorityAxis extends AnalyzedCompetency {
-  source: 'CATEGORY' | 'SKILL';
-}
-
 interface Props {
-  technicalWeaknesses: PriorityAxis[];
-  transversalWeaknesses: PriorityAxis[];
+  technicalWeaknesses: AnalyzedCompetency[];
+  tagsByCategory: Record<string, string[]>;
   summary: SimulationResultDTO;
   loading: boolean;
   onStart: (request: ReturnType<typeof buildTargetedRequest>) => void;
@@ -21,79 +17,73 @@ interface Props {
 }
 
 const MAX_VISIBLE = 5;
+const TAG_CLASS_NAME =
+  'inline-flex rounded-full border border-border-subtle bg-surface px-1.5 py-0.5 text-[10px] font-medium text-ink-secondary';
 
 export const ResultPriority = ({
   technicalWeaknesses,
-  transversalWeaknesses,
+  tagsByCategory,
   summary,
   loading,
   onStart,
   showCta,
 }: Props) => {
   const [expanded, setExpanded] = useState(false);
-  const priority = technicalWeaknesses[0] ?? transversalWeaknesses[0];
+  const priority = technicalWeaknesses[0];
   if (!priority) return null;
 
-  const visibleTechnical = expanded
+  const visibleWeaknesses = expanded
     ? technicalWeaknesses
     : technicalWeaknesses.slice(0, MAX_VISIBLE);
-  // Keep transversal axes out of the compact overview when technical axes exist.
-  // If there are no technical weaknesses, show transversal ones immediately.
-  const visibleTransversal = expanded
-    ? transversalWeaknesses
-    : technicalWeaknesses.length === 0
-      ? transversalWeaknesses.slice(0, MAX_VISIBLE)
-      : [];
-  const hiddenCount =
-    technicalWeaknesses.length - visibleTechnical.length
-    + transversalWeaknesses.length - visibleTransversal.length;
+  const hiddenCount = technicalWeaknesses.length - visibleWeaknesses.length;
 
-  const renderFamily = (
-    label: string,
-    source: 'CATEGORY' | 'SKILL',
-    items: PriorityAxis[],
-    Icon: typeof Code2,
-    tone: 'technical' | 'transversal'
-  ) => {
-    if (items.length === 0) return null;
-    return (
-      <section
-        aria-label={`Axes ${label.toLowerCase()}`}
-        className="border-t border-border-subtle pt-3"
-      >
-        <div className="mb-2 flex items-center justify-between gap-3">
-          <span className={`inline-flex items-center gap-1.5 rounded-sm border-2 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide shadow-[2px_2px_0_var(--color-shadow)] ${tone === 'technical' ? 'border-navy-200 bg-navy-100 text-navy-900' : 'border-crimson-200 bg-crimson-100 text-crimson-700'}`}>
-            <Icon className="h-3 w-3" aria-hidden="true" /> {label}
-          </span>
-          <span className="text-[11px] text-ink-muted">
-            {items.length} axe{items.length > 1 ? 's' : ''}
-          </span>
-        </div>
-        <ul className="space-y-2">
-          {items.map((item, index) => (
-            <li key={`${source}-${item.id}`} className="flex items-center justify-between gap-3">
-              <span className="min-w-0 truncate text-sm font-semibold text-ink">{item.name}</span>
-              <span className={`flex-shrink-0 font-mono text-xs font-semibold ${index === 0 ? 'text-crimson-700' : 'text-ink-secondary'}`}>
-                {item.pct} %
-              </span>
+  const renderAxes = () => (
+    <section aria-label="Axes techniques" className="border-t border-border-subtle pt-3">
+      <ul className="space-y-2">
+        {visibleWeaknesses.map((item, index) => {
+          const [primaryTag, ...secondaryTags] = tagsByCategory[item.name] ?? [];
+          return (
+            <li key={item.id}>
+              <div className="flex items-center justify-between gap-2">
+                <span className="min-w-0 truncate text-sm font-semibold text-ink">{item.name}</span>
+                <div className="flex flex-shrink-0 items-center gap-1.5">
+                  {primaryTag && <span className={TAG_CLASS_NAME}>{primaryTag}</span>}
+                  {secondaryTags.length > 0 && (
+                    <div className="hidden items-center gap-1.5 sm:flex">
+                      {secondaryTags.map((tag) => (
+                        <span key={tag} className={TAG_CLASS_NAME}>
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <span className={`font-mono text-xs font-semibold ${index === 0 ? 'text-crimson-700' : 'text-ink-secondary'}`}>
+                    {item.pct} %
+                  </span>
+                </div>
+              </div>
             </li>
-          ))}
-        </ul>
-      </section>
-    );
-  };
+          );
+        })}
+      </ul>
+    </section>
+  );
 
   return (
     <section className="bg-surface border-[0.5px] border-card-border rounded-2xl p-5 shadow-elevated space-y-4 sm:p-6">
-      <div className="flex items-center gap-2.5">
-        <div className="p-2 rounded-lg bg-navy-100 border border-navy-200 text-navy-900 flex-shrink-0">
-          <Target className="w-4 h-4" />
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 rounded-lg bg-navy-100 border border-navy-200 text-navy-900 flex-shrink-0">
+            <Target className="w-4 h-4" />
+          </div>
+          <PageTitle as="h2" size="sm">À travailler en priorité</PageTitle>
         </div>
-        <PageTitle as="h2" size="sm">À travailler en priorité</PageTitle>
+        <span className="flex-shrink-0 text-[11px] text-ink-muted">
+          {technicalWeaknesses.length} axe{technicalWeaknesses.length > 1 ? 's' : ''}
+        </span>
       </div>
 
-      {renderFamily('Technique', 'CATEGORY', visibleTechnical, Code2, 'technical')}
-      {renderFamily('Transversal', 'SKILL', visibleTransversal, Wrench, 'transversal')}
+      {renderAxes()}
 
       {hiddenCount > 0 && (
         <button
@@ -118,7 +108,7 @@ export const ResultPriority = ({
             summary,
             priority,
             summary.questions.map((question) => question.challengeId),
-            priority.source
+            'CATEGORY'
           ))}
           className="w-full sm:w-auto"
         >

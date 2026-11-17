@@ -13,7 +13,7 @@ const INITIAL_VISIBLE = 4;
 
 export const ResultQuestions = ({ summary }: Props) => {
   const [openQuestionId, setOpenQuestionId] = useState<number | null>(null);
-  const [filter, setFilter] = useState<'ALL' | 'CORRECT' | 'INCORRECT' | 'NO_ANSWER'>('ALL');
+  const [filter, setFilter] = useState<'ALL' | 'CORRECT' | 'INCORRECT'>('ALL');
   const [showAll, setShowAll] = useState(false);
 
   const toggleAccordion = (id: number) => {
@@ -25,12 +25,13 @@ export const ResultQuestions = ({ summary }: Props) => {
   const filteredQuestions = summary.questions.filter((q) => {
     const status = getQuestionStatus(q);
     if (filter === 'CORRECT') return status === 'ANSWERED' && q.isCorrect;
-    if (filter === 'INCORRECT') return status === 'ANSWERED' && !q.isCorrect;
-    if (filter === 'NO_ANSWER') return status !== 'ANSWERED';
+    if (filter === 'INCORRECT') return status !== 'ANSWERED' || !q.isCorrect;
     return true;
   });
-  const incorrectCount = summary.questions.filter(q => getQuestionStatus(q) === 'ANSWERED' && !q.isCorrect).length;
-  const noAnswerCount = summary.questions.filter(q => getQuestionStatus(q) !== 'ANSWERED').length;
+  const incorrectCount = summary.questions.filter((q) => {
+    const status = getQuestionStatus(q);
+    return status !== 'ANSWERED' || !q.isCorrect;
+  }).length;
 
   // Densité visuelle : initialement seulement quelques questions, déploiement
   // à la demande (le filtre actif s'applique quelle que soit l'étendue).
@@ -82,16 +83,6 @@ export const ResultQuestions = ({ summary }: Props) => {
             }`}
           >
             Erreurs ({incorrectCount})
-          </button>
-          <button
-            onClick={() => setFilter('NO_ANSWER')}
-            className={`px-3 py-1 rounded-lg transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas ${
-              filter === 'NO_ANSWER'
-                ? 'bg-canvas-subtle text-ink font-semibold'
-                : 'text-ink-secondary hover:text-ink'
-            }`}
-          >
-            Sans réponse ({noAnswerCount})
           </button>
         </div>
       </div>

@@ -11,7 +11,11 @@ interface Props {
   iconChipClassName: string;
   tone: 'success' | 'crimson' | 'navy';
   items: AnalyzedCompetency[];
+  tagsByCompetency: Record<string, string[]>;
 }
+
+const TAG_CLASS_NAME =
+  'inline-flex rounded-full border border-border-subtle bg-surface px-1.5 py-0.5 text-[10px] font-medium text-ink-secondary';
 
 const TONE_STYLES = {
   success: { value: 'text-success', bar: 'bg-success' },
@@ -26,6 +30,7 @@ export const ResultCompetencies = ({
   iconChipClassName,
   tone,
   items,
+  tagsByCompetency,
 }: Props) => {
   const [expanded, setExpanded] = useState(false);
   const styles = TONE_STYLES[tone];
@@ -44,27 +49,40 @@ export const ResultCompetencies = ({
       </div>
 
       <ul className="space-y-3.5">
-        {visibleItems.map((c) => (
-          <li key={c.id} className="space-y-1.5">
-            <div className="flex items-center justify-between gap-3 text-sm">
-              <span className="font-semibold text-ink truncate">{c.name}</span>
-              <span
-                className={`font-mono text-xs font-semibold flex-shrink-0 ${styles.value}`}
-              >
-                {c.pct} %
-              </span>
-            </div>
-            <div className="h-1.5 rounded-full bg-canvas-subtle overflow-hidden">
-              <div
-                className={`h-full rounded-full ${styles.bar}`}
-                style={{ width: `${c.pct}%` }}
-              />
-            </div>
-            <p className="text-[11px] text-ink-muted">
-              {c.correct} bonne(s) réponse(s) sur {c.total}
-            </p>
-          </li>
-        ))}
+        {visibleItems.map((c) => {
+          const [primaryTag, ...secondaryTags] = tagsByCompetency[c.name] ?? [];
+          return (
+            <li key={c.id} className="space-y-1.5">
+              <div className="flex items-center justify-between gap-2 text-sm">
+                <span className="min-w-0 truncate font-semibold text-ink">{c.name}</span>
+                <div className="flex flex-shrink-0 items-center gap-1.5">
+                  {primaryTag && <span className={TAG_CLASS_NAME}>{primaryTag}</span>}
+                  {secondaryTags.length > 0 && (
+                    <div className="hidden items-center gap-1.5 sm:flex">
+                      {secondaryTags.map((tag) => (
+                        <span key={tag} className={TAG_CLASS_NAME}>
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <span className={`font-mono text-xs font-semibold ${styles.value}`}>
+                    {c.pct} %
+                  </span>
+                </div>
+              </div>
+              <div className="h-1.5 rounded-full bg-canvas-subtle overflow-hidden">
+                <div
+                  className={`h-full rounded-full ${styles.bar}`}
+                  style={{ width: `${c.pct}%` }}
+                />
+              </div>
+              <p className="text-[11px] text-ink-muted">
+                {c.correct} bonne(s) réponse(s) sur {c.total}
+              </p>
+            </li>
+          );
+        })}
       </ul>
 
       {items.length > 4 && (
