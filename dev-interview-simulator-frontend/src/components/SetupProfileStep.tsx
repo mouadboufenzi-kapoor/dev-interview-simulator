@@ -1,5 +1,4 @@
 import { BriefcaseBusiness, Cloud, ClipboardCheck } from 'lucide-react';
-import { PageTitle } from './common/PageTitle';
 import { StatTiles, type StatItem } from './common/StatTiles';
 
 export interface ProfileCardConfig {
@@ -34,6 +33,8 @@ export const PROFILES: ProfileCardConfig[] = [
   },
 ];
 
+const CHALLENGE_TAGS = ['QCM', 'Code review', 'Mises en situation', 'Raisonnement séquentiel'];
+
 const STATS: StatItem[] = [
   { value: 7000, suffix: '+', label: 'Questions' },
   { value: 100, suffix: '+', label: 'Utilisateurs' },
@@ -46,18 +47,29 @@ interface Props {
 }
 
 export const SetupProfileStep = ({ selectedProfile, onSelect }: Props) => (
-  <div className="screen-transition relative w-full min-h-[calc(80vh-80px)] flex flex-col items-center justify-center py-10 sm:py-16 px-4">
+  <div className="screen-transition relative w-full flex flex-col items-center pt-7 pb-4 sm:pt-10 sm:pb-6 px-4">
     <div className="w-full max-w-4xl mx-auto space-y-10 sm:space-y-12 text-center">
-      <div className="space-y-4">
-        <p className="font-mono text-[11px] uppercase tracking-[0.06em] text-muted font-medium">
-          InterviewLab
-        </p>
-        <PageTitle size="hero">
-          Choisissez votre profil
-        </PageTitle>
+      <div className="space-y-6">
+        <h1 className="mx-auto font-serif font-bold text-brand text-center leading-[1.12] tracking-[-0.02em] text-[clamp(24px,8vw,58px)] [text-wrap:balance] mb-[0.5em]">
+          Réussissez vos <span className="hero-hl">entretiens techniques.</span>
+        </h1>
         <p className="text-sm sm:text-base text-muted font-sans max-w-lg mx-auto leading-relaxed">
-          Entraînez-vous, testez vos connaissances et progressez grâce à des exercices inspirés des entretiens techniques.
+          Des exercices inspirés de situations réelles : en Java, Spring Boot, Full Stack, base de données et bien plus.
         </p>
+        <ul className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-3" aria-label="Types de challenges">
+          {CHALLENGE_TAGS.map((tag, index) => (
+            <li
+              key={tag}
+              /* Mobile : 3 pastilles suffisent pour laisser la carte
+                 Développeur visible ; la 4e n'apparaît qu'à partir de sm. */
+              className={`whitespace-nowrap rounded-full border-2 border-brand bg-white px-2 py-1 text-xs font-semibold text-text shadow-card dark:bg-card sm:px-3 sm:py-1.5 sm:text-[15px] ${
+                index === CHALLENGE_TAGS.length - 1 ? 'hidden sm:block' : ''
+              }`}
+            >
+              {tag}
+            </li>
+          ))}
+        </ul>
         <StatTiles items={STATS} className="my-5 sm:my-6" />
       </div>
 
@@ -88,7 +100,7 @@ export const SetupProfileStep = ({ selectedProfile, onSelect }: Props) => (
                 >
                   <Icon className="w-4 h-4 stroke-[2]" />
                 </div>
-                <span className="rounded border border-border bg-selected px-2 py-1 font-mono text-[10px] uppercase tracking-[0.06em] text-text">
+                <span className="rounded border-2 border-border bg-[#D6F5E3] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.06em] text-[#14532D] shadow-card">
                   Disponible
                 </span>
               </div>
@@ -101,6 +113,13 @@ export const SetupProfileStep = ({ selectedProfile, onSelect }: Props) => (
                   {profile.description}
                 </p>
               </div>
+
+              <span
+                aria-hidden="true"
+                className="mt-5 inline-flex min-h-11 w-full items-center justify-center rounded bg-brand px-4 text-sm font-semibold text-cta-text sm:w-auto"
+              >
+                Commencer →
+              </span>
             </button>
           );
         })}

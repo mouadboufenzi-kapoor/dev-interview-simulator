@@ -43,7 +43,7 @@ export const ResultScreen = ({
   const showTargetedCta = summary.mode !== 'ARCHITECTURE';
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8 py-4 sm:py-6">
+    <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8 py-1 sm:py-2">
       <ResultHeader mode={summary.mode} difficulty={summary.difficulty} />
 
       <ResultEvaluation summary={summary} isGuest={isGuest} />
