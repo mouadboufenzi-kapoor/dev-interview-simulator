@@ -297,7 +297,7 @@ export const QuizScreen = ({ simulation, onFinish, onError, finishing }: Props) 
           utile sur écran étroit), identique à partir de sm. */}
       <div
         ref={challengeSurfaceRef}
-        className={`scroll-mt-14 sm:scroll-mt-16 border-[0.5px] rounded-2xl p-5 sm:p-9 space-y-7 transition-colors duration-200 ${
+        className={`scroll-mt-14 sm:scroll-mt-16 border-2 rounded-2xl p-5 sm:p-9 space-y-7 transition-colors duration-200 ${
           secondsRemaining <= 15 && !feedback && !submitting
             ? 'border-danger-border bg-danger-soft shadow-[0_2px_10px_rgba(172,59,97,0.12)] animate-pulse'
             : 'bg-surface border-card-border shadow-elevated'

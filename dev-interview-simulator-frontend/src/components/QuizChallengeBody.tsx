@@ -27,24 +27,13 @@ export const QuizChallengeBody = ({ challenge, showMultiChoiceHint }: Props) => 
       </header>
     )}
 
-    {/* Challenge Title */}
-    {(challenge.type !== 'ARCHITECTURE' || challenge.context) && (
-      <div className="space-y-3">
-        {challenge.type !== 'ARCHITECTURE' && (
-          <h2 className="font-serif text-base sm:text-lg font-bold text-ink tracking-tight leading-snug break-words">
-            {challenge.title}
-          </h2>
-        )}
-
-        {/* Context box if available */}
-        {challenge.context && (
-          <div className="p-4 rounded-xl bg-canvas-subtle border border-border text-sm text-ink-secondary leading-relaxed break-words">
-            <div className="text-[11px] font-mono text-ink-muted uppercase tracking-wider mb-1 font-semibold">
-              Mise en situation
-            </div>
-            <p className="italic text-ink font-serif text-base">{challenge.context}</p>
-          </div>
-        )}
+    {/* Context box if available (le titre du challenge n'est plus affiché) */}
+    {challenge.context && (
+      <div className="rounded-none border-l-4 border-y-0 border-r-0 border-brand bg-canvas-subtle pl-4 py-3 text-sm text-ink-secondary leading-relaxed break-words">
+        <div className="text-[11px] font-mono text-ink-muted uppercase tracking-wider mb-1 font-semibold">
+          Mise en situation
+        </div>
+        <p className="not-italic text-ink font-sans text-base">{challenge.context}</p>
       </div>
     )}
 
@@ -74,7 +63,7 @@ export const QuizChallengeBody = ({ challenge, showMultiChoiceHint }: Props) => 
     {/* Question Prompt */}
     <div className="space-y-2 pt-2 border-t border-border">
       <div className="flex items-center gap-2">
-        <span className="text-[11px] font-mono text-crimson-700 font-semibold tracking-wider uppercase">
+        <span className="text-[11px] font-mono text-accent-text font-semibold tracking-wider uppercase">
           Question
         </span>
         {showMultiChoiceHint && (

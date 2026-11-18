@@ -25,7 +25,6 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({
   currentScreen,
-  mode,
   difficulty,
   onQuit,
   user,
@@ -39,20 +38,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showAccessModal, setShowAccessModal] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
-
-
-  const getModeLabel = (m?: ChallengeType) => {
-    switch (m) {
-      case 'CODE_REVIEW':
-        return 'Code Review';
-      case 'ARCHITECTURE':
-        return 'Architecture';
-      case 'PROBLEM_SOLVING':
-        return 'Problem Solving';
-      default:
-        return 'QCM';
-    }
-  };
 
   const handleConfirmQuit = () => {
     setShowQuitModal(false);
@@ -86,17 +71,12 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           </div>
 
-          {/* Center Context (When Quiz in progress) — compact on mobile */}
-          {currentScreen === 'QUIZ' && mode && (
+          {/* Center Context (When Quiz in progress) — badge de difficulté uniquement */}
+          {currentScreen === 'QUIZ' && difficulty && (
             <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-              <span className="hidden sm:inline text-xs font-semibold text-nav-text whitespace-nowrap">
-                {getModeLabel(mode)}
-              </span>
-              {difficulty && (
-                <Badge variant="default" size="sm">
-                  {difficulty}
-                </Badge>
-              )}
+              <Badge variant="default" size="sm">
+                {difficulty}
+              </Badge>
             </div>
           )}
 

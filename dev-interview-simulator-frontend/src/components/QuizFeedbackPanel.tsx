@@ -17,13 +17,13 @@ export const QuizFeedbackPanel = ({ feedback }: Props) => {
   const hasSecondary = !!(feedback.revealedInformation || feedback.tradeoff);
 
   return (
-    <div className="rounded-2xl border-[0.5px] border-card-border bg-canvas-subtle p-5 sm:p-6 space-y-4 shadow-panel animate-in fade-in duration-200">
+    <div className="rounded-2xl border-2 border-card-border bg-canvas-subtle p-5 sm:p-6 space-y-4 shadow-panel animate-in fade-in duration-200">
       {/* 1. Résultat */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <Badge variant={feedback.isCorrect ? 'success' : 'danger'} size="md" dot>
           {feedback.isCorrect ? 'Réponse validée' : 'Réponse incorrecte'}
         </Badge>
-        <span className="font-mono text-xs text-crimson-700 font-semibold">
+        <span className="font-mono text-xs text-accent-text font-semibold">
           +{feedback.scoreAwarded} point(s)
         </span>
       </div>

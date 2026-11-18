@@ -68,9 +68,9 @@ export const QuizProgressHeader = ({
             <span>{formatTime(secondsRemaining)}</span>
           </div>
 
-          <div className="flex items-center gap-1.5 font-mono text-xs uppercase tracking-[0.06em] bg-card px-2.5 py-1 rounded border-2 border-border text-accent font-bold">
+          <div className="flex items-center gap-1.5 font-mono text-xs uppercase tracking-[0.06em] bg-card px-2.5 py-1 rounded border-2 border-border font-bold">
             <Award className="w-3.5 h-3.5 text-accent" />
-            <span>{score} pts</span>
+            <span className="text-accent-text">{score} pts</span>
           </div>
         </div>
       </div>
