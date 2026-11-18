@@ -107,10 +107,21 @@ export const SetupScreen = ({
     setSelectedSkillIds([]);
   };
 
-  // Clic sur une carte profil → navigation immédiate vers la configuration.
+  // Même mécanisme que App.tsx : sur mobile, un défilement lancé avant le
+  // remplacement de l'écran est parfois abandonné par le navigateur — on le
+  // rejoue juste après le rendu, en défilement instantané.
+  const scrollToTopAfterRender = () => {
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    });
+  };
+
+  // Clic sur une carte profil (ou son bouton « Commencer ») → navigation
+  // immédiate vers la configuration, en haut de la page.
   const handleProfileSelect = (profileId: string) => {
     setSelectedProfile(profileId);
     setShowConfiguration(true);
+    scrollToTopAfterRender();
   };
 
   if (!showConfiguration) {

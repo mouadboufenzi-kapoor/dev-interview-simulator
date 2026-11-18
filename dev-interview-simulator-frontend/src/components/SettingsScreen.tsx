@@ -25,7 +25,7 @@ const ROLE_LABELS: Record<string, string> = {
 // empilés en mobile-first. Le bloc Apparence est le même composant que par le
 // passé (il vient du dashboard, comportement identique).
 export const SettingsScreen = ({ user }: Props) => (
-  <div className="w-full max-w-5xl mx-auto space-y-6 py-8 sm:py-12">
+  <div className="w-full max-w-5xl mx-auto space-y-6 py-1 sm:py-2">
     <div className="space-y-2 border-b border-border pb-6">
       <PageTitle size="hero-compact">Paramètres</PageTitle>
       <p className="text-base text-ink-secondary">

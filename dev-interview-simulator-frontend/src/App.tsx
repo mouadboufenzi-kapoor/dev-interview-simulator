@@ -89,7 +89,14 @@ export default function App() {
 
       setSimulation(data);
       setScreen('QUIZ');
-      if (!window.matchMedia('(max-width: 639px)').matches) {
+      // Même mécanisme que goToSetup : sur mobile, un défilement lancé avant
+      // le remplacement de l'écran est parfois abandonné — on le rejoue après
+      // le rendu, en défilement instantané.
+      if (window.matchMedia('(max-width: 639px)').matches) {
+        window.requestAnimationFrame(() => {
+          window.scrollTo({ top: 0, behavior: 'auto' });
+        });
+      } else {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
       return true;
@@ -283,7 +290,7 @@ export default function App() {
       />
 
       {/* Main Content Area */}
-      <main className="relative z-10 flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col">
+      <main className="relative z-10 flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex flex-col">
         {/* Soft Error Banner */}
         {error && (
           <div className="mb-6 p-4 rounded-2xl bg-danger-soft border border-danger-border text-danger text-sm flex items-start justify-between gap-3 shadow-[0_2px_10px_rgba(172,59,97,0.08)] animate-in fade-in duration-200">
@@ -310,7 +317,7 @@ export default function App() {
             min-w-0 lets the column shrink to the viewport so only inner scroll
             zones (e.g. the code block) scroll, instead of the whole screen
             stretching horizontally. */}
-        <div key={screen} className="screen-transition flex-1 flex flex-col justify-center min-w-0">
+        <div key={screen} className="screen-transition flex-1 flex flex-col min-w-0">
           {screen === 'SETUP' && (
             <SetupScreen
               onStart={handleStartSimulation}

@@ -68,7 +68,7 @@ export const SetupConfigStep = ({
   };
 
   return (
-    <div className="screen-transition w-full min-h-[calc(80vh-80px)] flex flex-col items-center justify-center py-10 sm:py-16 px-4">
+    <div className="screen-transition w-full flex flex-col items-center py-4 sm:py-6 px-4">
       <div className="w-full max-w-3xl mx-auto space-y-12 sm:space-y-14 text-center">
         <button
           type="button"
