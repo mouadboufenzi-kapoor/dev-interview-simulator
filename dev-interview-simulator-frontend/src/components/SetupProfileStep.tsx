@@ -13,9 +13,10 @@ export const COMMERCIAL_STATS: readonly StatItem[] = [
 interface Props {
   onPlacement: () => void;
   onPersonalize: () => void;
+  onLogin: () => void;
 }
 
-export const SetupProfileStep = ({ onPlacement, onPersonalize }: Props) => (
+export const SetupProfileStep = ({ onPlacement, onPersonalize, onLogin }: Props) => (
   <div className="screen-transition relative w-full flex flex-col items-center pt-7 pb-4 sm:pt-10 sm:pb-6 px-4">
     <div className="w-full max-w-4xl mx-auto space-y-10 sm:space-y-12 text-center">
       <div className="space-y-6">
@@ -36,34 +37,42 @@ export const SetupProfileStep = ({ onPlacement, onPersonalize }: Props) => (
           ))}
         </ul>
         <StatTiles items={[...COMMERCIAL_STATS]} className="my-5 sm:my-6" />
+        <section className="w-full rounded border-2 border-border bg-card p-5 text-left shadow-card">
+          <h2 className="font-serif text-xl font-bold text-text">
+            Développeur
+          </h2>
+          <p className="mt-3 text-sm text-muted">
+            Teste-toi en 4 minutes et découvre ton niveau.
+          </p>
+          <Button
+            type="button"
+            variant="primary"
+            size="lg"
+            rightIcon={<ArrowRight className="w-4 h-4" />}
+            onClick={onPlacement}
+            className="mt-3 w-full sm:w-[320px] sm:self-start"
+          >
+            Tester mon niveau
+          </Button>
+          <button
+            type="button"
+            onClick={onPersonalize}
+            className="mt-3 block min-h-11 text-xs text-link underline cursor-pointer"
+          >
+            Configurer mon entraînement →
+          </button>
+          <div className="mt-3 border-t border-border pt-[10px] text-center text-xs text-ink-secondary">
+            Déjà un compte ?{' '}
+            <button
+              type="button"
+              onClick={onLogin}
+              className="min-h-11 text-link underline cursor-pointer"
+            >
+              Se connecter
+            </button>
+          </div>
+        </section>
       </div>
-
-      <section className="w-full max-w-3xl rounded border-2 border-border bg-card p-5 text-left shadow-card sm:p-6">
-        <h2 className="font-serif text-xl font-bold text-text">
-          Développeur
-        </h2>
-        <p className="mt-2 text-sm text-muted">
-          Teste ton niveau : 5 questions, niveau estimé à la fin
-        </p>
-        <Button
-          type="button"
-          variant="primary"
-          size="lg"
-          rightIcon={<ArrowRight className="w-4 h-4" />}
-          fullWidth
-          onClick={onPlacement}
-          className="mt-5 sm:w-auto"
-        >
-          Commencer
-        </Button>
-        <button
-          type="button"
-          onClick={onPersonalize}
-          className="mt-4 block text-sm text-link underline cursor-pointer mx-auto"
-        >
-          Personnaliser
-        </button>
-      </section>
     </div>
   </div>
 );
