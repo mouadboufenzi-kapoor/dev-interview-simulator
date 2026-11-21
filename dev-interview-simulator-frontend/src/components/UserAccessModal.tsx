@@ -4,6 +4,7 @@ import { PageTitle } from './common/PageTitle';
 import { Mail, UserRound, X } from 'lucide-react';
 import { authApi } from '../api/authApi';
 import { clearStoredAuth } from '../api/authStorage';
+import { trackEvent } from '../api/events';
 
 export interface AuthUser {
   id?: number;
@@ -63,9 +64,16 @@ export const UserAccessModal = ({ onClose, onAuthenticated }: Props) => {
   const googleButtonRef = useRef<HTMLDivElement>(null);
   // Dernier callback reçu : le script GIS capture une référence, pas l'état courant.
   const authCallbackRef = useRef(onAuthenticated);
+  const openedTrackedRef = useRef(false);
   useEffect(() => {
     authCallbackRef.current = onAuthenticated;
   }, [onAuthenticated]);
+
+  useEffect(() => {
+    if (openedTrackedRef.current) return;
+    openedTrackedRef.current = true;
+    trackEvent('auth_modal_opened');
+  }, []);
 
   useEffect(() => {
     if (!GOOGLE_CLIENT_ID || !googleButtonRef.current) return;
@@ -73,11 +81,19 @@ export const UserAccessModal = ({ onClose, onAuthenticated }: Props) => {
 
     const handleCredential = async (response: { credential?: string }) => {
       if (!response.credential) return;
+      trackEvent('auth_method_chosen', { metadata: { method: 'google' } });
       setError(null);
       setLoading(true);
       try {
         // ID token Google → POST /api/auth/google → MÊME AuthResponse qu'un login.
         const auth = await authApi.google(response.credential);
+        if (auth.newUser) {
+          // Nouveau compte Google créé : émettre signup_completed
+          trackEvent('signup_completed', { metadata: { method: 'google' } });
+        } else {
+          // Compte existant : émettre login_completed
+          trackEvent('login_completed', { metadata: { method: 'google' } });
+        }
         authCallbackRef.current({
           id: auth.userId,
           username: auth.username,
@@ -126,8 +142,10 @@ export const UserAccessModal = ({ onClose, onAuthenticated }: Props) => {
     setLoading(true);
 
     try {
+      trackEvent('auth_method_chosen', { metadata: { method: 'email' } });
       if (mode === 'login') {
         const response = await authApi.login({ usernameOrEmail, password });
+        trackEvent('login_completed', { metadata: { method: 'email' } });
         onAuthenticated({
           id: response.userId,
           username: response.username,
@@ -137,6 +155,7 @@ export const UserAccessModal = ({ onClose, onAuthenticated }: Props) => {
         });
       } else {
         const response = await authApi.register({ username: usernameOrEmail, email, password });
+        trackEvent('signup_completed', { metadata: { method: 'email' } });
         onAuthenticated({
           id: response.userId,
           username: response.username,

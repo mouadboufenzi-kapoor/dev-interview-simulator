@@ -87,7 +87,11 @@ export const ResultScreen = ({
       {/* CTA invité — après le détail des questions (hiérarchie : diagnostic →
           preuve → conversion), montre la valeur du compte sans bloquer */}
       {isGuest && (
-        <ResultGuestCta count={guestSimulationCount} onCreateAccount={onCreateAccount} />
+        <ResultGuestCta
+          count={guestSimulationCount}
+          simulationId={summary.simulationId}
+          onCreateAccount={onCreateAccount}
+        />
       )}
 
       {/* Restart CTA */}

@@ -9,6 +9,7 @@ import {
   type Mode,
   type ResolvedMode,
 } from '../../utils/theme';
+import { trackEvent } from '../../api/events';
 
 /**
  * Bouton de bascule clair/sombre (axe « mode » uniquement — la palette se
@@ -25,6 +26,7 @@ export const ThemeToggle: React.FC = () => {
 
   const toggle = () => {
     const next: Mode = resolved === 'dark' ? 'light' : 'dark';
+    trackEvent('config_theme_toggled', { metadata: { mode: next } });
     setMode(next);
     applyTheme(palette, next);
   };

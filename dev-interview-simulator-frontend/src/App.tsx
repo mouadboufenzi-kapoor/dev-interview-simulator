@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import type {
   StartSimulationRequest,
   SimulationResponse,
@@ -20,6 +20,7 @@ import { UserAccessModal, type AuthUser } from './components/UserAccessModal';
 import { AdminDashboard } from './components/AdminDashboard';
 import { SettingsScreen } from './components/SettingsScreen';
 import { LoadingNotice } from './components/common/LoadingNotice';
+import { trackEvent } from './api/events';
 
 type ScreenState = 'SETUP' | 'QUIZ' | 'RESULT' | 'DASHBOARD' | 'ADMIN' | 'SETTINGS';
 
@@ -58,6 +59,11 @@ export default function App() {
   // Garde anti double-clic sur « Réviser » : évite deux démarrages simultanés.
   const reviseInFlight = useRef(false);
   const resultInFlight = useRef(false);
+  const landingTracked = useRef(false);
+  const questionIndexRef = useRef<number | null>(null);
+  const handleQuestionIndexChange = useCallback((index: number) => {
+    questionIndexRef.current = index;
+  }, []);
   // Nombre de simulations terminées par l'invité dans SA session (sessionStorage).
   // Côté backend, tous les invités partagent default_user : un compteur serveur
   // serait faussé — donc zéro architecture ajoutée, compteur local uniquement.
@@ -70,6 +76,10 @@ export default function App() {
   });
 
   useEffect(() => {
+    if (!landingTracked.current) {
+      landingTracked.current = true;
+      trackEvent('landing_viewed');
+    }
     pruneGuestSimulations();
     const storedUser = localStorage.getItem('user');
     const token = localStorage.getItem('jwt_token');
@@ -83,13 +93,40 @@ export default function App() {
       }
     }
 
+    const handlePageUnload = () => {
+      if (screen === 'QUIZ' && simulation?.status === 'IN_PROGRESS') {
+        simulationApi.abandonSimulationOnUnload(simulation.id, simulation.guestAccessToken);
+        trackEvent('simulation_abandoned', {
+          simulationId: simulation.id,
+          mode: simulation.mode,
+          difficulty: simulation.difficulty,
+          questionIndex: questionIndexRef.current,
+        });
+      }
+    };
+    const handleVisibilityChange = () => {
+      if (screen === 'QUIZ' && simulation?.status === 'IN_PROGRESS' && document.visibilityState === 'hidden') {
+        simulationApi.abandonSimulationOnUnload(simulation.id, simulation.guestAccessToken);
+        trackEvent('simulation_abandoned', {
+          simulationId: simulation.id,
+          mode: simulation.mode,
+          difficulty: simulation.difficulty,
+          questionIndex: questionIndexRef.current,
+        });
+      }
+    };
+    window.addEventListener('pagehide', handlePageUnload);
+    window.addEventListener('visibilitychange', handleVisibilityChange);
     const handleAuthLogout = () => {
       setUser(null);
       setScreen('SETUP');
     };
 
     window.addEventListener('auth:logout', handleAuthLogout);
-    return () => window.removeEventListener('auth:logout', handleAuthLogout);
+    return () => {
+      window.removeEventListener('pagehide', handlePageUnload);
+      window.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   // Lancement unique de session (Setup, « Nouvelle simulation », Réviser).
@@ -112,6 +149,11 @@ export default function App() {
       }
 
       saveGuestSimulation(data);
+      trackEvent('simulation_started', {
+        simulationId: data.id,
+        mode: data.mode,
+        difficulty: data.difficulty,
+      });
       setSimulation(data);
       setScreen('QUIZ');
       // Même mécanisme que goToSetup : sur mobile, un défilement lancé avant
@@ -149,12 +191,22 @@ export default function App() {
       // compteurs du dashboard afficheraient « 0 terminée ». Best-effort :
       // si la clôture échoue, le bilan reste affichable (/result ne dépend
       // pas du statut).
-      try {
+      // Clôture côté serveur : best-effort, l'événement est émis quand même      // car le bilan peut s'afficher même si le statut serveur n'a pas changé.      try {
         await simulationApi.completeSimulation(simulation.id, simulation.guestAccessToken ?? undefined);
       } catch (completeErr) {
         console.error('Clôture de la simulation impossible', completeErr);
       }
+      trackEvent('simulation_completed', {
+        simulationId: simulation.id,
+        mode: simulation.mode,
+        difficulty: simulation.difficulty,
+      });
       const data = await simulationApi.getSimulationResult(simulation.id, simulation.guestAccessToken ?? undefined);
+      trackEvent('result_viewed', {
+        simulationId: simulation.id,
+        mode: simulation.mode,
+        difficulty: simulation.difficulty,
+      });
       setSummary(data);
       setScreen('RESULT');
       if (!user) {
@@ -184,6 +236,12 @@ export default function App() {
     if (screen === 'QUIZ' && simulation?.status === 'IN_PROGRESS') {
       simulationApi.abandonSimulation(simulation.id, simulation.guestAccessToken).catch((err) => {
         console.error('Abandon de la simulation impossible', err);
+      });
+      trackEvent('simulation_abandoned', {
+        simulationId: simulation.id,
+        mode: simulation.mode,
+        difficulty: simulation.difficulty,
+        questionIndex: questionIndexRef.current,
       });
     }
 
@@ -272,6 +330,11 @@ export default function App() {
     setError(null);
     try {
       const data = await simulationApi.getSimulationResult(simulationId);
+      trackEvent('result_viewed', {
+        simulationId: data.simulationId,
+        mode: data.mode,
+        difficulty: data.difficulty,
+      });
       setSummary(data);
       setScreen('RESULT');
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -386,6 +449,7 @@ export default function App() {
               onFinish={handleFinishQuiz}
               onError={setError}
               finishing={loading}
+              onQuestionIndexChange={handleQuestionIndexChange}
             />
           )}
 

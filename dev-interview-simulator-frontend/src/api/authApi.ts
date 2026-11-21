@@ -22,6 +22,8 @@ export interface AuthResponse {
   role: string;
   /** Nom du profil actif (squelette multiprofil) — null/absent = aucun profil. */
   profile?: string | null;
+  /** Mis à jour par le backend : true si le compte vient d'être créé. */
+  newUser?: boolean;
 }
 
 const persistAuth = (authResponse: AuthResponse) => {

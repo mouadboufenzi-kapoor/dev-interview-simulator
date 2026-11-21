@@ -5,6 +5,7 @@ import { Button } from './common/Button';
 import { PageTitle } from './common/PageTitle';
 import { SetupModeCards } from './SetupModeCards';
 import { SetupTopics } from './SetupTopics';
+import { trackEvent } from '../api/events';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 interface TopicsProps {
@@ -58,11 +59,13 @@ export const SetupConfigStep = ({
   };
 
   const handleSelectMode = (mode: ChallengeType) => {
+    trackEvent('config_mode_selected', { mode });
     onSelectMode(mode);
     scrollOnMobile(levelSectionRef);
   };
 
   const handleSelectDifficulty = (difficulty: DifficultyLevel) => {
+    trackEvent('config_level_selected', { difficulty });
     onSelectDifficulty(difficulty);
     scrollOnMobile(startButtonRef);
   };

@@ -7,6 +7,7 @@ import type {
   StartSimulationRequest,
 } from '../types';
 import { simulationApi } from '../api/simulationApi';
+import { trackEvent } from '../api/events';
 import { SetupProfileStep } from './SetupProfileStep';
 import { SetupConfigStep } from './SetupConfigStep';
 
@@ -119,6 +120,7 @@ export const SetupScreen = ({
   // Clic sur une carte profil (ou son bouton « Commencer ») → navigation
   // immédiate vers la configuration, en haut de la page.
   const handleProfileSelect = (profileId: string) => {
+    trackEvent('profile_selected', { metadata: { profile: profileId } });
     setSelectedProfile(profileId);
     setShowConfiguration(true);
     scrollToTopAfterRender();
