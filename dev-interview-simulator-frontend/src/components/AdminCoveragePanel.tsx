@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ChevronDown, ChevronUp, Eye } from 'lucide-react';
 import { coverageApi } from '../api/adminApi';
-import type { CoverageCell, CoverageContentItem, CoverageOptions } from '../api/adminApi';
+import type { CoverageCell, CoverageContentItem, CoverageOptions, CoverageSummaryRow } from '../api/adminApi';
 import type { ChallengeType, DifficultyLevel } from '../types';
 import { DEFAULT_COVERAGE_THRESHOLDS } from '../utils/coverageThresholds';
 import { DIFFICULTY_LABELS, MODE_LABELS } from '../utils/resultAnalysis';
@@ -10,6 +10,8 @@ import { emptyState, filterSelect, panel, tableHead } from '../styles/ui';
 const PAGE_SIZE = 10;
 type Dimension = 'CATEGORY' | 'SKILL';
 type SortOrder = 'asc' | 'desc';
+const SUMMARY_DIFFICULTY_ORDER: DifficultyLevel[] = ['ADVANCED', 'INTERMEDIATE', 'JUNIOR'];
+const SUMMARY_PROFILE_CODE = 'DEVELOPER';
 
 const rowKey = (cell: CoverageCell) =>
   `${cell.profileId}:${cell.difficulty}:${cell.type}:${cell.taxonomyId}`;
@@ -17,6 +19,8 @@ const rowKey = (cell: CoverageCell) =>
 export const AdminCoveragePanel = () => {
   const [options, setOptions] = useState<CoverageOptions | null>(null);
   const [optionsError, setOptionsError] = useState<string | null>(null);
+  const [summary, setSummary] = useState<CoverageSummaryRow[] | null>(null);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
   const [profileId, setProfileId] = useState('');
   const [difficulty, setDifficulty] = useState<DifficultyLevel | ''>('');
   const [type, setType] = useState<ChallengeType | ''>('');
@@ -45,6 +49,25 @@ export const AdminCoveragePanel = () => {
       .catch(() => setOptionsError('Impossible de charger les options de filtre.'));
   }, []);
 
+  useEffect(() => {
+    coverageApi.getSummary()
+      .then(result => setSummary(result.rows))
+      .catch(() => setSummaryError('Impossible de charger la synthèse de couverture.'));
+  }, []);
+
+  const detailsActive = profileId !== '' || difficulty !== '' || type !== '';
+  const summaryProfileRows = useMemo(() => {
+    const rows = summary ?? [];
+    const developerRows = rows.filter(row => row.profileCode === SUMMARY_PROFILE_CODE);
+    const scoped = developerRows.length > 0 ? developerRows : rows;
+    const profileIdToShow = scoped[0]?.profileId;
+    return scoped
+      .filter(row => row.profileId === profileIdToShow)
+      .sort((a, b) =>
+        SUMMARY_DIFFICULTY_ORDER.indexOf(a.difficulty) - SUMMARY_DIFFICULTY_ORDER.indexOf(b.difficulty));
+  }, [summary]);
+  const summaryTotal = summaryProfileRows.reduce((total, row) => total + row.contentCount, 0);
+
   const selectedProfile = options?.profiles.find(profile => String(profile.id) === profileId);
   const availableTypes = useMemo(() => (options?.types ?? []).filter(candidate =>
     selectedProfile
@@ -54,6 +77,13 @@ export const AdminCoveragePanel = () => {
 
   useEffect(() => {
     let cancelled = false;
+    if (!detailsActive) {
+      setCells(null);
+      setCoverageLoading(false);
+      setCoverageError(null);
+      setExpandedKey(null);
+      return;
+    }
     setCells(null);
     setTablePage(0);
     setCoverageError(null);
@@ -77,7 +107,7 @@ export const AdminCoveragePanel = () => {
         if (!cancelled) setCoverageLoading(false);
       });
     return () => { cancelled = true; };
-  }, [profileId, difficulty, type, dimension]);
+  }, [profileId, difficulty, type, dimension, detailsActive]);
 
   const sortedCells = useMemo(() => [...(cells ?? [])].sort((a, b) => {
     const countOrder = sortOrder === 'asc' ? a.count - b.count : b.count - a.count;
@@ -159,6 +189,47 @@ export const AdminCoveragePanel = () => {
 
   return (
     <div className="space-y-4">
+      <div className={panel}>
+        <div className="px-6 py-4 border-b border-border-subtle">
+          <h3 className="font-serif font-bold text-lg text-navy-900">Vue globale par niveau</h3>
+          <p className="text-xs text-ink-secondary">Contenus validés, toutes catégories, compétences et types confondus.</p>
+        </div>
+        {summaryError ? (
+          <div className={`${emptyState} text-danger`} role="alert">{summaryError}</div>
+        ) : summary === null ? (
+          <div className={emptyState}>Chargement de la synthèse...</div>
+        ) : summaryProfileRows.length === 0 ? (
+          <div className={emptyState}>Aucun profil actif à afficher.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className={tableHead}>
+                <tr>
+                  <th className="px-6 py-3 font-medium">Profil</th>
+                  <th className="px-6 py-3 font-medium">Niveau</th>
+                  <th className="px-6 py-3 font-medium text-right">Nombre de contenus</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border-subtle">
+                {summaryProfileRows.map(row => (
+                  <tr key={`${row.profileId}:${row.difficulty}`} className="hover:bg-surface-elevated transition">
+                    <td className="px-6 py-3 font-medium text-ink">{row.profileName}</td>
+                    <td className="px-6 py-3 text-ink-secondary">{DIFFICULTY_LABELS[row.difficulty]}</td>
+                    <td className="px-6 py-3 text-right font-mono font-semibold text-navy-900">{row.contentCount}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="border-t border-border-subtle">
+                  <th className="px-6 py-3 font-medium text-ink" scope="row" colSpan={2}>Total</th>
+                  <td className="px-6 py-3 text-right font-mono font-bold text-navy-900">{summaryTotal}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        )}
+      </div>
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="inline-flex rounded-lg border-2 border-border bg-card p-1" aria-label="Dimension de taxonomie">
           <button
@@ -191,12 +262,11 @@ export const AdminCoveragePanel = () => {
       </div>
 
       {optionsError && <p className="text-sm text-danger" role="alert">{optionsError} Les filtres ne sont pas disponibles.</p>}
-      <p className={`${panel} p-3 text-sm text-ink-secondary`}>
-        Architecture compte les scénarios sélectionnables selon la règle actuelle du simulateur : scénario actif avec au moins une étape Architecture active et validée pour le profil et le niveau affichés. Cela ne garantit pas que toutes les étapes configurées soient validées.
-      </p>
 
       <div className={panel}>
-        {coverageLoading ? (
+        {!detailsActive ? (
+          <div className={emptyState}>Sélectionnez un profil, un niveau ou un type pour afficher le détail.</div>
+        ) : coverageLoading ? (
           <div className={emptyState}>Chargement de la couverture...</div>
         ) : coverageError ? (
           <div className={`${emptyState} text-danger`} role="alert">{coverageError}</div>

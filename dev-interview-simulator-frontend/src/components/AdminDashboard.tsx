@@ -3,20 +3,20 @@ import { Button } from './common/Button';
 import { PageTitle } from './common/PageTitle';
 import { Plus } from 'lucide-react';
 import { AdminChallengeForm } from './AdminChallengeForm';
-import { AdminScenarioPanel } from './AdminScenarioPanel';
 import { AdminProfilePanel } from './AdminProfilePanel';
 import { AdminStatsPanel } from './AdminStatsPanel';
 import { AdminChallengesContent } from './AdminChallengesContent';
 import { AdminGeneration } from './AdminGeneration';
 import { AdminCoveragePanel } from './AdminCoveragePanel';
+import { AdminUsersPanel } from './AdminUsersPanel';
 
-type Tab = 'stats' | 'coverage' | 'content' | 'scenarios' | 'profiles' | 'generation';
+type Tab = 'stats' | 'users' | 'coverage' | 'content' | 'profiles' | 'generation';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'stats', label: 'Statistiques' },
+  { id: 'users', label: 'Utilisateurs' },
   { id: 'coverage', label: 'Couverture' },
   { id: 'content', label: 'Contenus' },
-  { id: 'scenarios', label: 'Scénarios' },
   { id: 'profiles', label: 'Profils' },
   { id: 'generation', label: 'Génération' },
 ];
@@ -25,22 +25,18 @@ export const AdminDashboard = () => {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [tab, setTab] = useState<Tab>('stats');
-  const [preselectedScenarioId, setPreselectedScenarioId] = useState<number | undefined>(undefined);
 
   if (isCreating || editingId) {
     return (
       <AdminChallengeForm
         challengeId={editingId || undefined}
-        defaultScenarioId={preselectedScenarioId}
         onBack={() => {
           setIsCreating(false);
           setEditingId(null);
-          setPreselectedScenarioId(undefined);
         }}
         onSaved={() => {
           setIsCreating(false);
           setEditingId(null);
-          setPreselectedScenarioId(undefined);
         }}
       />
     );
@@ -79,11 +75,11 @@ export const AdminDashboard = () => {
       </div>
 
       {tab === 'stats' ? (
-        <AdminStatsPanel />
+        <AdminStatsPanel onOpenUsers={() => setTab('users')} />
+      ) : tab === 'users' ? (
+        <AdminUsersPanel />
       ) : tab === 'coverage' ? (
         <AdminCoveragePanel />
-      ) : tab === 'scenarios' ? (
-        <AdminScenarioPanel onAddStep={id => { setPreselectedScenarioId(id); setIsCreating(true); }} />
       ) : tab === 'profiles' ? (
         <AdminProfilePanel />
       ) : tab === 'generation' ? (

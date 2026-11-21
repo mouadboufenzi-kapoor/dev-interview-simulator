@@ -152,7 +152,29 @@ export interface AdminStats {
   totalSimulations: number;
   completedSimulations: number;
   inProgressSimulations: number;
+  totalUsers: number;
+  newUsersLast7Days: number;
+  newUsersLast30Days: number;
+  abandonedSimulations: number;
+  completionRate: number | null;
+  averageSimulationsPerActiveUser: number | null;
 }
+
+export interface AdminUser {
+  id: number;
+  username: string;
+  email: string;
+  role: 'USER' | 'ADMIN';
+  enabled: boolean;
+  createdAt: string;
+}
+
+export const adminUserApi = {
+  search: async (params: { search?: string; page?: number; size?: number } = {}): Promise<Page<AdminUser>> => {
+    const { data } = await apiClient.get('/admin/users', { params });
+    return data;
+  }
+};
 
 export interface CoverageProfileOption {
   id: number;
@@ -184,6 +206,14 @@ export interface CoverageCell {
   count: number;
 }
 
+export interface CoverageSummaryRow {
+  profileId: number;
+  profileCode: string;
+  profileName: string;
+  difficulty: DifficultyLevel;
+  contentCount: number;
+}
+
 export interface CoverageContentItem {
   id: number;
   title: string;
@@ -199,6 +229,10 @@ export interface CoverageContentItem {
 export const coverageApi = {
   getOptions: async (): Promise<CoverageOptions> => {
     const { data } = await apiClient.get('/admin/coverage/options');
+    return data;
+  },
+  getSummary: async (): Promise<{ rows: CoverageSummaryRow[] }> => {
+    const { data } = await apiClient.get('/admin/coverage/summary');
     return data;
   },
   getCoverage: async (params: {

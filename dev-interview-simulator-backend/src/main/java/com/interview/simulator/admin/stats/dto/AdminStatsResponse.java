@@ -14,5 +14,11 @@ public record AdminStatsResponse(
         long activeScenarios,
         long totalSimulations,
         long completedSimulations,
-        long inProgressSimulations
+        long inProgressSimulations,
+        long totalUsers,
+        long newUsersLast7Days,
+        long newUsersLast30Days,
+        long abandonedSimulations,
+        Double completionRate,
+        Double averageSimulationsPerActiveUser
 ) {}

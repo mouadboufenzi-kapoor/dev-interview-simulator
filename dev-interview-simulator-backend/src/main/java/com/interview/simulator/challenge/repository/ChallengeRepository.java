@@ -33,6 +33,32 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
     long countByType(ChallengeType type);
 
     @Query("""
+        SELECT p.id, p.code, p.name, c.difficulty, COUNT(DISTINCT c.id)
+        FROM Challenge c JOIN c.profiles p
+        WHERE c.active = true AND c.status = :status AND p.active = true
+          AND (SIZE(p.allowedTypes) = 0 OR c.type MEMBER OF p.allowedTypes)
+          AND c.type <> com.interview.simulator.challenge.entity.ChallengeType.ARCHITECTURE
+        GROUP BY p.id, p.code, p.name, c.difficulty
+    """)
+    List<Object[]> countAvailableChallengesByProfileAndDifficulty(@Param("status") ContentStatus status);
+
+    @Query("""
+        SELECT p.id, p.code, p.name, c.difficulty, COUNT(DISTINCT sc.id)
+        FROM InterviewScenario sc JOIN Challenge c ON c.scenario = sc
+             JOIN c.profiles p
+        WHERE c.active = true AND c.status = :status AND p.active = true
+          AND c.type = com.interview.simulator.challenge.entity.ChallengeType.ARCHITECTURE
+          AND (SIZE(p.allowedTypes) = 0 OR c.type MEMBER OF p.allowedTypes)
+          AND sc.active = true AND sc.mode = com.interview.simulator.challenge.entity.ChallengeType.ARCHITECTURE
+          AND EXISTS (SELECT 1 FROM Challenge step JOIN step.profiles stepProfile
+              WHERE step.scenario = sc AND step.type = com.interview.simulator.challenge.entity.ChallengeType.ARCHITECTURE
+                AND step.active = true AND step.status = :status AND step.difficulty = c.difficulty
+                AND stepProfile.id = p.id)
+        GROUP BY p.id, p.code, p.name, c.difficulty
+    """)
+    List<Object[]> countAvailableArchitectureScenariosByProfileAndDifficulty(@Param("status") ContentStatus status);
+
+    @Query("""
         SELECT p.id, p.name, c.difficulty, c.type, cat.id, cat.name, COUNT(DISTINCT c.id)
         FROM Challenge c JOIN c.categories cat JOIN c.profiles p
         WHERE c.active = true AND c.status = :status AND p.active = true

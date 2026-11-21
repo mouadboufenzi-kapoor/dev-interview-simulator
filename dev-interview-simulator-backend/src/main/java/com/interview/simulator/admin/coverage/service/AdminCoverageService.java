@@ -5,6 +5,7 @@ import com.interview.simulator.admin.coverage.dto.CoverageOptionsResponse;
 import com.interview.simulator.admin.coverage.dto.CoverageOptionsResponse.ProfileOption;
 import com.interview.simulator.admin.coverage.dto.CoverageOptionsResponse.TaxonomyOption;
 import com.interview.simulator.admin.coverage.dto.CoverageReport;
+import com.interview.simulator.admin.coverage.dto.CoverageSummary;
 import com.interview.simulator.admin.coverage.dto.CoverageReport.CoverageCell;
 import com.interview.simulator.category.repository.CategoryRepository;
 import com.interview.simulator.challenge.entity.Challenge;
@@ -25,6 +26,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -69,6 +71,37 @@ public class AdminCoverageService {
                 .toList();
         return new CoverageOptionsResponse(profiles, List.of(ChallengeType.values()),
                 List.of(DifficultyLevel.values()), categories, skills);
+    }
+
+    @Transactional(readOnly = true)
+    public CoverageSummary getSummary() {
+        List<Profile> profiles = profileRepository.findByActiveTrueOrderByNameAsc();
+        Map<Long, Map<DifficultyLevel, Long>> totals = new LinkedHashMap<>();
+        for (Profile profile : profiles) {
+            Map<DifficultyLevel, Long> byDifficulty = new EnumMap<>(DifficultyLevel.class);
+            for (DifficultyLevel difficulty : DifficultyLevel.values()) {
+                byDifficulty.put(difficulty, 0L);
+            }
+            totals.put(profile.getId(), byDifficulty);
+        }
+        applyTotals(totals, challengeRepository.countAvailableChallengesByProfileAndDifficulty(AVAILABLE_STATUS));
+        applyTotals(totals,
+                challengeRepository.countAvailableArchitectureScenariosByProfileAndDifficulty(AVAILABLE_STATUS));
+        List<CoverageSummary.Row> rows = profiles.stream()
+                .flatMap(profile -> totals.get(profile.getId()).entrySet().stream()
+                        .map(entry -> new CoverageSummary.Row(profile.getId(), profile.getCode(),
+                                profile.getName(), entry.getKey(), entry.getValue())))
+                .toList();
+        return new CoverageSummary(rows);
+    }
+
+    private void applyTotals(Map<Long, Map<DifficultyLevel, Long>> totals, List<Object[]> rows) {
+        for (Object[] row : rows) {
+            Map<DifficultyLevel, Long> byDifficulty = totals.get(((Number) row[0]).longValue());
+            if (byDifficulty != null) {
+                byDifficulty.merge((DifficultyLevel) row[3], ((Number) row[4]).longValue(), Long::sum);
+            }
+        }
     }
 
     @Transactional(readOnly = true)
