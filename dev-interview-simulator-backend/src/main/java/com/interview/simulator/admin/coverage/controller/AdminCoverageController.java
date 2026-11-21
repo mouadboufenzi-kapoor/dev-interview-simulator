@@ -3,6 +3,7 @@ package com.interview.simulator.admin.coverage.controller;
 import com.interview.simulator.admin.coverage.dto.CoverageDetailPage;
 import com.interview.simulator.admin.coverage.dto.CoverageOptionsResponse;
 import com.interview.simulator.admin.coverage.dto.CoverageReport;
+import com.interview.simulator.admin.coverage.dto.CoverageSummary;
 import com.interview.simulator.admin.coverage.service.AdminCoverageService;
 import com.interview.simulator.challenge.entity.ChallengeType;
 import com.interview.simulator.challenge.entity.DifficultyLevel;
@@ -28,6 +29,11 @@ public class AdminCoverageController {
     @GetMapping("/options")
     public CoverageOptionsResponse getOptions() {
         return adminCoverageService.getOptions();
+    }
+
+    @GetMapping("/summary")
+    public CoverageSummary getSummary() {
+        return adminCoverageService.getSummary();
     }
 
     @GetMapping
