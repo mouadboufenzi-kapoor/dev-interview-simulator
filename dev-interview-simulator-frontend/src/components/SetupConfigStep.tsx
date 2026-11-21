@@ -29,6 +29,7 @@ interface Props {
   selectedDifficulty: DifficultyLevel;
   onSelectDifficulty: (difficulty: DifficultyLevel) => void;
   topics: TopicsProps;
+  placement?: boolean;
 }
 
 const DIFFICULTIES: { id: DifficultyLevel; label: string }[] = [
@@ -38,7 +39,6 @@ const DIFFICULTIES: { id: DifficultyLevel; label: string }[] = [
 ];
 
 const MOBILE_MAX_WIDTH_QUERY = '(max-width: 767px)';
-
 export const SetupConfigStep = ({
   onBack,
   loading,
@@ -48,6 +48,7 @@ export const SetupConfigStep = ({
   selectedDifficulty,
   onSelectDifficulty,
   topics,
+  placement = false,
 }: Props) => {
   const levelSectionRef = useRef<HTMLDivElement>(null);
   const startButtonRef = useRef<HTMLDivElement>(null);
@@ -70,19 +71,31 @@ export const SetupConfigStep = ({
     scrollOnMobile(startButtonRef);
   };
 
+  // Suppression des auto-scrolls dans cet écran
+  // Garde les comportements du quiz
+
   return (
     <div className="screen-transition w-full flex flex-col items-center py-4 sm:py-6 px-4">
       <div className="w-full max-w-3xl mx-auto space-y-12 sm:space-y-14 text-center">
+        {/* Bouton principal : 'Trouve votre niveau' */
         <button
           type="button"
-          onClick={onBack}
+          onClick={() => trackEvent('config_level_selected', { mode: selectedMode })}
           className="mx-auto flex items-center gap-2 text-xs font-medium text-muted hover:text-text transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
         >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          Changer de profil
+          Trouve votre niveau
         </button>
 
-        {/* Brand & Main Headline */}
+        {/* Lien 'Personnaliser' qui replie les sections actuelles */
+        <button
+          type="button"
+          onClick={() => trackEvent('config_personalize_opened', {})}
+          className="mt-2 text-sm text-link underline cursor-pointer"
+        >
+          Personnaliser
+        </button>
+
+        {/* Brun & En-tête principal */
         <PageTitle size="hero-compact">
           Configurez votre session
         </PageTitle>
@@ -95,11 +108,11 @@ export const SetupConfigStep = ({
             <SetupModeCards selectedMode={selectedMode} onSelect={handleSelectMode} />
           </section>
 
-          {/* Minimalist Configuration Bar (Level + Options) */}
+          {/* Configuration minimale (Niveau + Options) */
           <div className="flex flex-col items-center justify-between gap-6 pt-2">
             <div
               ref={levelSectionRef}
-              className="scroll-mt-14 sm:scroll-mt-16 flex flex-wrap items-center justify-center gap-2 text-xs font-sans"
+              className="flex flex-wrap items-center justify-center gap-2 text-xs font-sans"
             >
               <span id="difficulty-heading" className="text-muted font-mono uppercase tracking-[0.06em] mr-2">Niveau visé :</span>
               {/* Sélecteur de niveau Contraste (spec §11) : boutons bordés,
@@ -131,8 +144,8 @@ export const SetupConfigStep = ({
                 séquentiel, eux, filtrent réellement le contenu. */}
             {selectedMode !== 'ARCHITECTURE' && <SetupTopics {...topics} />}
 
-            {/* Prominent Action Button (Rosewood Accent: crimson-700) */}
-            <div ref={startButtonRef} className="scroll-mt-14 sm:scroll-mt-16 pt-2">
+            {/* Bouton d'action prominent */
+            <div ref={startButtonRef} className="pt-2">
               <Button
                 type="submit"
                 variant="primary"
@@ -150,3 +163,4 @@ export const SetupConfigStep = ({
     </div>
   );
 };
+

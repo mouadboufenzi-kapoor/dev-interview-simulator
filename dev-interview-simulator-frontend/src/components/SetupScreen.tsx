@@ -18,8 +18,8 @@ interface Props {
   initialCategoryIds?: number[];
   initialSkillIds?: number[];
   skipProfileSelection?: boolean;
+  placement?: boolean;
 }
-
 export const SetupScreen = ({
   onStart,
   loading,
@@ -27,6 +27,7 @@ export const SetupScreen = ({
   initialCategoryIds,
   initialSkillIds,
   skipProfileSelection = false,
+  placement = false,
 }: Props) => {
   const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
   const [showConfiguration, setShowConfiguration] = useState(skipProfileSelection);
@@ -40,6 +41,7 @@ export const SetupScreen = ({
   const [selectedSkillIds, setSelectedSkillIds] = useState<number[]>(initialSkillIds ?? []);
   const [isLoadingTopics, setIsLoadingTopics] = useState(false);
   const [topicsError, setTopicsError] = useState<string | null>(null);
+  const [placement, setPlacement] = useState<boolean>(placement);
 
   useEffect(() => {
     let isMounted = true;
@@ -108,18 +110,13 @@ export const SetupScreen = ({
     setSelectedSkillIds([]);
   };
 
-  // Même mécanisme que App.tsx : sur mobile, un défilement lancé avant le
-  // remplacement de l'écran est parfois abandonné par le navigateur — on le
-  // rejoue juste après le rendu, en défilement instantané.
-  const scrollToTopAfterRender = () => {
+  // Même mécanisme que App.tsx : sur mobile, un défilement lancé avant le  // remplacement de l'écran est parfois abandonné par le navigateur — on le  // rejoue juste après le rendu, en défilement instantané.  const scrollToTopAfterRender = () => {
     window.requestAnimationFrame(() => {
       window.scrollTo({ top: 0, behavior: 'auto' });
     });
   };
 
-  // Clic sur une carte profil (ou son bouton « Commencer ») → navigation
-  // immédiate vers la configuration, en haut de la page.
-  const handleProfileSelect = (profileId: string) => {
+  // Clic sur une carte profil (ou son bouton « Commencer ») → navigation  // immédiate vers la configuration, en haut de la page.  const handleProfileSelect = (profileId: string) => {
     trackEvent('profile_selected', { metadata: { profile: profileId } });
     setSelectedProfile(profileId);
     setShowConfiguration(true);
@@ -134,6 +131,12 @@ export const SetupScreen = ({
         onSelect={handleProfileSelect}
       />
     );
+  }
+
+  // Si placement=true, on va directement en configuration sans afficher
+  // le profil si skipProfileSelection est vrai, ou on saute directement
+  // vers la config. Sinon comportement normal.  if (placement && !skipProfileSelection) {
+    setShowConfiguration(true);
   }
 
   return (
@@ -157,6 +160,8 @@ export const SetupScreen = ({
         loading: isLoadingTopics,
         error: topicsError,
       }}
+      placement={placement}
     />
   );
 };
+
