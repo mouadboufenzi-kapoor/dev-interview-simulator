@@ -6,5 +6,6 @@ public record AuthResponse(
         String username,
         String email,
         String role,
-        String activeProfile
+        String activeProfile,
+        boolean newUser
 ) {}
