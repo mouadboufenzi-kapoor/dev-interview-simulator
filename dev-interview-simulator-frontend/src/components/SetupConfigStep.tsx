@@ -68,17 +68,17 @@ export const SetupConfigStep = ({
 
   return (
     <div className="screen-transition w-full px-4 py-4 sm:px-6 sm:py-5">
-      <div className="mx-auto w-full max-w-3xl">
-        <PageTitle size="hero-compact" className="text-center">
+      <div className="mx-auto w-full max-w-[640px]">
+        <PageTitle size="hero-compact" className="whitespace-nowrap text-center text-[23px] sm:text-4xl lg:text-5xl">
           Configure ton entraînement
         </PageTitle>
 
         <form onSubmit={onSubmit} className="mt-5 pb-24 sm:pb-0">
-          <section className="rounded border-2 border-border bg-card p-5 text-left shadow-card">
+          <section className="rounded border-2 border-border bg-card p-5 text-left shadow-card space-y-5 sm:space-y-5">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-muted">
               Niveau visé
             </h2>
-            <div role="group" aria-label="Niveau visé" className="mt-3 grid grid-cols-3 gap-2">
+            <div role="group" aria-label="Niveau visé" className="mt-2 grid grid-cols-3 gap-2">
               {DIFFICULTIES.map((difficulty) => (
                 <button
                   key={difficulty.id}
@@ -99,10 +99,10 @@ export const SetupConfigStep = ({
               ))}
             </div>
 
-            <h2 className="mt-5 text-xs font-semibold uppercase tracking-wider text-muted">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted">
               Challenge
             </h2>
-            <div className="mt-3">
+            <div>
               <SetupModeCards
                 selectedMode={selectedMode}
                 onSelect={(mode) => {
@@ -112,11 +112,11 @@ export const SetupConfigStep = ({
               />
             </div>
 
-            <div className="mt-5">
+            <div>
               <SetupTopics {...topics} />
             </div>
 
-            <p className="mt-5 border-t border-border pt-3 text-xs text-muted">
+            <p className="border-t border-border pt-3 text-xs text-muted">
               {PERSONALIZED_QUESTION_COUNT} questions · {MODE_LABELS[selectedMode]} · {difficultyLabel} · {technologySummary}
             </p>
           </section>
