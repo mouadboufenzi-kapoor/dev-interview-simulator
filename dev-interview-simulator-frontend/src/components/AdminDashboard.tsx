@@ -9,11 +9,13 @@ import { AdminStatsPanel } from './AdminStatsPanel';
 import { AdminChallengesContent } from './AdminChallengesContent';
 import { AdminGeneration } from './AdminGeneration';
 import { AdminCoveragePanel } from './AdminCoveragePanel';
+import { AdminUsersPanel } from './AdminUsersPanel';
 
-type Tab = 'stats' | 'coverage' | 'content' | 'scenarios' | 'profiles' | 'generation';
+type Tab = 'stats' | 'users' | 'coverage' | 'content' | 'scenarios' | 'profiles' | 'generation';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'stats', label: 'Statistiques' },
+  { id: 'users', label: 'Utilisateurs' },
   { id: 'coverage', label: 'Couverture' },
   { id: 'content', label: 'Contenus' },
   { id: 'scenarios', label: 'Scénarios' },
@@ -79,7 +81,9 @@ export const AdminDashboard = () => {
       </div>
 
       {tab === 'stats' ? (
-        <AdminStatsPanel />
+        <AdminStatsPanel onOpenUsers={() => setTab('users')} />
+      ) : tab === 'users' ? (
+        <AdminUsersPanel />
       ) : tab === 'coverage' ? (
         <AdminCoveragePanel />
       ) : tab === 'scenarios' ? (

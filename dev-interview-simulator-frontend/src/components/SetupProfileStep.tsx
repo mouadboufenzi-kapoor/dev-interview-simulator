@@ -36,7 +36,7 @@ export const PROFILES: ProfileCardConfig[] = [
 const CHALLENGE_TAGS = ['QCM', 'Code review', 'Mises en situation', 'Raisonnement séquentiel'];
 
 const STATS: StatItem[] = [
-  { value: 7000, suffix: '+', label: 'Questions' },
+  { value: 8000, suffix: '+', label: 'Questions' },
   { value: 100, suffix: '+', label: 'Utilisateurs' },
   { value: 4, label: 'Challenges' },
 ];

@@ -152,7 +152,29 @@ export interface AdminStats {
   totalSimulations: number;
   completedSimulations: number;
   inProgressSimulations: number;
+  totalUsers: number;
+  newUsersLast7Days: number;
+  newUsersLast30Days: number;
+  abandonedSimulations: number;
+  completionRate: number | null;
+  averageSimulationsPerActiveUser: number | null;
 }
+
+export interface AdminUser {
+  id: number;
+  username: string;
+  email: string;
+  role: 'USER' | 'ADMIN';
+  enabled: boolean;
+  createdAt: string;
+}
+
+export const adminUserApi = {
+  search: async (params: { search?: string; page?: number; size?: number } = {}): Promise<Page<AdminUser>> => {
+    const { data } = await apiClient.get('/admin/users', { params });
+    return data;
+  }
+};
 
 export interface CoverageProfileOption {
   id: number;
