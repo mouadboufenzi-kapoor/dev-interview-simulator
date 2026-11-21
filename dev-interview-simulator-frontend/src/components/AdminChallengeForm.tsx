@@ -14,14 +14,13 @@ import { AdminOptionsEditor } from './AdminOptionsEditor';
 
 interface Props {
   challengeId?: number;
-  defaultScenarioId?: number;
   onBack: () => void;
   onSaved: () => void;
 }
 
 const ALL_CHALLENGE_TYPES: ChallengeType[] = ['SITUATIONAL_QCM', 'CODE_REVIEW', 'ARCHITECTURE', 'SEQUENTIAL_REASONING'];
 
-export const AdminChallengeForm = ({ challengeId, defaultScenarioId, onBack, onSaved }: Props) => {
+export const AdminChallengeForm = ({ challengeId, onBack, onSaved }: Props) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -31,7 +30,7 @@ export const AdminChallengeForm = ({ challengeId, defaultScenarioId, onBack, onS
 
   const [formData, setFormData] = useState<AdminChallengeRequest>({
     title: '',
-    type: defaultScenarioId ? 'ARCHITECTURE' : 'SITUATIONAL_QCM',
+    type: 'SITUATIONAL_QCM',
     difficulty: 'INTERMEDIATE',
     selectionType: 'SINGLE_CHOICE',
     question: '',
@@ -42,7 +41,6 @@ export const AdminChallengeForm = ({ challengeId, defaultScenarioId, onBack, onS
     categoryIds: [],
     skillIds: [],
     profileIds: [],
-    scenarioId: defaultScenarioId,
     options: []
   });
 
@@ -156,7 +154,6 @@ export const AdminChallengeForm = ({ challengeId, defaultScenarioId, onBack, onS
     <div className="space-y-6">
       <AdminFormHeader
         challengeId={challengeId}
-        defaultScenarioId={defaultScenarioId}
         scenarioTitle={scenarioTitle}
         onBack={onBack}
         error={error}

@@ -1,14 +1,22 @@
 import { useState, useEffect } from 'react';
-import { adminApi } from '../api/adminApi';
+import { adminApi, statsApi } from '../api/adminApi';
 import type { AdminChallengeResponse } from '../api/adminApi';
 import { profileApi } from '../api/profileApi';
 import type { Profile } from '../api/profileApi';
-import { panel, tableHead } from '../styles/ui';
+import type { ChallengeType } from '../types';
+import { MODE_LABELS } from '../utils/resultAnalysis';
+import { panel, panelCard, tableHead } from '../styles/ui';
 import { IconButton } from './common/IconButton';
 import { Search, Edit2, Archive, CheckCircle } from 'lucide-react';
 import { Badge } from './common/Badge';
 
 const PAGE_SIZE = 6;
+const TYPE_ORDER: ChallengeType[] = ['SITUATIONAL_QCM', 'PROBLEM_SOLVING', 'CODE_REVIEW', 'ARCHITECTURE', 'SEQUENTIAL_REASONING'];
+
+const typeOrder = (type: string) => {
+  const index = TYPE_ORDER.indexOf(type as ChallengeType);
+  return index === -1 ? TYPE_ORDER.length : index;
+};
 
 interface Props {
   onEdit: (id: number) => void;
@@ -23,6 +31,7 @@ export const AdminChallengesContent = ({ onEdit }: Props) => {
   const [typeFilter, setTypeFilter] = useState('');
   const [difficultyFilter, setDifficultyFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [typeCounts, setTypeCounts] = useState<Record<string, number> | null>(null);
 
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -51,6 +60,16 @@ export const AdminChallengesContent = ({ onEdit }: Props) => {
     }
   };
 
+  const loadTypeCounts = () => {
+    statsApi.getStats()
+      .then(result => setTypeCounts(result.challengesByType))
+      .catch(() => setTypeCounts(null));
+  };
+
+  useEffect(() => {
+    loadTypeCounts();
+  }, []);
+
   useEffect(() => {
     profileApi.getProfiles()
       .then(setProfiles)
@@ -71,6 +90,7 @@ export const AdminChallengesContent = ({ onEdit }: Props) => {
       const newStatus = currentStatus === 'ARCHIVED' ? 'DRAFT' : 'ARCHIVED';
       await adminApi.changeStatus(id, newStatus);
       loadChallenges();
+      loadTypeCounts();
     } catch (err) {
       console.error(err);
     }
@@ -80,13 +100,28 @@ export const AdminChallengesContent = ({ onEdit }: Props) => {
     try {
       await adminApi.changeStatus(id, 'VALIDATED');
       loadChallenges();
+      loadTypeCounts();
     } catch (err) {
       console.error(err);
     }
   };
 
   return (
-    <div className={panel}>
+    <div className="space-y-4">
+      {typeCounts !== null && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
+          {Object.keys(typeCounts).sort((a, b) => typeOrder(a) - typeOrder(b)).map(type => (
+            <div key={type} className={`${panelCard} p-4 space-y-1`}>
+              <p className="text-[11px] uppercase tracking-wider text-ink-muted font-semibold">
+                {MODE_LABELS[type as ChallengeType] ?? type}
+              </p>
+              <p className="font-serif text-2xl font-bold text-navy-900">{typeCounts[type]}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className={panel}>
       <div className="p-4 border-b border-border-subtle flex flex-wrap gap-4">
         <div className="relative flex-1 min-w-[220px] max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted" />
@@ -234,6 +269,7 @@ export const AdminChallengesContent = ({ onEdit }: Props) => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };

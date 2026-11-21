@@ -92,19 +92,37 @@ export const AdminStatsPanel = ({ onOpenUsers }: Props) => {
     }
   ];
 
-  const simulationMetrics = [
-    { label: 'Terminées', value: nf.format(stats.completedSimulations) },
-    { label: 'En cours', value: nf.format(stats.inProgressSimulations) },
-    { label: 'Abandonnées', value: nf.format(stats.abandonedSimulations) },
+  const share = (count: number) => stats.totalSimulations === 0
+    ? '—'
+    : `${((count / stats.totalSimulations) * 100).toFixed(1)} %`;
+
+  const simulationRows = [
+    {
+      label: 'Terminées',
+      value: nf.format(stats.completedSimulations),
+      detail: `${share(stats.completedSimulations)} des simulations`
+    },
+    {
+      label: 'En cours',
+      value: nf.format(stats.inProgressSimulations),
+      detail: `${share(stats.inProgressSimulations)} des simulations`
+    },
+    {
+      label: 'Abandonnées',
+      value: nf.format(stats.abandonedSimulations),
+      detail: `${share(stats.abandonedSimulations)} des simulations`
+    },
     {
       label: 'Taux de finalisation',
-      value: stats.completionRate === null ? '—' : `${stats.completionRate} %`
+      value: stats.completionRate === null ? '—' : `${stats.completionRate} %`,
+      detail: 'terminées / lancées'
     },
     {
       label: 'Simulations / utilisateur actif',
       value: stats.averageSimulationsPerActiveUser === null
         ? '—'
-        : stats.averageSimulationsPerActiveUser.toFixed(1)
+        : stats.averageSimulationsPerActiveUser.toFixed(1),
+      detail: 'comptes inscrits ayant lancé au moins une simulation'
     }
   ];
 
@@ -122,40 +140,34 @@ export const AdminStatsPanel = ({ onOpenUsers }: Props) => {
         ))}
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        {simulationMetrics.map(metric => (
-          <div
-            key={metric.label}
-            className="bg-surface rounded-xl border border-card-border px-4 py-3 space-y-1"
-          >
-            <p className="text-[11px] uppercase tracking-wider text-ink-muted font-semibold">
-              {metric.label}
-            </p>
-            <p className="font-serif text-xl font-bold text-navy-900">{metric.value}</p>
-          </div>
-        ))}
-      </div>
-
       <div className={panel}>
         <div className="px-6 py-4 border-b border-border-subtle">
-          <h3 className="font-serif font-bold text-lg text-navy-900">Contenus par type</h3>
+          <h3 className="font-serif font-bold text-lg text-navy-900">Simulations</h3>
+          <p className="text-xs text-ink-secondary">
+            {nf.format(stats.totalSimulations)} simulations lancées au total
+          </p>
         </div>
-        <table className="w-full text-sm text-left">
-          <thead className={tableHead}>
-            <tr>
-              <th className="px-6 py-3 font-medium">Type</th>
-              <th className="px-6 py-3 font-medium text-right">Nombre</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border-subtle">
-            {Object.entries(stats.challengesByType).map(([type, count]) => (
-              <tr key={type} className="hover:bg-surface-elevated transition">
-                <td className="px-6 py-3 text-ink">{type}</td>
-                <td className="px-6 py-3 text-right font-mono font-semibold text-navy-900">{count}</td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left">
+            <thead className={tableHead}>
+              <tr>
+                <th className="px-6 py-3 font-medium">Indicateur</th>
+                <th className="px-6 py-3 font-medium text-right">Valeur</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-border-subtle">
+              {simulationRows.map(row => (
+                <tr key={row.label} className="hover:bg-surface-elevated transition">
+                  <td className="px-6 py-4 font-medium text-ink">
+                    {row.label}
+                    <span className="ml-1 text-xs font-normal text-ink-secondary">({row.detail})</span>
+                  </td>
+                  <td className="px-6 py-4 text-right font-serif text-2xl font-bold text-navy-900">{row.value}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

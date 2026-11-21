@@ -206,6 +206,14 @@ export interface CoverageCell {
   count: number;
 }
 
+export interface CoverageSummaryRow {
+  profileId: number;
+  profileCode: string;
+  profileName: string;
+  difficulty: DifficultyLevel;
+  contentCount: number;
+}
+
 export interface CoverageContentItem {
   id: number;
   title: string;
@@ -221,6 +229,10 @@ export interface CoverageContentItem {
 export const coverageApi = {
   getOptions: async (): Promise<CoverageOptions> => {
     const { data } = await apiClient.get('/admin/coverage/options');
+    return data;
+  },
+  getSummary: async (): Promise<{ rows: CoverageSummaryRow[] }> => {
+    const { data } = await apiClient.get('/admin/coverage/summary');
     return data;
   },
   getCoverage: async (params: {
