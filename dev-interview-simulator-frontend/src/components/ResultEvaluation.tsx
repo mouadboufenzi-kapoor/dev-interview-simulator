@@ -1,13 +1,18 @@
 import type { SimulationResultDTO } from '../types';
 import { Badge } from './common/Badge';
-import { CheckCircle2, Clock, Gauge } from 'lucide-react';
+import { CheckCircle2, Clock, Gauge, LockKeyhole } from 'lucide-react';
+import { Button } from './common/Button';
 import { getAssessment } from '../utils/resultAnalysis';
 import { estimateLevel } from '../utils/levelEstimation';
 import { LevelEstimate } from './LevelEstimate';
+import { trackEvent } from '../api/events';
 
 interface Props {
   summary: SimulationResultDTO;
   isGuest: boolean;
+  isPlacement: boolean;
+  onCreateAccount: () => void;
+  onContinuePlacement: () => void;
 }
 
 const formatTime = (seconds: number) => {
@@ -16,7 +21,7 @@ const formatTime = (seconds: number) => {
   return mins > 0 ? `${mins}m ${secs.toString().padStart(2, '0')}s` : `${secs}s`;
 };
 
-export const ResultEvaluation = ({ summary, isGuest }: Props) => {
+export const ResultEvaluation = ({ summary, isGuest, isPlacement, onCreateAccount, onContinuePlacement }: Props) => {
   const assessment = getAssessment(summary.successPercentage);
   const level = estimateLevel(
     [{ difficulty: summary.difficulty, answered: summary.totalQuestions, correct: summary.correctAnswersCount }],
@@ -48,14 +53,51 @@ export const ResultEvaluation = ({ summary, isGuest }: Props) => {
         </p>
       </div>
 
+      {isGuest && (
+        <div className="rounded border-2 border-border bg-card p-4 space-y-3">
+          <div className="flex items-start gap-3">
+            <LockKeyhole className="w-4 h-4 mt-0.5 text-muted flex-shrink-0" />
+            <div>
+              <p className="font-semibold text-sm text-text">Sauvegarde ton résultat</p>
+              <p className="mt-1 text-xs text-ink-secondary leading-relaxed">
+                Crée un compte gratuit pour garder ce résultat, voir tes points faibles et suivre ta progression
+              </p>
+            </div>
+          </div>
+          <Button type="button" variant="outline" size="lg" fullWidth onClick={onCreateAccount}>
+            Continuer avec Google
+          </Button>
+          <Button type="button" variant="primary" size="lg" fullWidth onClick={onCreateAccount}>
+            Créer mon compte
+          </Button>
+        </div>
+      )}
+
       <p className="text-sm text-ink-secondary leading-relaxed">{assessment.desc}</p>
 
       {level && (
-        <div className="pt-1">
+        <div className="pt-1 space-y-3">
           <LevelEstimate
             level={level}
             note={isGuest ? 'première estimation, à confirmer' : 'd’après cette simulation'}
           />
+          {isPlacement && (
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              fullWidth
+              onClick={() => {
+                trackEvent('placement_continue_clicked', {
+                  simulationId: summary.simulationId,
+                  metadata: { level: level.label },
+                });
+                onContinuePlacement();
+              }}
+            >
+              Continuer en niveau {level.index <= 1 ? 'Junior' : level.index <= 3 ? 'Intermédiaire' : 'Avancé'}
+            </Button>
+          )}
         </div>
       )}
 

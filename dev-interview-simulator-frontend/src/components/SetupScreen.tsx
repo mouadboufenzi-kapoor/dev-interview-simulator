@@ -18,7 +18,7 @@ interface Props {
   initialCategoryIds?: number[];
   initialSkillIds?: number[];
   skipProfileSelection?: boolean;
-  placement?: boolean;
+  initialDifficulty?: DifficultyLevel;
 }
 export const SetupScreen = ({
   onStart,
@@ -26,21 +26,23 @@ export const SetupScreen = ({
   activeMode,
   initialCategoryIds,
   initialSkillIds,
-  placement = false,
+  initialDifficulty,
 }: Props) => {
-  const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
-  const [showConfiguration, setShowConfiguration] = useState(false);
+  const [showConfiguration, setShowConfiguration] = useState(
+    Boolean(initialDifficulty)
+  );
   const [selectedMode, setSelectedMode] = useState<ChallengeType>(
     activeMode || 'SITUATIONAL_QCM'
   );
-  const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyLevel>('JUNIOR');
+  const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyLevel>(
+    initialDifficulty ?? 'JUNIOR'
+  );
   const [categories, setCategories] = useState<Category[]>([]);
   const [skills, setSkills] = useState<Skill[]>([]);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>(initialCategoryIds ?? []);
   const [selectedSkillIds, setSelectedSkillIds] = useState<number[]>(initialSkillIds ?? []);
   const [isLoadingTopics, setIsLoadingTopics] = useState(false);
   const [topicsError, setTopicsError] = useState<string | null>(null);
-  const [placement, setPlacement] = useState<boolean>(placement);
 
   useEffect(() => {
     let isMounted = true;
@@ -115,12 +117,7 @@ export const SetupScreen = ({
     });
   };
 
-  // Clic sur une carte profil (ou son bouton « Commencer ») → navigation  // immédiate vers la configuration, en haut de la page.  const handleProfileSelect = (profileId: string) => {
-    trackEvent('profile_selected', { metadata: { profile: profileId } });
-    setSelectedProfile(profileId);
-    setShowConfiguration(true);
-    scrollToTopAfterRender();
-  };
+  // Clic sur une carte profil (ou son bouton « Commencer ») → navigation  // immédiate vers la configuration, en haut de la page.  
 
   if (!showConfiguration) {
     return (
@@ -142,14 +139,11 @@ export const SetupScreen = ({
 
   // Si placement=true, on va directement en configuration sans afficher
   // le profil si skipProfileSelection est vrai, ou on saute directement
-  // vers la config. Sinon comportement normal.  if (placement && !skipProfileSelection) {
-    setShowConfiguration(true);
-  }
+  // vers la config. Sinon comportement normal.  
 
   return (
     <SetupConfigStep
       key="config"
-      onBack={() => setShowConfiguration(false)}
       loading={loading}
       onSubmit={handleSubmit}
       selectedMode={selectedMode}
@@ -167,7 +161,6 @@ export const SetupScreen = ({
         loading: isLoadingTopics,
         error: topicsError,
       }}
-      placement={placement}
     />
   );
 };

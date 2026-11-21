@@ -5,9 +5,9 @@ import { ResultHeader } from './ResultHeader';
 import { ResultEvaluation } from './ResultEvaluation';
 import { ResultCompetencies } from './ResultCompetencies';
 import { ResultPriority } from './ResultPriority';
-import { ResultGuestCta } from './ResultGuestCta';
 import { ResultQuestions } from './ResultQuestions';
 import { analyzeResult, groupSkillTagsByCategory } from '../utils/resultAnalysis';
+import { trackEvent } from '../api/events';
 
 interface Props {
   summary: SimulationResultDTO;
@@ -18,6 +18,8 @@ interface Props {
   isGuest: boolean;
   guestSimulationCount: number;
   onCreateAccount: () => void;
+  isPlacement: boolean;
+  onContinuePlacement: () => void;
 }
 
 export const ResultScreen = ({
@@ -26,8 +28,9 @@ export const ResultScreen = ({
   onStart,
   loading,
   isGuest,
-  guestSimulationCount,
   onCreateAccount,
+  isPlacement,
+  onContinuePlacement,
 }: Props) => {
   const categoryResults = summary.categoryResults ?? (
     summary.competencySource === 'CATEGORY' ? summary.competencyResults ?? [] : []
@@ -46,9 +49,44 @@ export const ResultScreen = ({
     <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8 py-1 sm:py-2">
       <ResultHeader mode={summary.mode} difficulty={summary.difficulty} />
 
-      <ResultEvaluation summary={summary} isGuest={isGuest} />
+      <ResultEvaluation
+        summary={summary}
+        isGuest={isGuest}
+        isPlacement={isPlacement}
+        onCreateAccount={onCreateAccount}
+        onContinuePlacement={onContinuePlacement}
+      />
 
-      {technicalWeaknesses.length > 0 && (
+      {isGuest && (
+        <section className="space-y-3">
+          {[
+            'Points faibles / axes à travailler',
+            'Plan de progression',
+            'Détail et corrections des questions',
+          ].map((title) => (
+            <div key={title} className="rounded border-2 border-border bg-card p-5">
+              <p className="font-semibold text-sm text-text">{title}</p>
+              <p className="mt-1 text-xs text-ink-secondary">
+                Aperçu disponible avec un compte gratuit.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="md"
+                className="mt-4"
+                onClick={() => {
+                  trackEvent('result_locked_clicked', { simulationId: summary.simulationId });
+                  onCreateAccount();
+                }}
+              >
+                Déverrouiller
+              </Button>
+            </div>
+          ))}
+        </section>
+      )}
+
+      {!isGuest && technicalWeaknesses.length > 0 && (
         <ResultPriority
           technicalWeaknesses={technicalWeaknesses}
           tagsByCategory={skillTagsByCategory}
@@ -59,7 +97,7 @@ export const ResultScreen = ({
         />
       )}
 
-      {categoryAnalysis.strengths.length > 0 && (
+      {!isGuest && categoryAnalysis.strengths.length > 0 && (
         <ResultCompetencies
           title="Domaines maîtrisés"
           subtitle="Technologies et domaines évalués"
@@ -70,7 +108,7 @@ export const ResultScreen = ({
           tagsByCompetency={skillTagsByCategory}
         />
       )}
-      {categoryAnalysis.toConsolidate.length > 0 && (
+      {!isGuest && categoryAnalysis.toConsolidate.length > 0 && (
         <ResultCompetencies
           title="Domaines à consolider"
           subtitle="Technologies et domaines évalués"
@@ -82,17 +120,7 @@ export const ResultScreen = ({
         />
       )}
 
-      <ResultQuestions summary={summary} />
-
-      {/* CTA invité — après le détail des questions (hiérarchie : diagnostic →
-          preuve → conversion), montre la valeur du compte sans bloquer */}
-      {isGuest && (
-        <ResultGuestCta
-          count={guestSimulationCount}
-          simulationId={summary.simulationId}
-          onCreateAccount={onCreateAccount}
-        />
-      )}
+      {!isGuest && <ResultQuestions summary={summary} />}
 
       {/* Restart CTA */}
       <div className="pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">

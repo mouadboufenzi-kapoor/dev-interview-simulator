@@ -6,7 +6,7 @@ import { PageTitle } from './common/PageTitle';
 import { SetupModeCards } from './SetupModeCards';
 import { SetupTopics } from './SetupTopics';
 import { trackEvent } from '../api/events';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
 interface TopicsProps {
   categories: Category[];
@@ -21,7 +21,6 @@ interface TopicsProps {
 }
 
 interface Props {
-  onBack: () => void;
   loading: boolean;
   onSubmit: (e: FormEvent) => void;
   selectedMode: ChallengeType;
@@ -29,7 +28,6 @@ interface Props {
   selectedDifficulty: DifficultyLevel;
   onSelectDifficulty: (difficulty: DifficultyLevel) => void;
   topics: TopicsProps;
-  placement?: boolean;
 }
 
 const DIFFICULTIES: { id: DifficultyLevel; label: string }[] = [
@@ -40,7 +38,6 @@ const DIFFICULTIES: { id: DifficultyLevel; label: string }[] = [
 
 const MOBILE_MAX_WIDTH_QUERY = '(max-width: 767px)';
 export const SetupConfigStep = ({
-  onBack,
   loading,
   onSubmit,
   selectedMode,
@@ -48,7 +45,6 @@ export const SetupConfigStep = ({
   selectedDifficulty,
   onSelectDifficulty,
   topics,
-  placement = false,
 }: Props) => {
   const levelSectionRef = useRef<HTMLDivElement>(null);
   const startButtonRef = useRef<HTMLDivElement>(null);
@@ -77,7 +73,6 @@ export const SetupConfigStep = ({
   return (
     <div className="screen-transition w-full flex flex-col items-center py-4 sm:py-6 px-4">
       <div className="w-full max-w-3xl mx-auto space-y-12 sm:space-y-14 text-center">
-        {/* Bouton principal : 'Trouve votre niveau' */
         <button
           type="button"
           onClick={() => trackEvent('config_level_selected', { mode: selectedMode })}
@@ -86,7 +81,6 @@ export const SetupConfigStep = ({
           Trouve votre niveau
         </button>
 
-        {/* Lien 'Personnaliser' qui replie les sections actuelles */
         <button
           type="button"
           onClick={() => trackEvent('config_personalize_opened', {})}
@@ -95,7 +89,6 @@ export const SetupConfigStep = ({
           Personnaliser
         </button>
 
-        {/* Brun & En-tête principal */
         <PageTitle size="hero-compact">
           Configurez votre session
         </PageTitle>
@@ -108,15 +101,12 @@ export const SetupConfigStep = ({
             <SetupModeCards selectedMode={selectedMode} onSelect={handleSelectMode} />
           </section>
 
-          {/* Configuration minimale (Niveau + Options) */
           <div className="flex flex-col items-center justify-between gap-6 pt-2">
             <div
               ref={levelSectionRef}
               className="flex flex-wrap items-center justify-center gap-2 text-xs font-sans"
             >
               <span id="difficulty-heading" className="text-muted font-mono uppercase tracking-[0.06em] mr-2">Niveau visé :</span>
-              {/* Sélecteur de niveau Contraste (spec §11) : boutons bordés,
-                  gap 8px, actif = fond brand + texte cta-text + ombre 2px. */}
               <div role="group" aria-labelledby="difficulty-heading" className="inline-flex gap-2">
                 {DIFFICULTIES.map((diff) => {
                   const isDiffSelected = selectedDifficulty === diff.id;
@@ -138,13 +128,8 @@ export const SetupConfigStep = ({
                 })}
               </div>
             </div>
-            {/* Technologies / sujets : masquées en Architecture — le backend choisit
-                un scénario au hasard et ignore ces filtres (findScenarioChallenges) :
-                les afficher serait trompeur. QCM, Code Review et Raisonnement
-                séquentiel, eux, filtrent réellement le contenu. */}
             {selectedMode !== 'ARCHITECTURE' && <SetupTopics {...topics} />}
 
-            {/* Bouton d'action prominent */
             <div ref={startButtonRef} className="pt-2">
               <Button
                 type="submit"

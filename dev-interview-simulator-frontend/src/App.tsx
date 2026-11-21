@@ -4,6 +4,7 @@ import type {
   SimulationResponse,
   SimulationResultDTO,
   ChallengeType,
+  DifficultyLevel,
 } from './types';
 import { simulationApi } from './api/simulationApi';
 import { pruneGuestSimulations, saveGuestSimulation } from './api/guestSimulations';
@@ -20,6 +21,7 @@ import { UserAccessModal, type AuthUser } from './components/UserAccessModal';
 import { AdminDashboard } from './components/AdminDashboard';
 import { SettingsScreen } from './components/SettingsScreen';
 import { LoadingNotice } from './components/common/LoadingNotice';
+import { estimateLevel } from './utils/levelEstimation';
 import { trackEvent } from './api/events';
 
 type ScreenState = 'SETUP' | 'QUIZ' | 'RESULT' | 'DASHBOARD' | 'ADMIN' | 'SETTINGS';
@@ -56,6 +58,8 @@ export default function App() {
   const [reviseCategoryIds, setReviseCategoryIds] = useState<number[] | null>(null);
   const [reviseSkillIds, setReviseSkillIds] = useState<number[] | null>(null);
   const [showAccessModal, setShowAccessModal] = useState(false);
+  const [isPlacementSimulation, setIsPlacementSimulation] = useState(false);
+  const [setupInitialDifficulty, setSetupInitialDifficulty] = useState<DifficultyLevel | undefined>();
   // Garde anti double-clic sur « Réviser » : évite deux démarrages simultanés.
   const reviseInFlight = useRef(false);
   const resultInFlight = useRef(false);
@@ -156,6 +160,7 @@ export default function App() {
         metadata: request.placement ? { placement: true } : null,
       });
       setSimulation(data);
+      setIsPlacementSimulation(Boolean(request.placement));
       setScreen('QUIZ');
       // Même mécanisme que goToSetup : sur mobile, un défilement lancé avant
       // le remplacement de l'écran est parfois abandonné — on le rejoue après
@@ -281,6 +286,19 @@ export default function App() {
 
   const handleAuthenticated = (authenticatedUser: AuthUser) => {
     setUser(authenticatedUser);
+    if (screen === 'RESULT' && simulation) {
+      simulationApi.getSimulationResult(simulation.id)
+        .then((data) => {
+          setSummary(data);
+          setScreen('RESULT');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        })
+        .catch((err) => {
+          console.error('Rafraîchissement du bilan après authentification impossible', err);
+          setScreen('RESULT');
+        });
+      return;
+    }
     setSimulation(null);
     setSummary(null);
     setError(null);
@@ -289,6 +307,22 @@ export default function App() {
   };
 
   const handleOpenSetup = () => goToSetup();
+
+  const handleContinuePlacement = () => {
+    if (!summary) return;
+    const level = estimateLevel(
+      [{ difficulty: summary.difficulty, answered: summary.totalQuestions, correct: summary.correctAnswersCount }],
+      1
+    );
+    const difficulty: DifficultyLevel =
+      level == null || level.index <= 1
+        ? 'JUNIOR'
+        : level.index <= 3
+          ? 'INTERMEDIATE'
+          : 'ADVANCED';
+    setSetupInitialDifficulty(difficulty);
+    goToSetup({ skipProfile: true });
+  };
 
   // Page Paramètres (profil + apparence) — accessible depuis le menu utilisateur.
   const handleOpenSettings = () => {
@@ -424,6 +458,7 @@ export default function App() {
               initialCategoryIds={reviseCategoryIds ?? undefined}
               initialSkillIds={reviseSkillIds ?? undefined}
               skipProfileSelection={user !== null || skipProfileStepOnSetup}
+              initialDifficulty={setupInitialDifficulty}
             />
           )}
 
@@ -463,6 +498,8 @@ export default function App() {
               isGuest={user === null}
               guestSimulationCount={guestSimulationCount}
               onCreateAccount={() => setShowAccessModal(true)}
+              isPlacement={isPlacementSimulation}
+              onContinuePlacement={handleContinuePlacement}
             />
           )}
         </div>

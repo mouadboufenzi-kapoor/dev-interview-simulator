@@ -46,6 +46,8 @@ public class AnalyticsEventService {
             "result_viewed",
             "guest_cta_viewed",
             "guest_cta_clicked",
+            "result_locked_clicked",
+            "placement_continue_clicked",
             "auth_modal_opened",
             "auth_method_chosen",
             "signup_completed",
