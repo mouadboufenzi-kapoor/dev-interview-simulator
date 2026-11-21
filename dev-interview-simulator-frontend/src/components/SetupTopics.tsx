@@ -38,7 +38,7 @@ export const SetupTopics = ({
   );
 
   const chipClass = (selected: boolean) =>
-    `min-h-11 rounded-full border-2 px-2.5 py-1.5 text-[13px] transition cursor-pointer sm:px-3 sm:py-2 sm:text-xs ${
+    `min-h-0 rounded-full border px-2 py-1 text-[11px] leading-none transition cursor-pointer sm:min-h-11 sm:border-2 sm:px-3 sm:py-2 sm:text-xs ${
       selected
         ? 'border-navy-900 bg-navy-100 font-semibold text-navy-900'
         : 'border-border bg-surface text-ink-secondary'
@@ -58,7 +58,7 @@ export const SetupTopics = ({
       ) : error ? (
         <p className="mt-3 text-xs text-crimson-700">{error}</p>
       ) : (
-        <div className="mt-2 flex flex-wrap gap-2">
+        <div className="mt-2 flex flex-wrap gap-1.5 sm:gap-2">
           {topCategories.map((category) => (
             <button
               key={category.id}
@@ -103,7 +103,7 @@ export const SetupTopics = ({
             <button
               type="button"
               onClick={() => setOpen(true)}
-              className="min-h-11 rounded-full border-2 border-border bg-card px-2.5 py-1.5 text-[13px] text-ink-secondary sm:px-3 sm:py-2 sm:text-xs"
+              className="min-h-0 rounded-full border border-border bg-card px-2 py-1 text-[11px] leading-none text-ink-secondary sm:min-h-11 sm:border-2 sm:px-3 sm:py-2 sm:text-xs"
             >
               + {remainingCount} autres
             </button>
