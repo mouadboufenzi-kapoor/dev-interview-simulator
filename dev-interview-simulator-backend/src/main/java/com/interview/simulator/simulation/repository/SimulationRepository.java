@@ -16,6 +16,11 @@ public interface SimulationRepository extends JpaRepository<Simulation, Long> {
 
     long countByStatus(SimulationStatus status);
 
+    long countByUserUsernameNot(String username);
+
+    @Query("SELECT COUNT(DISTINCT s.user.id) FROM Simulation s WHERE s.user.username <> :guestUsername")
+    long countDistinctRegisteredUsersWithSimulations(@Param("guestUsername") String guestUsername);
+
     @Query(value = """
         SELECT COUNT(s.id), COUNT(CASE WHEN s.status = 'COMPLETED' THEN 1 END)
         FROM simulations s
