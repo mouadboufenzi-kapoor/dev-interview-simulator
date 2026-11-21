@@ -18,8 +18,26 @@ import { UserDashboard } from './components/UserDashboard';
 import { UserAccessModal, type AuthUser } from './components/UserAccessModal';
 import { AdminDashboard } from './components/AdminDashboard';
 import { SettingsScreen } from './components/SettingsScreen';
+import { LoadingNotice } from './components/common/LoadingNotice';
 
 type ScreenState = 'SETUP' | 'QUIZ' | 'RESULT' | 'DASHBOARD' | 'ADMIN' | 'SETTINGS';
+
+type LoadingAction = { message: string; detail: string };
+
+const LOADING_REVISE: LoadingAction = {
+  message: 'Préparation de votre révision en cours…',
+  detail: 'Nous sélectionnons les questions adaptées à votre axe de travail.',
+};
+
+const LOADING_SIMULATION: LoadingAction = {
+  message: 'Préparation de votre simulation en cours…',
+  detail: 'La sélection des questions peut prendre quelques instants.',
+};
+
+const LOADING_RESULT: LoadingAction = {
+  message: 'Chargement de votre bilan en cours…',
+  detail: 'Récupération du compte-rendu de votre session.',
+};
 
 export default function App() {
   const [screen, setScreen] = useState<ScreenState>('SETUP');
@@ -28,6 +46,7 @@ export default function App() {
   const [summary, setSummary] = useState<SimulationResultDTO | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadingAction, setLoadingAction] = useState<LoadingAction | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
   // Après un bilan, « Lancer une nouvelle session » doit retomber sur le choix
   // du type de challenge : le profil ne doit plus être demandé.
@@ -37,6 +56,7 @@ export default function App() {
   const [showAccessModal, setShowAccessModal] = useState(false);
   // Garde anti double-clic sur « Réviser » : évite deux démarrages simultanés.
   const reviseInFlight = useRef(false);
+  const resultInFlight = useRef(false);
   // Nombre de simulations terminées par l'invité dans SA session (sessionStorage).
   // Côté backend, tous les invités partagent default_user : un compteur serveur
   // serait faussé — donc zéro architecture ajoutée, compteur local uniquement.
@@ -76,8 +96,10 @@ export default function App() {
   const handleStartSimulation = async (
     request: StartSimulationRequest,
     failureMessage =
-      'Impossible de lancer la session. Veuillez vérifier que le serveur backend Spring Boot est actif sur le port 8080.'
+      'Impossible de lancer la session. Veuillez vérifier que le serveur backend Spring Boot est actif sur le port 8080.',
+    pendingAction: LoadingAction = LOADING_SIMULATION
   ): Promise<boolean> => {
+    setLoadingAction(pendingAction);
     setLoading(true);
     setError(null);
     try {
@@ -109,6 +131,7 @@ export default function App() {
       setError(serverMessage || failureMessage);
       return false;
     } finally {
+      setLoadingAction(null);
       setLoading(false);
     }
   };
@@ -223,7 +246,8 @@ export default function App() {
     try {
       const started = await handleStartSimulation(
         { mode: 'SITUATIONAL_QCM', ...filters },
-        'Aucune question ciblée disponible pour cette compétence pour le moment. Vous pouvez préparer votre session manuellement.'
+        'Aucune question ciblée disponible pour cette compétence pour le moment. Vous pouvez préparer votre session manuellement.',
+        LOADING_REVISE
       );
       if (started) {
         setReviseCategoryIds(null);
@@ -239,6 +263,10 @@ export default function App() {
   };
 
   const handleOpenResult = async (simulationId: number) => {
+    if (resultInFlight.current) return;
+    resultInFlight.current = true;
+    setLoadingAction(LOADING_RESULT);
+    setError(null);
     try {
       const data = await simulationApi.getSimulationResult(simulationId);
       setSummary(data);
@@ -246,6 +274,9 @@ export default function App() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       setError('Impossible de récupérer le détail de cette simulation.');
+    } finally {
+      resultInFlight.current = false;
+      setLoadingAction(null);
     }
   };
 
@@ -368,6 +399,10 @@ export default function App() {
           )}
         </div>
       </main>
+
+      {loadingAction && (
+        <LoadingNotice overlay message={loadingAction.message} detail={loadingAction.detail} />
+      )}
 
       {/* Modal de création de compte — ouverte depuis le CTA invité du bilan.
           Navbar possède sa propre instance : l'overlay empêche les clics tant

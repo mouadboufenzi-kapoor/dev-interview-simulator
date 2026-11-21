@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { Loader2 } from 'lucide-react';
 import type { SimulationResponse, SubmitAnswerResponse } from '../types';
 import { simulationApi } from '../api/simulationApi';
 import { QuizProgressHeader } from './QuizProgressHeader';
@@ -8,6 +7,7 @@ import { QuizOptionsList } from './QuizOptionsList';
 import { QuizSequenceList } from './QuizSequenceList';
 import { QuizFeedbackPanel } from './QuizFeedbackPanel';
 import { QuizActionsFooter } from './QuizActionsFooter';
+import { LoadingNotice } from './common/LoadingNotice';
 
 const FALLBACK_QUESTION_TIME_SECONDS = 90;
 const AUTO_ADVANCE_DELAY_MS = 1500;
@@ -166,15 +166,10 @@ export const QuizScreen = ({ simulation, onFinish, onError, finishing }: Props) 
   if (finishing) {
     return (
       <div className="w-full max-w-4xl mx-auto py-16 text-center">
-        <div className="inline-flex flex-col items-center gap-4 bg-surface border-[0.5px] border-card-border rounded-2xl px-8 py-10 shadow-elevated">
-          <Loader2 className="w-7 h-7 animate-spin text-brand" />
-          <div className="space-y-1">
-            <p className="text-sm font-semibold text-text">Préparation de votre bilan…</p>
-            <p className="text-xs text-muted">
-              La session est en cours de clôture, un instant.
-            </p>
-          </div>
-        </div>
+        <LoadingNotice
+          message="Préparation de votre bilan…"
+          detail="La session est en cours de clôture, un instant."
+        />
       </div>
     );
   }
