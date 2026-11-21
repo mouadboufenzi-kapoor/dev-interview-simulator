@@ -1,4 +1,4 @@
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, BriefcaseBusiness } from 'lucide-react';
 import { Button } from './common/Button';
 import { StatTiles, type StatItem } from './common/StatTiles';
 
@@ -37,39 +37,51 @@ export const SetupProfileStep = ({ onPlacement, onPersonalize, onLogin }: Props)
           ))}
         </ul>
         <StatTiles items={[...COMMERCIAL_STATS]} className="my-5 sm:my-6" />
-        <section className="w-full rounded border-2 border-border bg-card p-5 text-left shadow-card">
-          <h2 className="font-serif text-xl font-bold text-text">
-            Développeur
-          </h2>
-          <p className="mt-3 text-sm text-muted">
-            Teste-toi en 4 minutes et découvre ton niveau.
-          </p>
-          <Button
-            type="button"
-            variant="primary"
-            size="lg"
-            rightIcon={<ArrowRight className="w-4 h-4" />}
-            onClick={onPlacement}
-            className="mt-3 w-full sm:w-[320px] sm:self-start"
-          >
-            Tester mon niveau
-          </Button>
-          <button
-            type="button"
-            onClick={onPersonalize}
-            className="mt-3 block min-h-11 text-xs text-link underline cursor-pointer"
-          >
-            Configurer mon entraînement →
-          </button>
-          <div className="mt-3 border-t border-border pt-[10px] text-center text-xs text-ink-secondary">
-            Déjà un compte ?{' '}
+        <section className="w-full rounded border-2 border-border bg-card p-5 text-left shadow-card sm:grid sm:grid-cols-2 sm:items-center sm:gap-6">
+          <div>
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded border-2 border-border bg-bg text-muted">
+                <BriefcaseBusiness className="h-4 w-4 stroke-[2]" />
+              </div>
+              <span className="rounded border-2 border-border bg-selected px-2 py-1 font-mono text-[10px] uppercase tracking-[0.06em] text-text shadow-card">
+                Disponible
+              </span>
+            </div>
+            <h2 className="mt-3 font-serif text-xl font-bold text-text">
+              Développeur
+            </h2>
+            <p className="mt-3 text-sm text-muted">
+              Teste-toi en 4 minutes et découvre ton niveau.
+            </p>
+          </div>
+          <div className="mt-3 flex flex-col items-center sm:mt-0">
+            <Button
+              type="button"
+              variant="primary"
+              size="lg"
+              rightIcon={<ArrowRight className="w-4 h-4" />}
+              onClick={onPlacement}
+              className="w-full sm:w-[300px]"
+            >
+              Tester mon niveau
+            </Button>
             <button
               type="button"
-              onClick={onLogin}
-              className="min-h-11 text-link underline cursor-pointer"
+              onClick={onPersonalize}
+              className="mt-3 block min-h-11 text-xs text-link underline cursor-pointer"
             >
-              Se connecter
+              Configurer mon entraînement →
             </button>
+            <div className="mt-3 w-full border-t border-border pt-[10px] text-center text-xs text-ink-secondary sm:mt-0">
+              Déjà un compte ?{' '}
+              <button
+                type="button"
+                onClick={onLogin}
+                className="min-h-11 text-link underline cursor-pointer"
+              >
+                Se connecter
+              </button>
+            </div>
           </div>
         </section>
       </div>
