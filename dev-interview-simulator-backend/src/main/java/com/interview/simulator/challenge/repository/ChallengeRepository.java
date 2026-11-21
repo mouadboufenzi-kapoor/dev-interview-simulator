@@ -28,6 +28,23 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
 
     List<Challenge> findByContentHash(String contentHash);
 
+    Optional<Challenge> findByTitleAndContentHash(String title, String contentHash);
+
+    @Query("""
+        SELECT DISTINCT c FROM Challenge c
+        JOIN c.categories cat
+        WHERE c.active = true
+          AND c.status = com.interview.simulator.challenge.entity.ContentStatus.VALIDATED
+          AND c.type = :type
+          AND c.difficulty = :difficulty
+          AND cat.name IN ('Java', 'Spring Boot', 'JPA / Hibernate',
+                           'SQL / PostgreSQL', 'API / Backend')
+    """)
+    List<Challenge> findPlacementFallbackCandidates(
+        @Param("type") ChallengeType type,
+        @Param("difficulty") DifficultyLevel difficulty
+    );
+
     long countByStatus(ContentStatus status);
 
     long countByType(ChallengeType type);

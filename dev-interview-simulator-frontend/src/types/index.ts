@@ -65,6 +65,7 @@ export interface StartSimulationRequest {
   categoryIds?: number[];
   skillIds?: number[];
   excludeChallengeIds?: number[];
+  placement?: boolean;
 }
 
 export interface SubmitAnswerRequest {

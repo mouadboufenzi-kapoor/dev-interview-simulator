@@ -29,6 +29,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
@@ -71,11 +72,63 @@ class SimulationServiceTest {
 
         SimulationResponse response = simulationService.startSimulation(new StartSimulationRequest(
                 ChallengeType.ARCHITECTURE, DifficultyLevel.INTERMEDIATE, null,
-                Set.of(), Set.of(), null));
+                Set.of(), Set.of(), null, null));
 
         assertEquals(6, response.challenges().size());
         assertEquals(List.of(1, 2, 3, 4, 5, 6), response.challenges().stream()
                 .map(challenge -> challenge.stepOrder()).toList());
+    }
+
+    @Test
+    void startPlacementSimulationUsesFiveOrderedMixedChallenges() {
+        User user = new User("guest", "guest@example.test");
+        when(userResolver.currentAuthenticatedOrNull()).thenReturn(Optional.of(user));
+        when(challengeRepository.findByTitleAndContentHash(anyString(), anyString()))
+            .thenReturn(Optional.empty());
+
+        Challenge juniorOne = placementChallenge(101L, "Junior one",
+            ChallengeType.SITUATIONAL_QCM, DifficultyLevel.JUNIOR);
+        Challenge juniorTwo = placementChallenge(102L, "Junior two",
+            ChallengeType.SITUATIONAL_QCM, DifficultyLevel.JUNIOR);
+        Challenge intermediate = placementChallenge(103L, "Intermediate",
+            ChallengeType.SITUATIONAL_QCM, DifficultyLevel.INTERMEDIATE);
+        Challenge codeReview = placementChallenge(104L, "Code review",
+            ChallengeType.CODE_REVIEW, DifficultyLevel.INTERMEDIATE);
+        Challenge advanced = placementChallenge(105L, "Advanced",
+            ChallengeType.SITUATIONAL_QCM, DifficultyLevel.ADVANCED);
+
+        when(challengeRepository.findPlacementFallbackCandidates(
+            ChallengeType.SITUATIONAL_QCM, DifficultyLevel.JUNIOR))
+            .thenReturn(List.of(juniorOne, juniorTwo));
+        when(challengeRepository.findPlacementFallbackCandidates(
+            ChallengeType.SITUATIONAL_QCM, DifficultyLevel.INTERMEDIATE))
+            .thenReturn(List.of(intermediate));
+        when(challengeRepository.findPlacementFallbackCandidates(
+            ChallengeType.CODE_REVIEW, DifficultyLevel.INTERMEDIATE))
+            .thenReturn(List.of(codeReview));
+        when(challengeRepository.findPlacementFallbackCandidates(
+            ChallengeType.SITUATIONAL_QCM, DifficultyLevel.ADVANCED))
+            .thenReturn(List.of(advanced));
+
+        when(simulationRepository.save(any(Simulation.class))).thenAnswer(invocation -> {
+            Simulation simulation = invocation.getArgument(0);
+            ReflectionTestUtils.setField(simulation, "id", 22L);
+            return simulation;
+        });
+
+        SimulationResponse response = simulationService.startSimulation(new StartSimulationRequest(
+            ChallengeType.SITUATIONAL_QCM, null, null,
+            Set.of(), Set.of(), null, true));
+
+        assertEquals(5, response.challenges().size());
+        assertEquals(ChallengeType.SITUATIONAL_QCM, response.mode());
+        assertEquals(List.of(
+            ChallengeType.SITUATIONAL_QCM,
+            ChallengeType.SITUATIONAL_QCM,
+            ChallengeType.SITUATIONAL_QCM,
+            ChallengeType.CODE_REVIEW,
+            ChallengeType.SITUATIONAL_QCM),
+            response.challenges().stream().map(challenge -> challenge.type()).toList());
     }
 
     private InterviewScenario scenario(Long id, String title) {
@@ -96,6 +149,19 @@ class SimulationServiceTest {
         challenge.setScenario(scenario);
         challenge.setStepOrder(order);
         challenge.setStatus(ContentStatus.VALIDATED);
+        return challenge;
+    }
+
+    private Challenge placementChallenge(
+            Long id, String title, ChallengeType type, DifficultyLevel difficulty) {
+        Challenge challenge = new Challenge();
+        ReflectionTestUtils.setField(challenge, "id", id);
+        challenge.setTitle(title);
+        challenge.setType(type);
+        challenge.setDifficulty(difficulty);
+        challenge.setQuestion(title);
+        challenge.setStatus(ContentStatus.VALIDATED);
+        challenge.setActive(true);
         return challenge;
     }
 }
