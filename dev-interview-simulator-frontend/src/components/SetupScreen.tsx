@@ -26,11 +26,10 @@ export const SetupScreen = ({
   activeMode,
   initialCategoryIds,
   initialSkillIds,
-  skipProfileSelection = false,
   placement = false,
 }: Props) => {
   const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
-  const [showConfiguration, setShowConfiguration] = useState(skipProfileSelection);
+  const [showConfiguration, setShowConfiguration] = useState(false);
   const [selectedMode, setSelectedMode] = useState<ChallengeType>(
     activeMode || 'SITUATIONAL_QCM'
   );
@@ -127,8 +126,16 @@ export const SetupScreen = ({
     return (
       <SetupProfileStep
         key="profiles"
-        selectedProfile={selectedProfile}
-        onSelect={handleProfileSelect}
+        onPlacement={() => onStart({
+          mode: 'SITUATIONAL_QCM',
+          difficulty: 'JUNIOR',
+          placement: true,
+        })}
+        onPersonalize={() => {
+          trackEvent('config_personalize_opened', {});
+          setShowConfiguration(true);
+          scrollToTopAfterRender();
+        }}
       />
     );
   }

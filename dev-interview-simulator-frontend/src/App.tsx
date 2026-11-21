@@ -153,6 +153,7 @@ export default function App() {
         simulationId: data.id,
         mode: data.mode,
         difficulty: data.difficulty,
+        metadata: request.placement ? { placement: true } : null,
       });
       setSimulation(data);
       setScreen('QUIZ');
