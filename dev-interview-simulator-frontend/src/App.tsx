@@ -62,6 +62,8 @@ export default function App() {
   const [reviseCategoryIds, setReviseCategoryIds] = useState<number[] | null>(null);
   const [reviseSkillIds, setReviseSkillIds] = useState<number[] | null>(null);
   const [showAccessModal, setShowAccessModal] = useState(false);
+  const [accessModalInitialMode, setAccessModalInitialMode] = useState<'login' | 'register'>('login');
+  const [accessModalGoogleFirst, setAccessModalGoogleFirst] = useState(false);
   const [isPlacementSimulation, setIsPlacementSimulation] = useState(false);
   const [setupInitialDifficulty, setSetupInitialDifficulty] = useState<DifficultyLevel | undefined>();
   // Garde anti double-clic sur « Réviser » : évite deux démarrages simultanés.
@@ -512,7 +514,16 @@ export default function App() {
               loading={loading}
               isGuest={user === null}
               guestSimulationCount={guestSimulationCount}
-              onCreateAccount={() => setShowAccessModal(true)}
+              onCreateAccount={() => {
+                setAccessModalInitialMode('register');
+                setAccessModalGoogleFirst(false);
+                setShowAccessModal(true);
+              }}
+              onGoogleAccount={() => {
+                setAccessModalInitialMode('login');
+                setAccessModalGoogleFirst(true);
+                setShowAccessModal(true);
+              }}
               isPlacement={isPlacementSimulation}
               onContinuePlacement={handleContinuePlacement}
             />
@@ -529,6 +540,8 @@ export default function App() {
           qu'une modale est ouverte, les deux ne peuvent donc pas se chevaucher. */}
       {showAccessModal && (
         <UserAccessModal
+          initialMode={accessModalInitialMode}
+          googleFirst={accessModalGoogleFirst}
           onClose={() => setShowAccessModal(false)}
           onAuthenticated={(authenticatedUser) => {
             setShowAccessModal(false);

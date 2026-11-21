@@ -6,12 +6,13 @@ import { Check, X, Clock3, CircleDashed, ChevronDown, ChevronUp } from 'lucide-r
 
 interface Props {
   summary: SimulationResultDTO;
+  isGuest?: boolean;
 }
 
 /** Questions visibles avant le dépliage « Voir toutes les questions ». */
 const INITIAL_VISIBLE = 4;
 
-export const ResultQuestions = ({ summary }: Props) => {
+export const ResultQuestions = ({ summary, isGuest = false }: Props) => {
   const [openQuestionId, setOpenQuestionId] = useState<number | null>(null);
   const [filter, setFilter] = useState<'ALL' | 'CORRECT' | 'INCORRECT'>('ALL');
   const [showAll, setShowAll] = useState(false);
@@ -35,9 +36,14 @@ export const ResultQuestions = ({ summary }: Props) => {
 
   // Densité visuelle : initialement seulement quelques questions, déploiement
   // à la demande (le filtre actif s'applique quelle que soit l'étendue).
-  const visibleQuestions = showAll
-    ? filteredQuestions
-    : filteredQuestions.slice(0, INITIAL_VISIBLE);
+  const visibleQuestions = isGuest
+    ? filteredQuestions.slice(0, 2)
+    : showAll
+      ? filteredQuestions
+      : filteredQuestions.slice(0, INITIAL_VISIBLE);
+  const lockedQuestionCount = isGuest
+    ? Math.max(0, filteredQuestions.length - visibleQuestions.length)
+    : 0;
 
   return (
     <div className="space-y-4">
@@ -159,11 +165,26 @@ export const ResultQuestions = ({ summary }: Props) => {
             </div>
           );
         })}
+        {lockedQuestionCount > 0 && (
+          <div className="rounded-2xl border-[0.5px] border-card-border bg-surface p-5 shadow-card" aria-label="Corrections verrouillées">
+            <p className="text-sm font-semibold text-text">
+              Corrections verrouillées
+            </p>
+            <p className="mt-1 text-xs text-ink-muted">
+              {lockedQuestionCount} correction{lockedQuestionCount > 1 ? 's' : ''} supplémentaire{lockedQuestionCount > 1 ? 's' : ''}
+            </p>
+            <div className="mt-3 flex gap-2" aria-hidden="true">
+              {[0, 1, 2].map((item) => (
+                <span key={item} className="h-3 flex-1 rounded bg-canvas-subtle blur-sm" />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Dépliage : au-delà de INITIAL_VISIBLE questions, un bouton unique
           étend ou réduit la liste (même pattern que ResultPriority). */}
-      {filteredQuestions.length > INITIAL_VISIBLE && (
+      {!isGuest && filteredQuestions.length > INITIAL_VISIBLE && (
         <button
           type="button"
           onClick={() => setShowAll((v) => !v)}

@@ -17,6 +17,8 @@ export interface AuthUser {
 interface Props {
   onClose: () => void;
   onAuthenticated: (user: AuthUser) => void;
+  initialMode?: AccessMode;
+  googleFirst?: boolean;
 }
 
 type AccessMode = 'login' | 'register';
@@ -52,8 +54,13 @@ const loadGoogleScript = (): Promise<void> => {
   return googleScriptPromise;
 };
 
-export const UserAccessModal = ({ onClose, onAuthenticated }: Props) => {
-  const [mode, setMode] = useState<AccessMode>('login');
+export const UserAccessModal = ({
+  onClose,
+  onAuthenticated,
+  initialMode = 'login',
+  googleFirst = false,
+}: Props) => {
+  const [mode, setMode] = useState<AccessMode>(initialMode);
   const [usernameOrEmail, setUsernameOrEmail] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -226,6 +233,12 @@ export const UserAccessModal = ({ onClose, onAuthenticated }: Props) => {
           </div>
         )}
 
+        {googleFirst && GOOGLE_CLIENT_ID && (
+          <div className="mt-5">
+            <div ref={googleButtonRef} className="flex justify-center" />
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <label className="block space-y-1.5">
             <span className="text-xs font-semibold text-ink-secondary">
@@ -277,7 +290,7 @@ export const UserAccessModal = ({ onClose, onAuthenticated }: Props) => {
           </Button>
         </form>
 
-        {GOOGLE_CLIENT_ID && (
+        {!googleFirst && GOOGLE_CLIENT_ID && (
           <div className="mt-5 border-t border-border-subtle pt-5">
             <div className="mb-3 flex items-center gap-3 text-[11px] uppercase tracking-[0.14em] text-ink-muted">
               <span className="h-px flex-1 bg-border-subtle" />
