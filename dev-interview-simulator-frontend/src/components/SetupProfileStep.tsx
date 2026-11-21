@@ -43,14 +43,14 @@ export const SetupProfileStep = ({ onPlacement, onPersonalize, onLogin }: Props)
               <div className="flex h-9 w-9 items-center justify-center rounded border-2 border-border bg-bg text-muted">
                 <BriefcaseBusiness className="h-4 w-4 stroke-[2]" />
               </div>
-              <h2 className="font-serif text-[22px] sm:text-[24px] font-bold leading-none text-text">
+              <h2 className="font-serif text-[20px] sm:text-[24px] font-bold leading-none text-text">
                 Développeur
               </h2>
               <span className="rounded border-2 border-border bg-selected px-2 py-1 font-mono text-[10px] uppercase tracking-[0.06em] text-text shadow-card">
                 Disponible
               </span>
             </div>
-            <p className="mt-3 text-sm text-muted">
+            <p className="mt-2 text-xs sm:text-sm text-muted">
               Teste-toi en 6 questions, 4 minutes et découvre ton niveau actuel.
             </p>
           </div>
@@ -68,11 +68,11 @@ export const SetupProfileStep = ({ onPlacement, onPersonalize, onLogin }: Props)
             <button
               type="button"
               onClick={onPersonalize}
-              className="mt-2 block min-h-11 text-xs text-link underline cursor-pointer"
+              className="mt-1 block min-h-11 text-xs text-link underline cursor-pointer"
             >
               Configurer mon entraînement →
             </button>
-            <div className="mt-3 w-full border-t border-border pt-[10px] text-center text-xs text-ink-secondary sm:mt-0">
+            <div className="mt-1 w-full border-t border-border pt-1.5 text-center text-xs text-ink-secondary sm:mt-0">
               Déjà un compte ?{' '}
               <button
                 type="button"
