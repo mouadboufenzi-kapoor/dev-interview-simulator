@@ -163,6 +163,28 @@ export const QuizScreen = ({ simulation, onFinish, onError, finishing }: Props) 
     }
   }, []);
 
+  useEffect(() => {
+    if (simulation.status !== 'IN_PROGRESS') return;
+    const guestAccessToken = simulation.guestAccessToken ?? undefined;
+
+    const handlePageHide = (event: PageTransitionEvent) => {
+      if (event.persisted) return;
+      simulationApi.abandonSimulationOnUnload(simulation.id, guestAccessToken);
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        simulationApi.markSimulationSeenOnUnload(simulation.id, guestAccessToken);
+      }
+    };
+
+    window.addEventListener('pagehide', handlePageHide);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      window.removeEventListener('pagehide', handlePageHide);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [simulation.id, simulation.status, simulation.guestAccessToken]);
+
   if (finishing) {
     return (
       <div className="w-full max-w-4xl mx-auto py-16 text-center">

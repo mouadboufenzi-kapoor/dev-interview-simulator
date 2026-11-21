@@ -5,8 +5,10 @@ import { clearStoredAuth } from './authStorage';
 // toujours requis — le backend mappe toutes les routes sous /api/**.
 const rawApiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api';
 
+export const apiBaseUrl = rawApiUrl.replace(/\/$/, '');
+
 export const apiClient = axios.create({
-  baseURL: rawApiUrl.replace(/\/$/, ''),
+  baseURL: apiBaseUrl,
   headers: {
     'Content-Type': 'application/json',
   },

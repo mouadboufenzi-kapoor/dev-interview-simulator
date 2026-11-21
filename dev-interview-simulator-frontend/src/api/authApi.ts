@@ -1,5 +1,7 @@
 import { apiClient } from './client';
 import { clearStoredAuth } from './authStorage';
+import { clearGuestSimulations, readGuestSimulationTokens } from './guestSimulations';
+import { simulationApi } from './simulationApi';
 
 export interface LoginRequest {
   usernameOrEmail: string;
@@ -25,6 +27,22 @@ export interface AuthResponse {
 const persistAuth = (authResponse: AuthResponse) => {
   localStorage.setItem('jwt_token', authResponse.token);
   localStorage.setItem('user', JSON.stringify(authResponse));
+};
+
+const claimGuestSimulations = async () => {
+  const tokens = readGuestSimulationTokens().slice(-50);
+  if (tokens.length === 0) return;
+  try {
+    await simulationApi.claimSimulations(tokens);
+    clearGuestSimulations();
+  } catch (error) {
+    console.error('Rattachement des simulations invité impossible', error);
+  }
+};
+
+const persistAuthAndClaim = async (authResponse: AuthResponse) => {
+  persistAuth(authResponse);
+  await claimGuestSimulations();
 };
 
 const normalizeAuthResponse = (response: unknown): AuthResponse => {
@@ -76,7 +94,7 @@ export const authApi = {
       clearStoredAuth();
       throw error;
     }
-    persistAuth(authResponse);
+    await persistAuthAndClaim(authResponse);
     return authResponse;
   },
   
@@ -90,7 +108,7 @@ export const authApi = {
       clearStoredAuth();
       throw error;
     }
-    persistAuth(authResponse);
+    await persistAuthAndClaim(authResponse);
     return authResponse;
   },
   
@@ -108,7 +126,7 @@ export const authApi = {
       clearStoredAuth();
       throw error;
     }
-    persistAuth(authResponse);
+    await persistAuthAndClaim(authResponse);
     return authResponse;
   },
 

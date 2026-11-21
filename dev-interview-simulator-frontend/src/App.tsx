@@ -6,6 +6,7 @@ import type {
   ChallengeType,
 } from './types';
 import { simulationApi } from './api/simulationApi';
+import { pruneGuestSimulations, saveGuestSimulation } from './api/guestSimulations';
 import { SetupScreen } from './components/SetupScreen';
 import { QuizScreen } from './components/QuizScreen';
 import { useEffect } from 'react';
@@ -69,6 +70,7 @@ export default function App() {
   });
 
   useEffect(() => {
+    pruneGuestSimulations();
     const storedUser = localStorage.getItem('user');
     const token = localStorage.getItem('jwt_token');
     if (storedUser && token) {
@@ -109,6 +111,7 @@ export default function App() {
         throw new Error('La session reçue ne contient aucune question.');
       }
 
+      saveGuestSimulation(data);
       setSimulation(data);
       setScreen('QUIZ');
       // Même mécanisme que goToSetup : sur mobile, un défilement lancé avant

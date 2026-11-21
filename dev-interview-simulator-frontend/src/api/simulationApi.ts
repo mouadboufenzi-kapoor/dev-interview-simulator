@@ -1,4 +1,4 @@
-import { apiClient } from './client';
+import { apiBaseUrl, apiClient } from './client';
 import type {
   Category,
   Skill,
@@ -9,6 +9,28 @@ import type {
   SimulationResultDTO,
   SimulationSummaryResponse,
 } from '../types';
+
+const postOnUnload = (path: string, guestAccessToken?: string | null): void => {
+  const url = `${apiBaseUrl}${path}`;
+  if (guestAccessToken) {
+    if (typeof navigator.sendBeacon !== 'function') return;
+    navigator.sendBeacon(url, new URLSearchParams({ guestAccessToken }));
+    return;
+  }
+  const authToken = localStorage.getItem('jwt_token');
+  if (!authToken) return;
+  void fetch(url, {
+    method: 'POST',
+    keepalive: true,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${authToken}`,
+    },
+    body: JSON.stringify({}),
+  }).catch((error) => {
+    console.error('Envoi de la requête de sortie impossible', error);
+  });
+};
 
 export const simulationApi = {
   // Récupérer la liste des catégories
@@ -27,6 +49,20 @@ export const simulationApi = {
   startSimulation: async (request: StartSimulationRequest): Promise<SimulationResponse> => {
     const response = await apiClient.post<SimulationResponse>('/simulations', request);
     return response.data;
+  },
+
+  claimSimulations: async (tokens: string[]): Promise<number> => {
+    if (tokens.length === 0) return 0;
+    const response = await apiClient.post<{ claimed: number }>('/simulations/claim', { tokens });
+    return response.data.claimed;
+  },
+
+  abandonSimulationOnUnload: (simulationId: number, guestAccessToken?: string | null): void => {
+    postOnUnload(`/simulations/${simulationId}/abandon`, guestAccessToken);
+  },
+
+  markSimulationSeenOnUnload: (simulationId: number, guestAccessToken?: string | null): void => {
+    postOnUnload(`/simulations/${simulationId}/seen`, guestAccessToken);
   },
 
   // Soumettre une réponse à une question
