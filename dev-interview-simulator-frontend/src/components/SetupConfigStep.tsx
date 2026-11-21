@@ -1,12 +1,11 @@
-import { useRef } from 'react';
-import type { FormEvent, RefObject } from 'react';
+import type { FormEvent } from 'react';
 import type { Category, ChallengeType, DifficultyLevel, Skill } from '../types';
 import { Button } from './common/Button';
 import { PageTitle } from './common/PageTitle';
 import { SetupModeCards } from './SetupModeCards';
 import { SetupTopics } from './SetupTopics';
-import { trackEvent } from '../api/events';
 import { ArrowRight } from 'lucide-react';
+import { trackEvent } from '../api/events';
 
 interface TopicsProps {
   categories: Category[];
@@ -32,11 +31,20 @@ interface Props {
 
 const DIFFICULTIES: { id: DifficultyLevel; label: string }[] = [
   { id: 'JUNIOR', label: 'Junior' },
-  { id: 'INTERMEDIATE', label: 'Intermédiaire' },
+  { id: 'INTERMEDIATE', label: 'Confirmé' },
   { id: 'ADVANCED', label: 'Senior' },
 ];
 
-const MOBILE_MAX_WIDTH_QUERY = '(max-width: 767px)';
+const MODE_LABELS: Record<ChallengeType, string> = {
+  SITUATIONAL_QCM: 'QCM',
+  CODE_REVIEW: 'Code review',
+  ARCHITECTURE: 'Mises en situation',
+  SEQUENTIAL_REASONING: 'Raisonnement séquentiel',
+  PROBLEM_SOLVING: 'Résolution',
+};
+
+const PERSONALIZED_QUESTION_COUNT = 10;
+
 export const SetupConfigStep = ({
   loading,
   onSubmit,
@@ -46,106 +54,88 @@ export const SetupConfigStep = ({
   onSelectDifficulty,
   topics,
 }: Props) => {
-  const levelSectionRef = useRef<HTMLDivElement>(null);
-  const startButtonRef = useRef<HTMLDivElement>(null);
-
-  const scrollOnMobile = (target: RefObject<HTMLDivElement | null>) => {
-    if (window.matchMedia(MOBILE_MAX_WIDTH_QUERY).matches) {
-      target.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  };
-
-  const handleSelectMode = (mode: ChallengeType) => {
-    trackEvent('config_mode_selected', { mode });
-    onSelectMode(mode);
-    scrollOnMobile(levelSectionRef);
-  };
-
-  const handleSelectDifficulty = (difficulty: DifficultyLevel) => {
-    trackEvent('config_level_selected', { difficulty });
-    onSelectDifficulty(difficulty);
-    scrollOnMobile(startButtonRef);
-  };
-
-  // Suppression des auto-scrolls dans cet écran
-  // Garde les comportements du quiz
+  const selectedTechnologyNames = [
+    ...topics.categories
+      .filter((category) => topics.selectedCategoryIds.includes(category.id))
+      .map((category) => category.name),
+  ];
+  const technologySummary = selectedTechnologyNames.length > 0
+    ? selectedTechnologyNames.join(', ')
+    : 'Toutes technologies';
+  const difficultyLabel =
+    DIFFICULTIES.find((difficulty) => difficulty.id === selectedDifficulty)?.label
+    ?? 'Junior';
 
   return (
-    <div className="screen-transition w-full flex flex-col items-center py-4 sm:py-6 px-4">
-      <div className="w-full max-w-3xl mx-auto space-y-12 sm:space-y-14 text-center">
-        <button
-          type="button"
-          onClick={() => trackEvent('config_level_selected', { mode: selectedMode })}
-          className="mx-auto flex items-center gap-2 text-xs font-medium text-muted hover:text-text transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-        >
-          Trouve votre niveau
-        </button>
-
-        <button
-          type="button"
-          onClick={() => trackEvent('config_personalize_opened', {})}
-          className="mt-2 text-sm text-link underline cursor-pointer"
-        >
-          Personnaliser
-        </button>
-
-        <PageTitle size="hero-compact">
-          Configurez votre session
+    <div className="screen-transition w-full px-4 py-4 sm:px-6 sm:py-5">
+      <div className="mx-auto w-full max-w-3xl">
+        <PageTitle size="hero-compact" className="text-center">
+          Configure ton entraînement
         </PageTitle>
 
-        <form onSubmit={onSubmit} className="space-y-10 sm:space-y-12">
-          <section aria-labelledby="simulation-mode-heading" className="space-y-4">
-            <h2 id="simulation-mode-heading" className="text-sm font-semibold text-text">
-              Format de simulation
+        <form onSubmit={onSubmit} className="mt-5 pb-24 sm:pb-0">
+          <section className="rounded border-2 border-border bg-card p-5 text-left shadow-card">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted">
+              Niveau visé
             </h2>
-            <SetupModeCards selectedMode={selectedMode} onSelect={handleSelectMode} />
+            <div role="group" aria-label="Niveau visé" className="mt-3 grid grid-cols-3 gap-2">
+              {DIFFICULTIES.map((difficulty) => (
+                <button
+                  key={difficulty.id}
+                  type="button"
+                  onClick={() => {
+                    trackEvent('config_level_selected', { difficulty: difficulty.id });
+                    onSelectDifficulty(difficulty.id);
+                  }}
+                  aria-pressed={selectedDifficulty === difficulty.id}
+                  className={`min-h-11 rounded border-2 px-2 text-sm font-semibold ${
+                    selectedDifficulty === difficulty.id
+                      ? 'border-border bg-brand text-cta-text shadow-[2px_2px_0_var(--color-shadow)]'
+                      : 'border-border bg-card text-text'
+                  }`}
+                >
+                  {difficulty.label}
+                </button>
+              ))}
+            </div>
+
+            <h2 className="mt-5 text-xs font-semibold uppercase tracking-wider text-muted">
+              Challenge
+            </h2>
+            <div className="mt-3">
+              <SetupModeCards
+                selectedMode={selectedMode}
+                onSelect={(mode) => {
+                  trackEvent('config_mode_selected', { mode });
+                  onSelectMode(mode);
+                }}
+              />
+            </div>
+
+            <div className="mt-5">
+              <SetupTopics {...topics} />
+            </div>
+
+            <p className="mt-5 border-t border-border pt-3 text-xs text-muted">
+              {PERSONALIZED_QUESTION_COUNT} questions · {MODE_LABELS[selectedMode]} · {difficultyLabel} · {technologySummary}
+            </p>
           </section>
 
-          <div className="flex flex-col items-center justify-between gap-6 pt-2">
-            <div
-              ref={levelSectionRef}
-              className="flex flex-wrap items-center justify-center gap-2 text-xs font-sans"
+          <div className="fixed bottom-0 left-0 right-0 z-20 border-t-2 border-border bg-surface px-4 py-3 sm:static sm:mt-5 sm:border-0 sm:bg-transparent sm:p-0">
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              loading={loading}
+              rightIcon={<ArrowRight className="h-4 w-4" />}
+              fullWidth
+              className="sm:w-[320px]"
             >
-              <span id="difficulty-heading" className="text-muted font-mono uppercase tracking-[0.06em] mr-2">Niveau visé :</span>
-              <div role="group" aria-labelledby="difficulty-heading" className="inline-flex gap-2">
-                {DIFFICULTIES.map((diff) => {
-                  const isDiffSelected = selectedDifficulty === diff.id;
-                  return (
-                    <button
-                      key={diff.id}
-                      type="button"
-                      onClick={() => handleSelectDifficulty(diff.id)}
-                      aria-pressed={isDiffSelected}
-                      className={`px-3.5 py-2 min-h-11 rounded border-2 text-xs font-semibold transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-bg ${
-                        isDiffSelected
-                          ? 'bg-brand text-cta-text border-border shadow-[2px_2px_0_var(--color-shadow)]'
-                          : 'bg-card text-text border-border hover:border-brand'
-                      }`}
-                    >
-                      {diff.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-            {selectedMode !== 'ARCHITECTURE' && <SetupTopics {...topics} />}
-
-            <div ref={startButtonRef} className="pt-2">
-              <Button
-                type="submit"
-                variant="primary"
-                size="lg"
-                loading={loading}
-                rightIcon={<ArrowRight className="w-4 h-4" />}
-                className="px-9 py-3 text-base font-semibold tracking-wide"
-              >
-                Lancer ma simulation
-              </Button>
-            </div>
+              Commencer
+            </Button>
           </div>
         </form>
       </div>
     </div>
   );
 };
-
