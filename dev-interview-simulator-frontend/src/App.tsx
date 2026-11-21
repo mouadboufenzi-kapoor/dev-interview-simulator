@@ -22,6 +22,10 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { SettingsScreen } from './components/SettingsScreen';
 import { LoadingNotice } from './components/common/LoadingNotice';
 import { estimateLevel } from './utils/levelEstimation';
+import {
+  readPlacementSeenChallengeIds,
+  savePlacementSeenChallengeIds,
+} from './api/placementSeen';
 import { trackEvent } from './api/events';
 
 type ScreenState = 'SETUP' | 'QUIZ' | 'RESULT' | 'DASHBOARD' | 'ADMIN' | 'SETTINGS';
@@ -146,13 +150,24 @@ export default function App() {
     setLoading(true);
     setError(null);
     try {
-      const data = await simulationApi.startSimulation(request);
+      const placementRequest = request.placement
+        ? {
+            ...request,
+            excludeChallengeIds: readPlacementSeenChallengeIds(),
+          }
+        : request;
+      const data = await simulationApi.startSimulation(placementRequest);
 
       if (!Array.isArray(data.challenges) || data.challenges.length === 0) {
         throw new Error('La session reçue ne contient aucune question.');
       }
 
       saveGuestSimulation(data);
+      if (placementRequest.placement) {
+        savePlacementSeenChallengeIds(
+          data.challenges.map((challenge) => challenge.challengeId)
+        );
+      }
       trackEvent('simulation_started', {
         simulationId: data.id,
         mode: data.mode,

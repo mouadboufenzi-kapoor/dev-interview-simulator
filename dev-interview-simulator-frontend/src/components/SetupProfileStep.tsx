@@ -40,13 +40,10 @@ export const SetupProfileStep = ({ onPlacement, onPersonalize }: Props) => (
 
       <section className="w-full max-w-3xl rounded border-2 border-border bg-card p-5 text-left shadow-card sm:p-6">
         <h2 className="font-serif text-xl font-bold text-text">
-          Teste ton niveau en développement backend
+          Développeur
         </h2>
         <p className="mt-2 text-sm text-muted">
-          Java · Spring Boot · SQL · API
-        </p>
-        <p className="mt-3 text-xs text-ink-secondary">
-          5 questions · 3 minutes · niveau estimé à la fin
+          Teste ton niveau : 5 questions, niveau estimé à la fin
         </p>
         <Button
           type="button"
@@ -64,7 +61,7 @@ export const SetupProfileStep = ({ onPlacement, onPersonalize }: Props) => (
           onClick={onPersonalize}
           className="mt-4 block text-sm text-link underline cursor-pointer mx-auto"
         >
-          Personnaliser ma simulation
+          Personnaliser
         </button>
       </section>
     </div>

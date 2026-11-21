@@ -131,6 +131,38 @@ class SimulationServiceTest {
             response.challenges().stream().map(challenge -> challenge.type()).toList());
     }
 
+    @Test
+    void startPlacementSimulationExcludesSeenChallengeFromConfiguredPool() {
+        User user = new User("guest", "guest@example.test");
+        Challenge seenJunior = placementChallenge(101L, "Q1 seen",
+            ChallengeType.SITUATIONAL_QCM, DifficultyLevel.JUNIOR);
+        Challenge replacementJunior = placementChallenge(102L, "Q1 replacement",
+            ChallengeType.SITUATIONAL_QCM, DifficultyLevel.JUNIOR);
+
+        when(userResolver.currentAuthenticatedOrNull()).thenReturn(Optional.of(user));
+        when(challengeRepository.findByTitleAndContentHash(
+            "Comparaison de jetons de session avec ==",
+            "559c849fa23d7adad0a3bc6446c667826e905870d2f9924ad93992faf432fdd6"))
+            .thenReturn(Optional.of(seenJunior));
+        when(challengeRepository.findPlacementFallbackCandidates(
+            ChallengeType.SITUATIONAL_QCM, DifficultyLevel.JUNIOR))
+            .thenReturn(List.of(seenJunior, replacementJunior));
+
+        when(simulationRepository.save(any(Simulation.class))).thenAnswer(invocation -> {
+            Simulation simulation = invocation.getArgument(0);
+            ReflectionTestUtils.setField(simulation, "id", 23L);
+            return simulation;
+        });
+
+        SimulationResponse response = simulationService.startSimulation(new StartSimulationRequest(
+            ChallengeType.SITUATIONAL_QCM, null, null,
+            Set.of(), Set.of(), Set.of(101L), true));
+
+        assertEquals(
+            replacementJunior.getId(),
+            response.challenges().get(0).challengeId());
+    }
+
     private InterviewScenario scenario(Long id, String title) {
         InterviewScenario scenario = new InterviewScenario();
         ReflectionTestUtils.setField(scenario, "id", id);
