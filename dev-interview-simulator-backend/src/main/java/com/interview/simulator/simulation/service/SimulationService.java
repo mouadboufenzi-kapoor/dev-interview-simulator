@@ -14,6 +14,8 @@ import com.interview.simulator.category.entity.Category;
 import com.interview.simulator.skill.entity.Skill;
 import com.interview.simulator.simulation.dto.SimulationChallengeResponse;
 import com.interview.simulator.simulation.dto.ChallengeCorrectionDTO;
+import com.interview.simulator.simulation.dto.ClaimSimulationsRequest;
+import com.interview.simulator.simulation.dto.ClaimSimulationsResponse;
 import com.interview.simulator.simulation.dto.SimulationResponse;
 import com.interview.simulator.simulation.dto.SimulationResultDTO;
 import com.interview.simulator.simulation.dto.SimulationSummaryResponse;
@@ -705,6 +707,36 @@ public class SimulationService {
                 skillResults,
                 questionSummaries
         );
+    }
+
+    @Transactional
+    public ClaimSimulationsResponse claimSimulations(ClaimSimulationsRequest request) {
+        User user = userResolver.currentAuthenticatedOrNull()
+                .orElseThrow(() -> new ApiException(
+                        HttpStatus.UNAUTHORIZED,
+                        "Authentification requise pour rattacher des simulations."
+                ));
+
+        int claimed = 0;
+        for (String token : request.tokens()) {
+            Simulation simulation = simulationRepository
+                    .findByGuestAccessTokenHash(hashGuestAccessToken(token))
+                    .orElse(null);
+            if (simulation == null
+                    || !UserResolver.GUEST_USERNAME.equals(simulation.getUser().getUsername())) {
+                continue;
+            }
+            simulation.setUser(user);
+            simulation.setGuestAccessTokenHash(null);
+            claimed++;
+        }
+        return new ClaimSimulationsResponse(claimed);
+    }
+
+    @Transactional
+    public void markSimulationSeen(Long simulationId, String guestAccessToken) {
+        Simulation simulation = findOwnedSimulation(simulationId, guestAccessToken);
+        simulation.setLastSeenAt(LocalDateTime.now());
     }
 
     private Simulation findOwnedSimulation(Long simulationId, String guestAccessToken) {

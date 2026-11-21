@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface SimulationRepository extends JpaRepository<Simulation, Long> {
@@ -17,6 +18,8 @@ public interface SimulationRepository extends JpaRepository<Simulation, Long> {
     long countByStatus(SimulationStatus status);
 
     long countByUserUsernameNot(String username);
+
+    Optional<Simulation> findByGuestAccessTokenHash(String guestAccessTokenHash);
 
     @Query("SELECT COUNT(DISTINCT s.user.id) FROM Simulation s WHERE s.user.username <> :guestUsername")
     long countDistinctRegisteredUsersWithSimulations(@Param("guestUsername") String guestUsername);
