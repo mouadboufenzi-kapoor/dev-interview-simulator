@@ -7,12 +7,11 @@ import { DIFFICULTY_LABELS, MODE_LABELS } from '../utils/resultAnalysis';
 interface Props {
   mode: ChallengeType;
   difficulty: DifficultyLevel | null;
-  levelLabel?: string | null;
   onBack?: () => void;
 }
 
-export const ResultHeader = ({ mode, difficulty, levelLabel, onBack }: Props) => (
-  <div className="flex items-center justify-between gap-2">
+export const ResultHeader = ({ mode, difficulty, onBack }: Props) => (
+  <div className="flex flex-wrap items-center justify-between gap-2">
     <div className="flex min-w-0 items-center gap-1.5">
       {onBack && <BackButton onClick={onBack} />}
       <PageTitle
@@ -23,12 +22,7 @@ export const ResultHeader = ({ mode, difficulty, levelLabel, onBack }: Props) =>
       </PageTitle>
     </div>
 
-    <div className="flex flex-shrink-0 items-center gap-1">
-      {levelLabel && (
-        <Badge variant="navy" size="sm">
-          <span className="text-[10px]">{levelLabel}</span>
-        </Badge>
-      )}
+    <div className="flex flex-wrap items-center gap-1">
       <Badge variant="default" size="sm">
         <span className="text-[10px]">{MODE_LABELS[mode] ?? mode}</span>
       </Badge>
