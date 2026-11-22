@@ -14,6 +14,8 @@ interface Props {
   tagsByCompetency: Record<string, string[]>;
 }
 
+const MAX_TAGS = 3;
+
 const TAG_CLASS_NAME =
   'inline-flex rounded-full border border-border-subtle bg-surface px-1.5 py-0.5 text-[10px] font-medium text-ink-secondary';
 
@@ -50,27 +52,37 @@ export const ResultCompetencies = ({
 
       <ul className="space-y-3.5">
         {visibleItems.map((c) => {
-          const [primaryTag, ...secondaryTags] = tagsByCompetency[c.name] ?? [];
+          const tags = tagsByCompetency[c.name] ?? [];
+          const visibleTags = tags.slice(0, MAX_TAGS);
+          const hiddenTags = tags.slice(MAX_TAGS);
           return (
             <li key={c.id} className="space-y-1.5">
               <div className="flex items-center justify-between gap-2 text-sm">
-                <span className="min-w-0 truncate font-semibold text-ink">{c.name}</span>
-                <div className="flex flex-shrink-0 items-center gap-1.5">
-                  {primaryTag && <span className={TAG_CLASS_NAME}>{primaryTag}</span>}
-                  {secondaryTags.length > 0 && (
-                    <div className="hidden items-center gap-1.5 sm:flex">
-                      {secondaryTags.map((tag) => (
-                        <span key={tag} className={TAG_CLASS_NAME}>
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  <span className={`font-mono text-xs font-semibold ${styles.value}`}>
-                    {c.pct} %
-                  </span>
-                </div>
+                <span className="min-w-0 truncate font-semibold text-ink" title={c.name}>
+                  {c.name}
+                </span>
+                <span className={`flex-shrink-0 font-mono text-xs font-semibold ${styles.value}`}>
+                  {c.pct} %
+                </span>
               </div>
+              {tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {visibleTags.map((tag) => (
+                    <span key={tag} className={TAG_CLASS_NAME}>
+                      {tag}
+                    </span>
+                  ))}
+                  {hiddenTags.length > 0 && (
+                    <span
+                      className={TAG_CLASS_NAME}
+                      title={hiddenTags.join(', ')}
+                      aria-label={hiddenTags.join(', ')}
+                    >
+                      +{hiddenTags.length}
+                    </span>
+                  )}
+                </div>
+              )}
               <div className="h-1.5 rounded-full bg-canvas-subtle overflow-hidden">
                 <div
                   className={`h-full rounded-full ${styles.bar}`}

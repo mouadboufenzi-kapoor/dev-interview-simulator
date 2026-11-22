@@ -17,6 +17,7 @@ interface Props {
 }
 
 const MAX_VISIBLE = 3;
+const MAX_TAGS = 3;
 const TAG_CLASS_NAME =
   'inline-flex rounded-full border border-border-subtle bg-surface px-1.5 py-0.5 text-[10px] font-medium text-ink-secondary';
 
@@ -41,27 +42,37 @@ export const ResultPriority = ({
     <section aria-label="Axes techniques" className="border-t border-border-subtle pt-3">
       <ul className="space-y-2">
         {visibleWeaknesses.map((item, index) => {
-          const [primaryTag, ...secondaryTags] = tagsByCategory[item.name] ?? [];
+          const tags = tagsByCategory[item.name] ?? [];
+          const visibleTags = tags.slice(0, MAX_TAGS);
+          const hiddenTags = tags.slice(MAX_TAGS);
           return (
             <li key={item.id}>
               <div className="flex items-center justify-between gap-2">
-                <span className="min-w-0 truncate text-sm font-semibold text-ink">{item.name}</span>
-                <div className="flex flex-shrink-0 items-center gap-1.5">
-                  {primaryTag && <span className={TAG_CLASS_NAME}>{primaryTag}</span>}
-                  {secondaryTags.length > 0 && (
-                    <div className="hidden items-center gap-1.5 sm:flex">
-                      {secondaryTags.map((tag) => (
-                        <span key={tag} className={TAG_CLASS_NAME}>
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  <span className={`font-mono text-xs font-semibold ${index === 0 && item.pct < 65 ? 'text-crimson-700' : 'text-ink-secondary'}`}>
-                    {item.pct} %
-                  </span>
-                </div>
+                <span className="min-w-0 truncate text-sm font-semibold text-ink" title={item.name}>
+                  {item.name}
+                </span>
+                <span className={`flex-shrink-0 font-mono text-xs font-semibold ${index === 0 && item.pct < 65 ? 'text-crimson-700' : 'text-ink-secondary'}`}>
+                  {item.pct} %
+                </span>
               </div>
+              {tags.length > 0 && (
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {visibleTags.map((tag) => (
+                    <span key={tag} className={TAG_CLASS_NAME}>
+                      {tag}
+                    </span>
+                  ))}
+                  {hiddenTags.length > 0 && (
+                    <span
+                      className={TAG_CLASS_NAME}
+                      title={hiddenTags.join(', ')}
+                      aria-label={hiddenTags.join(', ')}
+                    >
+                      +{hiddenTags.length}
+                    </span>
+                  )}
+                </div>
+              )}
             </li>
           );
         })}

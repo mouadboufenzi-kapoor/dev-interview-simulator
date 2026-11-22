@@ -29,8 +29,6 @@ export const UserDashboardLevel = ({ level, loading, error, stats, statsLoading,
   const currentLabel = level ? DIFFICULTY_LABELS[level.currentLevel] ?? level.currentLevel : 'Junior';
   const nextLabel = level?.nextLevel ? DIFFICULTY_LABELS[level.nextLevel] ?? level.nextLevel : null;
 
-  const windowProgress = level && level.windowSize > 0 ? (level.answeredCount * 100) / level.windowSize : 0;
-  const windowIncomplete = !!level && level.answeredCount < level.windowSize;
   const goalReached = !!level && level.successRatePercent >= level.requiredSuccessRate;
   const correctAnswers = level ? Math.round((level.successRatePercent * level.answeredCount) / 100) : 0;
   const requiredAnswers = level ? Math.ceil((level.requiredSuccessRate * level.windowSize) / 100) : 0;
@@ -56,15 +54,6 @@ export const UserDashboardLevel = ({ level, loading, error, stats, statsLoading,
         </div>
       ) : !nextLabel ? (
         <p className="mt-4 text-sm text-ink-secondary">Niveau {currentLabel} atteint.</p>
-      ) : windowIncomplete ? (
-        <>
-          <p className="mt-4 text-xs text-ink-secondary sm:text-sm">
-            {level.answeredCount} / {level.windowSize} questions {currentLabel.toLowerCase()} pour mesurer ta progression.
-          </p>
-          <div className="mt-3 h-1.5 rounded-full bg-canvas-subtle overflow-hidden">
-            <div className="h-full rounded-full bg-brand" style={{ width: `${clamped(windowProgress)}%` }} />
-          </div>
-        </>
       ) : (
         <>
           <div className="mt-4 flex items-end justify-between gap-3">
@@ -72,7 +61,7 @@ export const UserDashboardLevel = ({ level, loading, error, stats, statsLoading,
               {level.successRatePercent} %
             </p>
             <p className="min-w-0 text-right text-[11px] leading-snug text-ink-secondary sm:text-sm">
-              de réussite sur tes {level.windowSize} dernières questions {currentLabel.toLowerCase()}
+              de réussite sur tes {level.answeredCount} dernières questions {currentLabel.toLowerCase()}
             </p>
           </div>
 

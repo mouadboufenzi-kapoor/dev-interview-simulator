@@ -92,7 +92,7 @@ export const SetupConfigStep = ({
       <div className="mx-auto w-full max-w-[640px]">
         <div className="flex items-center gap-2">
           <BackButton onClick={onBack} />
-          <PageTitle size="hero-compact" className="min-w-0 flex-1 text-center text-[20px] sm:text-4xl lg:text-5xl">
+          <PageTitle size="hero-compact" className="min-w-0 flex-1 text-center text-[20px] sm:text-[24px] lg:text-[30px]">
             Configure ton entraînement
           </PageTitle>
         </div>
