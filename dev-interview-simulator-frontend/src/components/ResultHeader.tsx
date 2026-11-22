@@ -9,18 +9,15 @@ interface Props {
 }
 
 export const ResultHeader = ({ mode, difficulty }: Props) => (
-  <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-border">
-    <div className="space-y-2">
-      <Badge variant="default" size="sm" dot>
-        Évaluation terminée
-      </Badge>
-      <PageTitle size="hero-compact">Bilan de votre évaluation</PageTitle>
-      <p className="text-base text-ink-secondary">
-        Votre niveau, vos forces et votre prochain axe de travail.
-      </p>
-    </div>
+  <div className="flex items-center justify-between gap-3">
+    <PageTitle
+      size="hero-compact"
+      className="min-w-0 [font-size:26px] sm:[font-size:2.25rem] lg:[font-size:3rem]"
+    >
+      Votre bilan
+    </PageTitle>
 
-    <div className="flex items-center gap-2">
+    <div className="flex flex-shrink-0 items-center gap-2">
       <Badge variant="default" size="md">{MODE_LABELS[mode] ?? mode}</Badge>
       {difficulty && (
         <Badge variant="navy" size="md">{DIFFICULTY_LABELS[difficulty] ?? difficulty}</Badge>

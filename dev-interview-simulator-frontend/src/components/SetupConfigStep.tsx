@@ -1,4 +1,5 @@
 import type { FormEvent } from 'react';
+import { useRef } from 'react';
 import type { Category, ChallengeType, DifficultyLevel, Skill } from '../types';
 import { Button } from './common/Button';
 import { PageTitle } from './common/PageTitle';
@@ -66,19 +67,36 @@ export const SetupConfigStep = ({
     DIFFICULTIES.find((difficulty) => difficulty.id === selectedDifficulty)?.label
     ?? 'Junior';
 
+  const submitRef = useRef<HTMLDivElement>(null);
+
+  const scrollToSubmitIfNeeded = () => {
+    window.requestAnimationFrame(() => {
+      const target = submitRef.current;
+      if (!target) return;
+      const rect = target.getBoundingClientRect();
+      if (rect.top >= 0 && rect.bottom <= window.innerHeight) return;
+      target.scrollIntoView({
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+          ? 'auto'
+          : 'smooth',
+        block: 'nearest',
+      });
+    });
+  };
+
   return (
-    <div className="screen-transition w-full px-4 py-4 sm:px-6 sm:py-5">
+    <div className="screen-transition w-full px-4 py-3 sm:px-6 sm:py-5">
       <div className="mx-auto w-full max-w-[640px]">
-        <PageTitle size="hero-compact" className="whitespace-nowrap text-center text-[23px] sm:text-4xl lg:text-5xl">
+        <PageTitle size="hero-compact" className="whitespace-nowrap text-center text-[20px] sm:text-4xl lg:text-5xl">
           Configure ton entraînement
         </PageTitle>
 
-        <form onSubmit={onSubmit} className="mt-5 pb-24 sm:pb-0">
-          <section className="rounded border-2 border-border bg-card p-5 text-left shadow-card space-y-5 sm:space-y-5">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted">
+        <form onSubmit={onSubmit} className="mt-3 sm:mt-5">
+          <section className="rounded border-2 border-border bg-card p-4 text-left shadow-card sm:p-5">
+            <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted sm:text-xs">
               Niveau visé
             </h2>
-            <div role="group" aria-label="Niveau visé" className="mt-2 grid grid-cols-3 gap-2">
+            <div role="group" aria-label="Niveau visé" className="mt-1.5 grid grid-cols-3 gap-2 sm:mt-5">
               {DIFFICULTIES.map((difficulty) => (
                 <button
                   key={difficulty.id}
@@ -88,7 +106,7 @@ export const SetupConfigStep = ({
                     onSelectDifficulty(difficulty.id);
                   }}
                   aria-pressed={selectedDifficulty === difficulty.id}
-                  className={`min-h-11 rounded border-2 px-2 text-sm font-semibold ${
+                  className={`min-h-10 rounded border-2 px-2 text-sm font-semibold sm:min-h-11 ${
                     selectedDifficulty === difficulty.id
                       ? 'border-border bg-brand text-cta-text shadow-[2px_2px_0_var(--color-shadow)]'
                       : 'border-border bg-card text-text'
@@ -99,10 +117,10 @@ export const SetupConfigStep = ({
               ))}
             </div>
 
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted">
+            <h2 className="mt-3 text-[11px] font-semibold uppercase tracking-wider text-muted sm:mt-5 sm:text-xs">
               Challenge
             </h2>
-            <div>
+            <div className="mt-1.5 sm:mt-5">
               <SetupModeCards
                 selectedMode={selectedMode}
                 onSelect={(mode) => {
@@ -112,28 +130,27 @@ export const SetupConfigStep = ({
               />
             </div>
 
-            <div>
-              <SetupTopics {...topics} />
+            <div className="mt-3 sm:mt-5">
+              <SetupTopics {...topics} onExpand={scrollToSubmitIfNeeded} />
             </div>
 
-            <p className="border-t border-border pt-3 text-xs text-muted">
+            <p className="mt-3 border-t border-border pt-3 text-xs text-muted sm:mt-5">
               {PERSONALIZED_QUESTION_COUNT} questions · {MODE_LABELS[selectedMode]} · {difficultyLabel} · {technologySummary}
             </p>
+            <div ref={submitRef} className="mt-3 flex justify-center sm:mt-5">
+              <Button
+                type="submit"
+                variant="primary"
+                size="md"
+                loading={loading}
+                rightIcon={<ArrowRight className="h-4 w-4" />}
+                fullWidth
+                className="sm:w-[320px]"
+              >
+                Commencer
+              </Button>
+            </div>
           </section>
-
-          <div className="fixed bottom-0 left-0 right-0 z-20 border-t-2 border-border bg-surface px-4 py-3 sm:static sm:mt-5 sm:border-0 sm:bg-transparent sm:p-0">
-            <Button
-              type="submit"
-              variant="primary"
-              size="lg"
-              loading={loading}
-              rightIcon={<ArrowRight className="h-4 w-4" />}
-              fullWidth
-              className="sm:w-[320px]"
-            >
-              Commencer
-            </Button>
-          </div>
         </form>
       </div>
     </div>

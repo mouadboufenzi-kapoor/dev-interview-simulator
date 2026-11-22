@@ -13,20 +13,24 @@ import { SetupConfigStep } from './SetupConfigStep';
 
 interface Props {
   onStart: (request: StartSimulationRequest) => void;
+  onLogin: () => void;
   loading: boolean;
   activeMode?: ChallengeType;
   initialCategoryIds?: number[];
   initialSkillIds?: number[];
   skipProfileSelection?: boolean;
   initialDifficulty?: DifficultyLevel;
+  accountDifficulty?: DifficultyLevel;
 }
 export const SetupScreen = ({
   onStart,
+  onLogin,
   loading,
   activeMode,
   initialCategoryIds,
   initialSkillIds,
   initialDifficulty,
+  accountDifficulty,
 }: Props) => {
   const [showConfiguration, setShowConfiguration] = useState(
     Boolean(initialDifficulty)
@@ -35,14 +39,22 @@ export const SetupScreen = ({
     activeMode || 'SITUATIONAL_QCM'
   );
   const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyLevel>(
-    initialDifficulty ?? 'JUNIOR'
+    initialDifficulty ?? accountDifficulty ?? 'JUNIOR'
   );
+  const [difficultyTouched, setDifficultyTouched] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [skills, setSkills] = useState<Skill[]>([]);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>(initialCategoryIds ?? []);
   const [selectedSkillIds, setSelectedSkillIds] = useState<number[]>(initialSkillIds ?? []);
   const [isLoadingTopics, setIsLoadingTopics] = useState(false);
   const [topicsError, setTopicsError] = useState<string | null>(null);
+
+  // Le niveau du compte arrive parfois après le rendu : on présélectionne
+  // alors sa difficulté, sauf si l'utilisateur a déjà choisi la sienne.
+  useEffect(() => {
+    if (initialDifficulty || difficultyTouched || !accountDifficulty) return;
+    setSelectedDifficulty(accountDifficulty);
+  }, [accountDifficulty, initialDifficulty, difficultyTouched]);
 
   useEffect(() => {
     let isMounted = true;
@@ -123,9 +135,9 @@ export const SetupScreen = ({
     return (
       <SetupProfileStep
         key="profiles"
+        onLogin={onLogin}
         onPlacement={() => onStart({
           mode: 'SITUATIONAL_QCM',
-          difficulty: 'JUNIOR',
           placement: true,
         })}
         onPersonalize={() => {
@@ -149,7 +161,10 @@ export const SetupScreen = ({
       selectedMode={selectedMode}
       onSelectMode={setSelectedMode}
       selectedDifficulty={selectedDifficulty}
-      onSelectDifficulty={setSelectedDifficulty}
+      onSelectDifficulty={(difficulty) => {
+        setDifficultyTouched(true);
+        setSelectedDifficulty(difficulty);
+      }}
       topics={{
         categories,
         skills,

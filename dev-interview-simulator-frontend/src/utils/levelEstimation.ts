@@ -42,21 +42,34 @@ const levelModifier = (evidence: LevelEvidence) => {
 const baseLevelOf = (evidence: LevelEvidence) =>
   evidence.difficulty ? DIFFICULTY_BASE_LEVEL[evidence.difficulty] : undefined;
 
+const baseLevelFromRate = (evidence: LevelEvidence) => {
+  const rate = successRate(evidence);
+  if (rate >= 80) return 4; // ADVANCED
+  if (rate >= 65) return 3; // INTERMEDIATE
+  return 1; // JUNIOR
+};
+
 export const estimateLevel = (
   evidence: LevelEvidence[],
   completedSimulations: number
 ): EstimatedLevel | null => {
-  const usable = evidence.filter((entry) => entry.answered > 0 && baseLevelOf(entry) !== undefined);
+  const hasDifficulty = evidence.some((entry) => entry.difficulty != null);
+  const usable = evidence.filter((entry) => entry.answered > 0 && (hasDifficulty ? baseLevelOf(entry) !== undefined : true));
   if (usable.length === 0) return null;
 
   const totalAnswered = usable.reduce((total, entry) => total + entry.answered, 0);
   const weightedScore = usable.reduce(
-    (total, entry) => total + entry.answered * ((baseLevelOf(entry) as number) + levelModifier(entry)),
+    (total, entry) => total + entry.answered * (hasDifficulty ? (baseLevelOf(entry) as number) + levelModifier(entry) : baseLevelFromRate(entry)),
     0
   );
   const rawIndex = Math.round(weightedScore / totalAnswered);
   const provisional = completedSimulations < CONFIRMED_MIN_SIMULATIONS;
-  const highestPractised = Math.max(...usable.map((entry) => baseLevelOf(entry) as number));
+  let highestPractised: number;
+  if (hasDifficulty) {
+    highestPractised = Math.max(...usable.map((entry) => baseLevelOf(entry) as number));
+  } else {
+    highestPractised = 4; // Pas de précédent connu, on part du plus haut
+  }
   const cappedIndex = provisional ? Math.min(rawIndex, highestPractised) : rawIndex;
   const index = Math.min(Math.max(cappedIndex, 0), LEVEL_LABELS.length - 1);
 

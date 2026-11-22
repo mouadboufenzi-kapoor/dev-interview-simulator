@@ -159,3 +159,12 @@ export interface SimulationResultDTO {
   skillResults?: CompetencyResult[];
   questions: QuestionSummary[];
 }
+
+export interface UserLevelProgress {
+  currentLevel: DifficultyLevel;
+  nextLevel: DifficultyLevel | null;
+  answeredCount: number;
+  windowSize: number;
+  successRatePercent: number;
+  requiredSuccessRate: number;
+}

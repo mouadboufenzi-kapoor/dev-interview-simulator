@@ -34,7 +34,7 @@ export const ResultCompetencies = ({
 }: Props) => {
   const [expanded, setExpanded] = useState(false);
   const styles = TONE_STYLES[tone];
-  const visibleItems = expanded ? items : items.slice(0, 4);
+  const visibleItems = expanded ? items : items.slice(0, 3);
 
   return (
     <section className="bg-surface border-[0.5px] border-card-border rounded-2xl p-6 shadow-card space-y-4">
@@ -85,7 +85,7 @@ export const ResultCompetencies = ({
         })}
       </ul>
 
-      {items.length > 4 && (
+      {items.length > 3 && (
         <button
           type="button"
           onClick={() => setExpanded((current) => !current)}
@@ -94,7 +94,7 @@ export const ResultCompetencies = ({
           {expanded ? (
             <>Réduire <ChevronUp className="h-3.5 w-3.5" /></>
           ) : (
-            <>Voir tout ({items.length}) <ChevronDown className="h-3.5 w-3.5" /></>
+            <>Voir les {items.length - 3} autres <ChevronDown className="h-3.5 w-3.5" /></>
           )}
         </button>
       )}

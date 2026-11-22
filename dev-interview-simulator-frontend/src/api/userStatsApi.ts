@@ -1,3 +1,4 @@
+import type { UserLevelProgress } from '../types';
 import { apiClient } from './client';
 
 export interface UserStatEntry {
@@ -67,6 +68,11 @@ export interface UserStats {
 export const userStatsApi = {
   getStats: async (page = 0): Promise<UserStats> => {
     const { data } = await apiClient.get<UserStats>('/user/stats', { params: { page } });
+    return data;
+  },
+
+  getLevel: async (): Promise<UserLevelProgress> => {
+    const { data } = await apiClient.get<UserLevelProgress>('/user/level');
     return data;
   },
 };

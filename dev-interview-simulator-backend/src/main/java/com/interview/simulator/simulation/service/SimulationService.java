@@ -31,6 +31,7 @@ import com.interview.simulator.simulation.repository.SimulationChallengeReposito
 import com.interview.simulator.simulation.repository.SimulationAnswerRepository;
 import com.interview.simulator.simulation.repository.SimulationRepository;
 import com.interview.simulator.user.entity.User;
+import com.interview.simulator.user.service.UserLevelService;
 import com.interview.simulator.user.service.UserResolver;
 import com.interview.simulator.profile.entity.Profile;
 import com.interview.simulator.profile.repository.ProfileRepository;
@@ -75,6 +76,7 @@ public class SimulationService {
     private final ProfileRepository profileRepository;
 
     private final SimulationAnswerRepository simulationAnswerRepository;
+    private final UserLevelService userLevelService;
 
     public SimulationService(
             SimulationRepository simulationRepository,
@@ -85,7 +87,8 @@ public class SimulationService {
             InterviewScenarioRepository interviewScenarioRepository,
             ScoringService scoringService,
             ProfileRepository profileRepository,
-            SimulationAnswerRepository simulationAnswerRepository) {
+            SimulationAnswerRepository simulationAnswerRepository,
+            UserLevelService userLevelService) {
         this.simulationRepository = simulationRepository;
         this.challengeRepository = challengeRepository;
         this.userResolver = userResolver;
@@ -95,6 +98,7 @@ public class SimulationService {
         this.scoringService = scoringService;
         this.profileRepository = profileRepository;
         this.simulationAnswerRepository = simulationAnswerRepository;
+        this.userLevelService = userLevelService;
     }
 
     @Transactional
@@ -219,6 +223,8 @@ public class SimulationService {
         addPlacementPosition(selected, PlacementPoolConfiguration.Q4,
             ChallengeType.CODE_REVIEW, DifficultyLevel.INTERMEDIATE, excluded);
         addPlacementPosition(selected, PlacementPoolConfiguration.Q5,
+            ChallengeType.SITUATIONAL_QCM, DifficultyLevel.INTERMEDIATE, excluded);
+        addPlacementPosition(selected, PlacementPoolConfiguration.Q6,
             ChallengeType.SITUATIONAL_QCM, DifficultyLevel.ADVANCED, excluded);
 
         selected = selected.stream()
@@ -227,8 +233,8 @@ public class SimulationService {
             .stream()
             .toList();
 
-        if (selected.size() < 5) {
-            LOGGER.warn("Placement pool has only {} configured/fallback questions; catalog will fill up to 5", selected.size());
+        if (selected.size() < 6) {
+            LOGGER.warn("Placement pool has only {} configured/fallback questions; catalog will fill up to 6", selected.size());
         }
         return selected;
     }
@@ -625,6 +631,7 @@ public class SimulationService {
         int correctAnswers = (int) simulation.getSimulationChallenges().stream()
                 .filter(sc -> sc.getAnswer() != null && sc.getAnswer().isCorrect())
                 .count();
+        String level = "JUNIOR"; // Niveau par défaut pour abandonment
 
         return new SimulationSummaryResponse(
                 simulation.getId(),
@@ -632,6 +639,7 @@ public class SimulationService {
                 simulation.getTotalScore(),
                 totalQuestions,
                 correctAnswers,
+                level,
                 simulation.getStartedAt(),
                 simulation.getCompletedAt()
         );
@@ -651,10 +659,21 @@ public class SimulationService {
         simulation.setStatus(SimulationStatus.COMPLETED);
         simulation.setCompletedAt(LocalDateTime.now());
 
-        int totalQuestions = simulation.getSimulationChallenges().size();
         int correctAnswers = (int) simulation.getSimulationChallenges().stream()
                 .filter(sc -> sc.getAnswer() != null && sc.getAnswer().isCorrect())
                 .count();
+        String level;
+        if (correctAnswers >= 5) {
+            level = "ADVANCED";
+        } else if (correctAnswers >= 3) {
+            level = "INTERMEDIATE";
+        } else {
+            level = "JUNIOR";
+        }
+
+        updateUserLevel(simulation.getUser());
+
+        int totalQuestions = simulation.getSimulationChallenges().size();
 
         return new SimulationSummaryResponse(
                 simulation.getId(),
@@ -662,6 +681,7 @@ public class SimulationService {
                 simulation.getTotalScore(),
                 totalQuestions,
                 correctAnswers,
+                level,  // Nouveau champ niveau
                 simulation.getStartedAt(),
                 simulation.getCompletedAt()
         );
@@ -851,7 +871,20 @@ public class SimulationService {
             simulation.setGuestAccessTokenHash(null);
             claimed++;
         }
+        updateUserLevel(user);
         return new ClaimSimulationsResponse(claimed);
+    }
+
+    /** Recalcul « au mieux » du niveau : jamais d'échec de la fin de simulation ni du rattachement. */
+    private void updateUserLevel(User user) {
+        if (user == null || UserResolver.GUEST_USERNAME.equals(user.getUsername())) {
+            return;
+        }
+        try {
+            userLevelService.updateStoredLevel(user);
+        } catch (RuntimeException exception) {
+            LOGGER.warn("Mise à jour du niveau impossible pour l'utilisateur {}.", user.getId(), exception);
+        }
     }
 
     @Transactional

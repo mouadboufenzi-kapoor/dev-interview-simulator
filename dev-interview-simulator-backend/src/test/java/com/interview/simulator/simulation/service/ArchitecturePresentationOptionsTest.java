@@ -24,7 +24,7 @@ class ArchitecturePresentationOptionsTest {
         challenge.getOptions().add(option("Alternative C", false, 4));
 
         SimulationService service = new SimulationService(
-                null, null, null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null, null, null);
         Method presentationOptions = SimulationService.class
                 .getDeclaredMethod("presentationOptions", Challenge.class);
         presentationOptions.setAccessible(true);

@@ -16,7 +16,7 @@ interface Props {
   showCta: boolean;
 }
 
-const MAX_VISIBLE = 5;
+const MAX_VISIBLE = 3;
 const TAG_CLASS_NAME =
   'inline-flex rounded-full border border-border-subtle bg-surface px-1.5 py-0.5 text-[10px] font-medium text-ink-secondary';
 
@@ -57,7 +57,7 @@ export const ResultPriority = ({
                       ))}
                     </div>
                   )}
-                  <span className={`font-mono text-xs font-semibold ${index === 0 ? 'text-crimson-700' : 'text-ink-secondary'}`}>
+                  <span className={`font-mono text-xs font-semibold ${index === 0 && item.pct < 65 ? 'text-crimson-700' : 'text-ink-secondary'}`}>
                     {item.pct} %
                   </span>
                 </div>

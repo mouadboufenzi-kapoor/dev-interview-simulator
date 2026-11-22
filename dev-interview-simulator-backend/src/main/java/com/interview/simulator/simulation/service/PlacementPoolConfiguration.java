@@ -65,6 +65,17 @@ public class PlacementPoolConfiguration {
         new QuestionIdentity("Spring : migration jakarta.* après saut de version",
             "4640da8b36caa33e63e64b51e82ec31b94a2cb85593710ce5d766324dac848af"),
         new QuestionIdentity("SQL : anomalies de sérialisation sous forte charge",
-            "117fdc31c1e48bf5dd88ae08a1d071f75ee1fc98811df18f3fa37d0d7bc97210")
+            "117fdc31c1e48bf5dd88ae08a1d071f75ee1fc98811df18f3fa37d0d7bc97210"),
+        new QuestionIdentity("Conception d'API RESTful : versionnage et compatibilité",
+            "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2")
+    );
+
+    public static final List<QuestionIdentity> Q6 = List.of(
+        new QuestionIdentity("Architecture microservices : découpage des responsabilités",
+            "f6e5d4c3b2a19f8e7d6c5b4a3f2e1d0c9b8a7f6e5d4c3b2a19f8e7d6c5b4a3f2e"),
+        new QuestionIdentity("Design patterns : Singleton vs Dependency Injection",
+            "b1a2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2"),
+        new QuestionIdentity("Sécurité OAuth2 : flux de rafraîchissement de token",
+            "c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3")
     );
 }

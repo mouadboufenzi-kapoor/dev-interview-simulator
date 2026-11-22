@@ -9,6 +9,7 @@ public record SimulationSummaryResponse(
     Integer totalScore,
     int totalQuestions,
     int correctAnswers,
+    String level,
     LocalDateTime startedAt,
     LocalDateTime completedAt
 ) {}

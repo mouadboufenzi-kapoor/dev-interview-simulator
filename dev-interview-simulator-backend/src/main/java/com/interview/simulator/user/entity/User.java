@@ -1,5 +1,6 @@
 package com.interview.simulator.user.entity;
 
+import com.interview.simulator.challenge.entity.DifficultyLevel;
 import com.interview.simulator.profile.entity.Profile;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -49,6 +50,14 @@ public class User {
 
     @Column(nullable = false)
     private boolean enabled = true;
+
+    /**
+     * Niveau atteint, nullable : null vaut JUNIOR.
+     * Calculé par UserLevelService, il ne peut que monter.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private DifficultyLevel level;
 
     /**
      * Profils rattachés à l'utilisateur — squelette multiprofil (V10).
@@ -108,6 +117,8 @@ public class User {
     public void setRole(UserRole role) { this.role = role; }
     public boolean isEnabled() { return enabled; }
     public void setEnabled(boolean enabled) { this.enabled = enabled; }
+    public DifficultyLevel getLevel() { return level; }
+    public void setLevel(DifficultyLevel level) { this.level = level; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public Set<Profile> getProfiles() { return profiles; }

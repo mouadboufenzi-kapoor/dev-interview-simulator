@@ -51,7 +51,7 @@ class SimulationResultServiceTest {
         UserResolver userResolver = mock(UserResolver.class);
         when(userResolver.currentAuthenticatedOrNull()).thenReturn(Optional.empty());
         SimulationService service = new SimulationService(
-                repository, null, userResolver, null, null, null, new ScoringService(), null, null);
+                repository, null, userResolver, null, null, null, new ScoringService(), null, null, null);
 
         SimulationResultDTO result = service.getSimulationResult(42L, guestAccessToken);
 
@@ -109,7 +109,7 @@ class SimulationResultServiceTest {
         UserResolver userResolver = mock(UserResolver.class);
         when(userResolver.currentAuthenticatedOrNull()).thenReturn(Optional.of(currentUser));
         SimulationService service = new SimulationService(
-                repository, null, userResolver, null, null, null, new ScoringService(), null, null);
+                repository, null, userResolver, null, null, null, new ScoringService(), null, null, null);
 
         assertThrows(ResourceNotFoundException.class, () -> service.getSimulationResult(42L, null));
     }
@@ -124,7 +124,7 @@ class SimulationResultServiceTest {
         UserResolver userResolver = mock(UserResolver.class);
         when(userResolver.currentAuthenticatedOrNull()).thenReturn(Optional.empty());
         SimulationService service = new SimulationService(
-                repository, null, userResolver, null, null, null, new ScoringService(), null, null);
+                repository, null, userResolver, null, null, null, new ScoringService(), null, null, null);
 
         assertThrows(ResourceNotFoundException.class, () -> service.getSimulationResult(42L, null));
         assertThrows(ResourceNotFoundException.class,

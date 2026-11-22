@@ -6,6 +6,7 @@ import com.interview.simulator.simulation.dto.ClaimSimulationsResponse;
 import com.interview.simulator.simulation.entity.Simulation;
 import com.interview.simulator.simulation.repository.SimulationRepository;
 import com.interview.simulator.user.entity.User;
+import com.interview.simulator.user.service.UserLevelService;
 import com.interview.simulator.user.service.UserResolver;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,6 +35,7 @@ class SimulationClaimServiceTest {
 
     @Mock private SimulationRepository simulationRepository;
     @Mock private UserResolver userResolver;
+    @Mock private UserLevelService userLevelService;
 
     @InjectMocks private SimulationService simulationService;
 
