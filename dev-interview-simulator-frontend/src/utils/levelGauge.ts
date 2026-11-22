@@ -1,4 +1,5 @@
 import type { EstimatedLevel } from './levelEstimation';
+import { AT_LEVEL_RATE, STRONG_RATE } from './levelEstimation';
 
 export type GaugeZone = 'junior' | 'confirmed' | 'senior';
 
@@ -17,6 +18,11 @@ const ZONE_LABELS: Record<GaugeZone, string> = {
 
 const zoneOf = (position: number): GaugeZone =>
   position <= 33 ? 'junior' : position <= 66 ? 'confirmed' : 'senior';
+
+export const maxLevelIndexForRate = (rate: number): number => {
+  if (rate >= STRONG_RATE) return 4;
+  return rate >= AT_LEVEL_RATE ? 3 : 1;
+};
 
 export const toGaugeLevel = (level: EstimatedLevel): GaugeLevel => {
   const raw = LEVEL_POSITIONS[level.index] ?? 10;
