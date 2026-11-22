@@ -158,6 +158,9 @@ export interface AdminStats {
   abandonedSimulations: number;
   completionRate: number | null;
   averageSimulationsPerActiveUser: number | null;
+  placementSimulations: number;
+  placementCompleted: number;
+  guestPlacementSimulations: number;
 }
 
 export interface AdminUser {

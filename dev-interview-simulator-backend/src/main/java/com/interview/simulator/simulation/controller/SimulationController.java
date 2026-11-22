@@ -1,5 +1,6 @@
 package com.interview.simulator.simulation.controller;
 
+import com.interview.simulator.analytics.service.ClientIpResolver;
 import com.interview.simulator.analytics.service.SimulationCreationRateLimiter;
 import com.interview.simulator.exception.RateLimitExceededException;
 import com.interview.simulator.simulation.dto.*;
@@ -21,14 +22,17 @@ public class SimulationController {
 
     private final SimulationService simulationService;
     private final SimulationCreationRateLimiter creationRateLimiter;
+    private final ClientIpResolver clientIpResolver;
     private final UserResolver userResolver;
 
     public SimulationController(
             SimulationService simulationService,
             SimulationCreationRateLimiter creationRateLimiter,
+            ClientIpResolver clientIpResolver,
             UserResolver userResolver) {
         this.simulationService = simulationService;
         this.creationRateLimiter = creationRateLimiter;
+        this.clientIpResolver = clientIpResolver;
         this.userResolver = userResolver;
     }
 
@@ -39,7 +43,7 @@ public class SimulationController {
         User authenticatedUser = userResolver.currentAuthenticatedOrNull().orElse(null);
         String clientKey = authenticatedUser != null
                 ? "user:" + authenticatedUser.getId()
-                : "ip:" + httpRequest.getRemoteAddr();
+                : "ip:" + clientIpResolver.resolve(httpRequest);
         SimulationCreationRateLimiter.Decision decision =
                 creationRateLimiter.allow(clientKey, authenticatedUser != null);
         if (!decision.allowed()) {

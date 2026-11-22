@@ -191,6 +191,7 @@ public class SimulationService {
         simulation.setGuestAccessTokenHash(guest ? hashGuestAccessToken(guestAccessToken) : null);
         simulation.setMode(placement ? ChallengeType.SITUATIONAL_QCM : request.mode());
         simulation.setDifficulty(request.difficulty());
+        simulation.setPlacement(placement);
         simulation.setProfile(profile);
 
         // 5. Associer les questions avec leur ordre d'affichage
@@ -214,114 +215,73 @@ public class SimulationService {
             ? Set.of()
             : excludeChallengeIds;
 
-        addPlacementPosition(selected, PlacementPoolConfiguration.Q1,
-            ChallengeType.SITUATIONAL_QCM, DifficultyLevel.JUNIOR, excluded);
-        addPlacementPosition(selected, PlacementPoolConfiguration.Q2,
-            ChallengeType.SITUATIONAL_QCM, DifficultyLevel.JUNIOR, excluded);
-        addPlacementPosition(selected, PlacementPoolConfiguration.Q3,
-            ChallengeType.SITUATIONAL_QCM, DifficultyLevel.INTERMEDIATE, excluded);
-        addPlacementPosition(selected, PlacementPoolConfiguration.Q4,
-            ChallengeType.CODE_REVIEW, DifficultyLevel.INTERMEDIATE, excluded);
-        addPlacementPosition(selected, PlacementPoolConfiguration.Q5,
-            ChallengeType.SITUATIONAL_QCM, DifficultyLevel.INTERMEDIATE, excluded);
-        addPlacementPosition(selected, PlacementPoolConfiguration.Q6,
-            ChallengeType.SITUATIONAL_QCM, DifficultyLevel.ADVANCED, excluded);
+        for (PlacementPoolConfiguration.PlacementPosition position
+                : PlacementPoolConfiguration.POSITIONS) {
+            addPlacementPosition(selected, position, excluded);
+        }
 
-        selected = selected.stream()
-            .filter(Objects::nonNull)
-            .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new))
-            .stream()
-            .toList();
-
-        if (selected.size() < 6) {
-            LOGGER.warn("Placement pool has only {} configured/fallback questions; catalog will fill up to 6", selected.size());
+        if (selected.size() < PlacementPoolConfiguration.POSITIONS.size()) {
+            LOGGER.warn("Placement pool has only {} questions out of {} positions",
+                selected.size(), PlacementPoolConfiguration.POSITIONS.size());
         }
         return selected;
     }
 
     private void addPlacementPosition(
             List<Challenge> selected,
-            List<PlacementPoolConfiguration.QuestionIdentity> pool,
-            ChallengeType type,
-            DifficultyLevel difficulty,
+            PlacementPoolConfiguration.PlacementPosition position,
             Set<Long> excluded) {
-        int sizeBefore = selected.size();
-        addConfiguredChallenge(selected, pool, type, difficulty, excluded);
-        if (selected.size() == sizeBefore) {
-            addFallbackChallenge(selected, type, difficulty, excluded);
+        Set<String> otherCategories = otherCategories(position.categories());
+        Challenge challenge = drawPlacementChallenge(
+            selected, excluded, position.type(), position.difficulty(), position.categories());
+        if (challenge == null && !otherCategories.isEmpty()) {
+            challenge = drawPlacementChallenge(
+                selected, excluded, position.type(), position.difficulty(), otherCategories);
         }
-    }
-
-    private void addConfiguredChallenge(
-            List<Challenge> selected,
-            List<PlacementPoolConfiguration.QuestionIdentity> pool,
-            ChallengeType expectedType,
-            DifficultyLevel expectedDifficulty,
-            Set<Long> excluded) {
-        for (PlacementPoolConfiguration.QuestionIdentity identity : pool) {
-            java.util.Optional<Challenge> found =
-                challengeRepository.findByTitleAndContentHash(
-                    identity.title(), identity.contentHash());
-            if (found.isEmpty()) {
-                LOGGER.warn("Placement question absent from catalog: title={}, contentHash={}",
-                    identity.title(), identity.contentHash());
-                continue;
+        if (challenge == null && position.type() != ChallengeType.SITUATIONAL_QCM) {
+            challenge = drawPlacementChallenge(
+                selected, excluded, ChallengeType.SITUATIONAL_QCM,
+                position.difficulty(), position.categories());
+            if (challenge == null && !otherCategories.isEmpty()) {
+                challenge = drawPlacementChallenge(
+                    selected, excluded, ChallengeType.SITUATIONAL_QCM,
+                    position.difficulty(), otherCategories);
             }
-
-            Challenge challenge = found.get();
-            if (!challenge.isActive() || challenge.getStatus() != ContentStatus.VALIDATED
-                    || challenge.getType() != expectedType
-                    || challenge.getDifficulty() != expectedDifficulty) {
-                LOGGER.warn("Placement question unusable: title={}, contentHash={}, active={}, status={}, type={}, difficulty={}",
-                    identity.title(), identity.contentHash(), challenge.isActive(),
-                    challenge.getStatus(), challenge.getType(), challenge.getDifficulty());
-                continue;
-            }
-            if (excluded.contains(challenge.getId())) {
-                LOGGER.warn("Placement question excluded from this simulation: title={}, id={}",
-                    identity.title(), challenge.getId());
-                continue;
-            }
-            if (selected.stream().noneMatch(item -> item.getId().equals(challenge.getId()))) {
-                selected.add(challenge);
-            }
+        }
+        if (challenge == null) {
+            LOGGER.warn("Placement position without candidate: difficulty={}, type={}, categories={}",
+                position.difficulty(), position.type(), position.categories());
             return;
         }
+        selected.add(challenge);
     }
 
-    private void addFallbackChallenge(
+    private Challenge drawPlacementChallenge(
             List<Challenge> selected,
+            Set<Long> excluded,
             ChallengeType type,
             DifficultyLevel difficulty,
-            Set<Long> excluded) {
-        for (DifficultyLevel candidateDifficulty : fallbackDifficultyOrder(difficulty)) {
-            List<Challenge> candidates =
-                challengeRepository.findPlacementFallbackCandidates(type, candidateDifficulty);
-            for (Challenge candidate : candidates) {
-                if (candidate.isActive()
-                        && candidate.getStatus() == ContentStatus.VALIDATED
-                        && candidate.getType() == type
-                        && candidate.getDifficulty() == candidateDifficulty
-                        && !excluded.contains(candidate.getId())
-                        && selected.stream().noneMatch(item -> item.getId().equals(candidate.getId()))) {
-                    LOGGER.warn("Placement fallback selected: type={}, difficulty={}, title={}, id={}",
-                        type, candidateDifficulty, candidate.getTitle(), candidate.getId());
-                    selected.add(candidate);
-                    return;
-                }
-            }
+            Set<String> categories) {
+        if (categories.isEmpty()) {
+            return null;
         }
+        List<Challenge> candidates = challengeRepository
+            .findPlacementFallbackCandidates(type, difficulty, categories)
+            .stream()
+            .filter(candidate -> !excluded.contains(candidate.getId()))
+            .filter(candidate -> selected.stream()
+                .noneMatch(item -> item.getId().equals(candidate.getId())))
+            .toList();
+        if (candidates.isEmpty()) {
+            return null;
+        }
+        return candidates.get(SECURE_RANDOM.nextInt(candidates.size()));
     }
 
-    private List<DifficultyLevel> fallbackDifficultyOrder(DifficultyLevel difficulty) {
-        return switch (difficulty) {
-            case JUNIOR -> List.of(DifficultyLevel.JUNIOR,
-                DifficultyLevel.INTERMEDIATE, DifficultyLevel.ADVANCED);
-            case INTERMEDIATE -> List.of(DifficultyLevel.INTERMEDIATE,
-                DifficultyLevel.JUNIOR, DifficultyLevel.ADVANCED);
-            case ADVANCED -> List.of(DifficultyLevel.ADVANCED,
-                DifficultyLevel.INTERMEDIATE, DifficultyLevel.JUNIOR);
-        };
+    private Set<String> otherCategories(Set<String> categories) {
+        Set<String> others = new LinkedHashSet<>(PlacementPoolConfiguration.ALLOWED_CATEGORIES);
+        others.removeAll(categories);
+        return others;
     }
 
     // Les questions Architecture mélangent l'affichage des choix pour éviter

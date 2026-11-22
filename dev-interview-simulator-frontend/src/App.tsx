@@ -73,6 +73,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [loadingAction, setLoadingAction] = useState<LoadingAction | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [authReady, setAuthReady] = useState(false);
   // Après un bilan, « Lancer une nouvelle session » doit retomber sur le choix
   // du type de challenge : le profil ne doit plus être demandé.
   const [skipProfileStepOnSetup, setSkipProfileStepOnSetup] = useState(false);
@@ -117,11 +118,13 @@ export default function App() {
       try {
         const parsed = JSON.parse(storedUser);
         setUser(parsed);
+        setScreen('DASHBOARD');
       } catch (e) {
         localStorage.removeItem('user');
         localStorage.removeItem('jwt_token');
       }
     }
+    setAuthReady(true);
 
     const handlePageUnload = () => {
       if (screen === 'QUIZ' && simulation?.status === 'IN_PROGRESS') {
@@ -469,6 +472,10 @@ export default function App() {
       setScreen('SETUP');
     }
   };
+
+  if (!authReady) {
+    return null;
+  }
 
   return (
     <div className="relative min-h-screen flex flex-col overflow-x-clip bg-canvas watermark-pattern text-ink selection:bg-peach-500 selection:text-navy-900">

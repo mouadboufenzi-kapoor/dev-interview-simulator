@@ -118,6 +118,21 @@ export const AdminStatsPanel = ({ onOpenUsers }: Props) => {
       detail: 'terminées / lancées'
     },
     {
+      label: 'Mini-tests',
+      value: nf.format(stats.placementSimulations),
+      detail: `${share(stats.placementSimulations)} des simulations`
+    },
+    {
+      label: 'Mini-tests terminés',
+      value: nf.format(stats.placementCompleted),
+      detail: `${share(stats.placementCompleted)} des simulations`
+    },
+    {
+      label: 'Mini-tests visiteurs',
+      value: nf.format(stats.guestPlacementSimulations),
+      detail: `${share(stats.guestPlacementSimulations)} des simulations`
+    },
+    {
       label: 'Simulations / utilisateur actif',
       value: stats.averageSimulationsPerActiveUser === null
         ? '—'

@@ -1,5 +1,6 @@
 package com.interview.simulator.simulation.controller;
 
+import com.interview.simulator.analytics.service.ClientIpResolver;
 import com.interview.simulator.analytics.service.SimulationCreationRateLimiter;
 import com.interview.simulator.auth.service.JwtService;
 import com.interview.simulator.challenge.entity.ChallengeType;
@@ -33,11 +34,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(SimulationController.class)
 @AutoConfigureMockMvc(addFilters = false)
-@Import(SimulationCreationRateLimiter.class)
+@Import({SimulationCreationRateLimiter.class, ClientIpResolver.class})
 @TestPropertySource(properties = {
         "app.simulation.rate-limit.window=PT1H",
         "app.simulation.rate-limit.guest-limit=1",
-        "app.simulation.rate-limit.user-limit=1"
+        "app.simulation.rate-limit.user-limit=1",
+        "app.client-ip.trust-proxy-headers=true"
 })
 class SimulationControllerRateLimitTest {
 
@@ -81,6 +83,42 @@ class SimulationControllerRateLimitTest {
                 .andExpect(jsonPath("$.message")
                         .value("Trop de tests lancés. Réessaie dans quelques minutes."))
                 .andExpect(jsonPath("$.path").value("/api/simulations"));
+    }
+
+    @Test
+    void distinctForwardedClientsGetIndependentCounters() throws Exception {
+        given(userResolver.currentAuthenticatedOrNull()).willReturn(Optional.empty());
+        given(simulationService.startSimulation(any())).willReturn(createdSimulation());
+
+        mockMvc.perform(post("/api/simulations")
+                        .with(request -> {
+                            request.setRemoteAddr("10.0.0.5");
+                            return request;
+                        })
+                        .header("CF-Connecting-IP", "198.51.100.1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(REQUEST_BODY))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/simulations")
+                        .with(request -> {
+                            request.setRemoteAddr("10.0.0.5");
+                            return request;
+                        })
+                        .header("CF-Connecting-IP", "198.51.100.1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(REQUEST_BODY))
+                .andExpect(status().isTooManyRequests());
+
+        mockMvc.perform(post("/api/simulations")
+                        .with(request -> {
+                            request.setRemoteAddr("10.0.0.5");
+                            return request;
+                        })
+                        .header("CF-Connecting-IP", "198.51.100.2")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(REQUEST_BODY))
+                .andExpect(status().isCreated());
     }
 
     @Test

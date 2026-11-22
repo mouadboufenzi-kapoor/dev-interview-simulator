@@ -56,6 +56,11 @@ public class AdminStatsService {
         long registeredSimulations = simulationRepository.countByUserUsernameNot(UserResolver.GUEST_USERNAME);
         long activeUsers = simulationRepository.countDistinctRegisteredUsersWithSimulations(
                 UserResolver.GUEST_USERNAME);
+        long placementSimulations = simulationRepository.countByPlacementTrue();
+        long placementCompleted =
+                simulationRepository.countByPlacementTrueAndStatus(SimulationStatus.COMPLETED);
+        long guestPlacementSimulations =
+                simulationRepository.countByPlacementTrueAndUserUsername(UserResolver.GUEST_USERNAME);
         LocalDateTime now = LocalDateTime.now();
 
         return new AdminStatsResponse(
@@ -78,7 +83,10 @@ public class AdminStatsService {
                         UserResolver.GUEST_USERNAME, now.minusDays(NEW_USERS_LONG_WINDOW_DAYS)),
                 abandonedSimulations,
                 percentage(completedSimulations, totalSimulations),
-                average(registeredSimulations, activeUsers)
+                average(registeredSimulations, activeUsers),
+                placementSimulations,
+                placementCompleted,
+                guestPlacementSimulations
         );
     }
 

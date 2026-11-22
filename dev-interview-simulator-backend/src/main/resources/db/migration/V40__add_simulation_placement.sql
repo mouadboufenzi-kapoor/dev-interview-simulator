@@ -1,0 +1,2 @@
+ALTER TABLE simulations
+    ADD COLUMN placement BOOLEAN NOT NULL DEFAULT FALSE;

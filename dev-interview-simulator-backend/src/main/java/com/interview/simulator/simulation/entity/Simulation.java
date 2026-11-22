@@ -36,6 +36,9 @@ public class Simulation {
     @Enumerated(EnumType.STRING)
     private DifficultyLevel difficulty;
 
+    @Column(nullable = false)
+    private boolean placement = false;
+
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -76,6 +79,8 @@ public class Simulation {
     public void setMode(ChallengeType mode) { this.mode = mode; }
     public DifficultyLevel getDifficulty() { return difficulty; }
     public void setDifficulty(DifficultyLevel difficulty) { this.difficulty = difficulty; }
+    public boolean isPlacement() { return placement; }
+    public void setPlacement(boolean placement) { this.placement = placement; }
     public SimulationStatus getStatus() { return status; }
     public void setStatus(SimulationStatus status) { this.status = status; }
     public Integer getTotalScore() { return totalScore; }
