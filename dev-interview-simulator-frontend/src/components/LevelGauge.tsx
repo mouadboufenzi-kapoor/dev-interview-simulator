@@ -9,7 +9,7 @@ export const LevelGauge = ({ level }: Props) => {
   const { position, label } = toGaugeLevel(level);
 
   return (
-    <div className="mt-3 md:mt-0">
+    <div className="mt-3">
       <div className="flex items-center justify-between gap-3">
         <p className="font-mono text-xs font-bold uppercase tracking-[0.08em] text-brand">
           Niveau estimé

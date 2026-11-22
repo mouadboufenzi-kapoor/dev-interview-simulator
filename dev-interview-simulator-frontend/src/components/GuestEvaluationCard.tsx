@@ -47,9 +47,7 @@ export const GuestEvaluationCard = ({
 
   return (
     <section
-      className={`${panelCard} rounded-[10px] border-[#0a2342] p-3.5 shadow-none md:p-5 ${
-        displayedLevel ? 'md:grid md:grid-cols-2 md:items-start md:gap-6' : ''
-      }`}
+      className={`${panelCard} rounded-[10px] border-[#0a2342] p-3.5 shadow-none md:p-5`}
     >
       <div>
         <div className="flex items-start justify-between gap-3">
@@ -75,7 +73,7 @@ export const GuestEvaluationCard = ({
       </div>
 
       {displayedLevel && (
-        <div className="md:flex md:flex-col md:border-l-2 md:border-border md:pl-6">
+        <div>
           <LevelGauge level={displayedLevel} />
 
           {displayedLevel.provisional && (
@@ -90,7 +88,7 @@ export const GuestEvaluationCard = ({
               variant="primary"
               size="lg"
               fullWidth
-              className="mt-3 md:w-auto md:self-end"
+              className="mt-3"
               rightIcon={<ArrowRight className="h-4 w-4" />}
               onClick={() => {
                 trackEvent('placement_continue_clicked', {
