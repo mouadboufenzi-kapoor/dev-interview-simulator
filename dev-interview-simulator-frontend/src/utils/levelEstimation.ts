@@ -18,8 +18,8 @@ const DIFFICULTY_BASE_LEVEL: Record<string, number> = {
   ADVANCED: 4,
 };
 
-const STRONG_RATE = 80;
-const AT_LEVEL_RATE = 65;
+export const STRONG_RATE = 80;
+export const AT_LEVEL_RATE = 65;
 const CONFIRMED_MIN_SIMULATIONS = 3;
 
 const LEVEL_PHRASES = [
