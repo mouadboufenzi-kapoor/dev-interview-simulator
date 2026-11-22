@@ -7,6 +7,7 @@ import type {
   DifficultyLevel,
 } from './types';
 import { simulationApi } from './api/simulationApi';
+import { userStatsApi } from './api/userStatsApi';
 import { pruneGuestSimulations, saveGuestSimulation } from './api/guestSimulations';
 import { SetupScreen } from './components/SetupScreen';
 import { QuizScreen } from './components/QuizScreen';
@@ -42,6 +43,18 @@ const LOADING_SIMULATION: LoadingAction = {
   detail: 'La sélection des questions peut prendre quelques instants.',
 };
 
+const DIFFICULTY_ORDER: DifficultyLevel[] = ['JUNIOR', 'INTERMEDIATE', 'ADVANCED'];
+
+// La plus élevée des deux difficultés (ignore les valeurs absentes).
+const highestDifficulty = (
+  first?: DifficultyLevel | null,
+  second?: DifficultyLevel | null
+): DifficultyLevel | undefined => {
+  if (!first) return second ?? undefined;
+  if (!second) return first;
+  return DIFFICULTY_ORDER.indexOf(first) >= DIFFICULTY_ORDER.indexOf(second) ? first : second;
+};
+
 const LOADING_RESULT: LoadingAction = {
   message: 'Chargement de votre bilan en cours…',
   detail: 'Récupération du compte-rendu de votre session.',
@@ -66,6 +79,9 @@ export default function App() {
   const [accessModalGoogleFirst, setAccessModalGoogleFirst] = useState(false);
   const [isPlacementSimulation, setIsPlacementSimulation] = useState(false);
   const [setupInitialDifficulty, setSetupInitialDifficulty] = useState<DifficultyLevel | undefined>();
+  // Niveau stocké du compte : sert à présélectionner la difficulté et à cibler
+  // la révision. Reste nul pour un invité ou si l'appel échoue.
+  const [accountLevel, setAccountLevel] = useState<DifficultyLevel | null>(null);
   // Garde anti double-clic sur « Réviser » : évite deux démarrages simultanés.
   const reviseInFlight = useRef(false);
   const resultInFlight = useRef(false);
@@ -138,6 +154,24 @@ export default function App() {
       window.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setAccountLevel(null);
+      return;
+    }
+    let isMounted = true;
+    userStatsApi.getLevel()
+      .then((level) => {
+        if (isMounted) setAccountLevel(level.currentLevel);
+      })
+      .catch(() => {
+        if (isMounted) setAccountLevel(null);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
 
   // Lancement unique de session (Setup, « Nouvelle simulation », Réviser).
   // Retourne true si le quiz a démarré : permet aux appelsants de basculer
@@ -352,13 +386,16 @@ export default function App() {
   // défaut, toutes difficultés pour maximiser le pool). Repli : écran de
   // configuration pré-pré-sélectionné si aucune question n'est disponible.
   const handleRevise = async (
-    filters: { categoryIds?: number[]; skillIds?: number[] }
+    filters: { categoryIds?: number[]; skillIds?: number[]; difficulty?: DifficultyLevel }
   ) => {
     if (reviseInFlight.current) return;
     reviseInFlight.current = true;
+    // Difficulté la plus élevée entre le niveau du compte et celle de la
+    // simulation d'où vient le point faible (si elle est connue).
+    const difficulty = highestDifficulty(accountLevel, filters.difficulty);
     try {
       const started = await handleStartSimulation(
-        { mode: 'SITUATIONAL_QCM', ...filters },
+        { mode: 'SITUATIONAL_QCM', ...filters, difficulty },
         'Aucune question ciblée disponible pour cette compétence pour le moment. Vous pouvez préparer votre session manuellement.',
         LOADING_REVISE
       );
@@ -470,12 +507,18 @@ export default function App() {
           {screen === 'SETUP' && (
             <SetupScreen
               onStart={handleStartSimulation}
+              onLogin={() => {
+                setAccessModalInitialMode('login');
+                setAccessModalGoogleFirst(false);
+                setShowAccessModal(true);
+              }}
               loading={loading}
               activeMode={selectedDashboardMode}
               initialCategoryIds={reviseCategoryIds ?? undefined}
               initialSkillIds={reviseSkillIds ?? undefined}
               skipProfileSelection={user !== null || skipProfileStepOnSetup}
               initialDifficulty={setupInitialDifficulty}
+              accountDifficulty={accountLevel ?? undefined}
             />
           )}
 
@@ -517,11 +560,6 @@ export default function App() {
               onCreateAccount={() => {
                 setAccessModalInitialMode('register');
                 setAccessModalGoogleFirst(false);
-                setShowAccessModal(true);
-              }}
-              onGoogleAccount={() => {
-                setAccessModalInitialMode('login');
-                setAccessModalGoogleFirst(true);
                 setShowAccessModal(true);
               }}
               isPlacement={isPlacementSimulation}

@@ -1,18 +1,21 @@
 import { useState } from 'react';
 import type { QuestionStatus, QuestionSummary, SimulationResultDTO } from '../types';
 import { PageTitle } from './common/PageTitle';
+import { Button } from './common/Button';
 import { QuestionDetails } from './QuestionDetails';
 import { Check, X, Clock3, CircleDashed, ChevronDown, ChevronUp } from 'lucide-react';
+import { trackEvent } from '../api/events';
 
 interface Props {
   summary: SimulationResultDTO;
   isGuest?: boolean;
+  onCreateAccount?: () => void;
 }
 
 /** Questions visibles avant le dépliage « Voir toutes les questions ». */
 const INITIAL_VISIBLE = 4;
 
-export const ResultQuestions = ({ summary, isGuest = false }: Props) => {
+export const ResultQuestions = ({ summary, isGuest = false, onCreateAccount }: Props) => {
   const [openQuestionId, setOpenQuestionId] = useState<number | null>(null);
   const [filter, setFilter] = useState<'ALL' | 'CORRECT' | 'INCORRECT'>('ALL');
   const [showAll, setShowAll] = useState(false);
@@ -34,19 +37,19 @@ export const ResultQuestions = ({ summary, isGuest = false }: Props) => {
     return status !== 'ANSWERED' || !q.isCorrect;
   }).length;
 
-  // Densité visuelle : initialement seulement quelques questions, déploiement
-  // à la demande (le filtre actif s'applique quelle que soit l'étendue).
+  // Invité : 3 questions lisibles et dépliables, le reste regroupé dans une
+  // zone floutée non interactive ; connecté : dépliage à la demande.
   const visibleQuestions = isGuest
-    ? filteredQuestions.slice(0, 2)
+    ? filteredQuestions.slice(0, 3)
     : showAll
       ? filteredQuestions
       : filteredQuestions.slice(0, INITIAL_VISIBLE);
-  const lockedQuestionCount = isGuest
-    ? Math.max(0, filteredQuestions.length - visibleQuestions.length)
-    : 0;
+  // Invité : jamais plus de 6 questions rendues (les suivantes n'existent pas
+  // dans le DOM).
+  const blurredQuestions = isGuest ? filteredQuestions.slice(3, 6) : [];
 
   return (
-    <div className="space-y-4">
+    <div className="bg-surface border-[0.5px] border-card-border rounded-2xl p-5 shadow-card space-y-4 sm:p-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-border">
         <div>
           <PageTitle as="h2" size="sm">
@@ -71,22 +74,28 @@ export const ResultQuestions = ({ summary, isGuest = false }: Props) => {
             Toutes ({summary.questions.length})
           </button>
           <button
-            onClick={() => setFilter('CORRECT')}
+            onClick={() => {
+              if (!isGuest) setFilter('CORRECT');
+            }}
+            aria-disabled={isGuest || undefined}
             className={`px-3 py-1 rounded-lg transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas ${
               filter === 'CORRECT'
                 ? 'bg-success-soft text-success font-semibold'
                 : 'text-ink-secondary hover:text-success'
-            }`}
+            } ${isGuest ? 'cursor-default opacity-60' : ''}`}
           >
             Correctes ({summary.correctAnswersCount})
           </button>
           <button
-            onClick={() => setFilter('INCORRECT')}
+            onClick={() => {
+              if (!isGuest) setFilter('INCORRECT');
+            }}
+            aria-disabled={isGuest || undefined}
             className={`px-3 py-1 rounded-lg transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas ${
               filter === 'INCORRECT'
                 ? 'bg-danger-soft text-danger font-semibold'
                 : 'text-ink-secondary hover:text-danger'
-            }`}
+            } ${isGuest ? 'cursor-default opacity-60' : ''}`}
           >
             Erreurs ({incorrectCount})
           </button>
@@ -98,7 +107,6 @@ export const ResultQuestions = ({ summary, isGuest = false }: Props) => {
         {visibleQuestions.map((q, index) => {
           const status = getQuestionStatus(q);
           const isOpen = openQuestionId === q.challengeId;
-
           return (
             <div
               key={q.challengeId}
@@ -108,7 +116,8 @@ export const ResultQuestions = ({ summary, isGuest = false }: Props) => {
               <button
                 type="button"
                 onClick={() => toggleAccordion(q.challengeId)}
-                className="w-full flex items-center justify-between p-5 text-left hover:bg-canvas-subtle transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas select-none"
+                aria-expanded={isOpen}
+                className="w-full flex items-center justify-between p-5 text-left transition-colors hover:bg-canvas-subtle cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas select-none"
               >
                 <div className="flex items-center gap-3.5 pr-2 flex-1 min-w-0">
                   <span
@@ -134,7 +143,7 @@ export const ResultQuestions = ({ summary, isGuest = false }: Props) => {
                     (mots longs cassés proprement) — jamais tronqué en plein milieu,
                     aucune perte de contenu. */}
                 <div className="min-w-0 flex-1 pr-2">
-                  <span className="font-serif font-bold text-ink text-base break-words">
+                  <span className="font-serif font-bold text-ink text-sm break-words sm:text-base">
                     {index + 1}. {q.title}
                   </span>
                 </div>
@@ -165,22 +174,80 @@ export const ResultQuestions = ({ summary, isGuest = false }: Props) => {
             </div>
           );
         })}
-        {lockedQuestionCount > 0 && (
-          <div className="rounded-2xl border-[0.5px] border-card-border bg-surface p-5 shadow-card" aria-label="Corrections verrouillées">
-            <p className="text-sm font-semibold text-text">
-              Corrections verrouillées
-            </p>
-            <p className="mt-1 text-xs text-ink-muted">
-              {lockedQuestionCount} correction{lockedQuestionCount > 1 ? 's' : ''} supplémentaire{lockedQuestionCount > 1 ? 's' : ''}
-            </p>
-            <div className="mt-3 flex gap-2" aria-hidden="true">
-              {[0, 1, 2].map((item) => (
-                <span key={item} className="h-3 flex-1 rounded bg-canvas-subtle blur-sm" />
-              ))}
+      </div>
+
+      {isGuest && blurredQuestions.length > 0 && (
+        <div className="relative">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none select-none space-y-3 opacity-80 blur-[2px] min-h-[220px]"
+          >
+            {blurredQuestions.map((q, index) => {
+              const status = getQuestionStatus(q);
+              return (
+                <div
+                  key={q.challengeId}
+                  className="border-[0.5px] border-card-border rounded-2xl overflow-hidden bg-surface shadow-card"
+                >
+                  <div className="w-full flex items-center justify-between p-5 text-left">
+                    <div className="flex items-center gap-3.5 pr-2 flex-1 min-w-0">
+                      <span
+                        className={`flex-shrink-0 w-6 h-6 rounded-md flex items-center justify-center text-xs font-mono font-bold ${
+                          status === 'ANSWERED'
+                            ? q.isCorrect
+                              ? 'bg-success-soft border border-success-border text-success'
+                              : 'bg-danger-soft border border-danger-border text-danger'
+                            : 'bg-canvas-subtle border border-border text-ink-muted'
+                        }`}
+                      >
+                        {status === 'ANSWERED' ? (
+                          q.isCorrect ? <Check className="w-3.5 h-3.5 stroke-[2.5]" /> : <X className="w-3.5 h-3.5 stroke-[2.5]" />
+                        ) : status === 'TIMED_OUT' ? (
+                          <Clock3 className="w-3.5 h-3.5" />
+                        ) : (
+                          <CircleDashed className="w-3.5 h-3.5" />
+                        )}
+                      </span>
+                      <div className="min-w-0 flex-1 pr-2">
+                        <span className="font-serif font-bold text-ink text-sm break-words sm:text-base">
+                          {index + 4}. {q.title}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            <div className="inline-flex items-center gap-1 text-xs font-semibold text-navy-900">
+              <ChevronDown className="w-3.5 h-3.5" /> Voir toutes les questions (
+              {summary.questions.length})
             </div>
           </div>
-        )}
-      </div>
+
+          <div className="absolute inset-0 flex items-center justify-center px-2">
+            <div className="w-full max-w-sm rounded-2xl border-[0.5px] border-card-border bg-surface p-5 shadow-card text-center space-y-3">
+              <PageTitle as="h3" size="sm">
+                Retrouve le détail de tes réponses
+              </PageTitle>
+              <p className="text-xs text-ink-secondary">
+                Consulte ton historique et le détail de tes simulations gratuitement avec un compte.
+              </p>
+              <Button
+                type="button"
+                variant="primary"
+                size="md"
+                fullWidth
+                onClick={() => {
+                  trackEvent('guest_cta_clicked', { simulationId: summary.simulationId });
+                  onCreateAccount?.();
+                }}
+              >
+                Créer un compte
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Dépliage : au-delà de INITIAL_VISIBLE questions, un bouton unique
           étend ou réduit la liste (même pattern que ResultPriority). */}
