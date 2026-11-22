@@ -21,6 +21,8 @@ interface Props {
   skipProfileSelection?: boolean;
   initialDifficulty?: DifficultyLevel;
   accountDifficulty?: DifficultyLevel;
+  onBack: () => void;
+  isGuest: boolean;
 }
 export const SetupScreen = ({
   onStart,
@@ -31,9 +33,11 @@ export const SetupScreen = ({
   initialSkillIds,
   initialDifficulty,
   accountDifficulty,
+  onBack,
+  isGuest,
 }: Props) => {
   const [showConfiguration, setShowConfiguration] = useState(
-    Boolean(initialDifficulty)
+    Boolean(initialDifficulty) || !isGuest
   );
   const [selectedMode, setSelectedMode] = useState<ChallengeType>(
     activeMode || 'SITUATIONAL_QCM'
@@ -127,14 +131,19 @@ export const SetupScreen = ({
     window.requestAnimationFrame(() => {
       window.scrollTo({ top: 0, behavior: 'auto' });
     });
-  };
-
-  // Clic sur une carte profil (ou son bouton « Commencer ») → navigation  // immédiate vers la configuration, en haut de la page.  
+  };  // Clic sur une carte profil (ou son bouton « Commencer ») → navigation
+  // immédiate vers la configuration, en haut de la page.
+  const handleBackToHome = () => {
+    setShowConfiguration(false);
+    scrollToTopAfterRender();
+    onBack();
+  };  
 
   if (!showConfiguration) {
     return (
       <SetupProfileStep
         key="profiles"
+        isGuest={isGuest}
         onLogin={onLogin}
         onPlacement={() => onStart({
           mode: 'SITUATIONAL_QCM',
@@ -158,6 +167,7 @@ export const SetupScreen = ({
       key="config"
       loading={loading}
       onSubmit={handleSubmit}
+      onBack={handleBackToHome}
       selectedMode={selectedMode}
       onSelectMode={setSelectedMode}
       selectedDifficulty={selectedDifficulty}

@@ -45,17 +45,17 @@ export const SetupModeCards = ({ selectedMode, onSelect }: Props) => (
           type="button"
           onClick={() => onSelect(mode.id)}
           aria-pressed={isSelected}
-          className={`group relative w-full rounded border-2 px-3 py-2.5 text-left transition-all duration-150 cursor-pointer focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-bg flex flex-col justify-between select-none min-h-[60px] sm:min-h-[72px] sm:p-4 ${
+          className={`group relative flex min-h-[84px] w-full cursor-pointer select-none flex-col justify-between rounded border-2 px-3 py-3.5 text-left transition-all duration-150 focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-bg sm:min-h-[104px] sm:p-5 ${
             isSelected
-              ? 'bg-selected border-border shadow-elevated'
-              : 'bg-card border-border hover:border-brand hover:shadow-card'
+              ? 'border-accent bg-card shadow-[3px_3px_0_var(--color-accent)]'
+              : 'border-border bg-card hover:border-brand hover:shadow-card'
           }`}
         >
           <div className="space-y-1">
-              <h3 className="font-serif text-[15px] font-bold leading-tight text-text sm:text-lg">
+              <h3 className="font-serif text-[16px] font-bold leading-tight text-text sm:text-xl">
                 {mode.title}
               </h3>
-              <p className="text-xs text-muted leading-tight sm:leading-relaxed">
+              <p className="text-[13px] text-muted leading-tight sm:text-sm sm:leading-relaxed">
                 {mode.description}
               </p>
           </div>

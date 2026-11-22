@@ -75,7 +75,7 @@ export const QuizOptionsList = ({ challenge, selectedOptionIds, feedback, timedO
         >
           {/* Index / Checkbox indicator */}
           <div
-            className={`w-6 h-6 rounded-sm border-2 flex items-center justify-center text-xs font-mono flex-shrink-0 mt-0.5 transition-colors ${indicatorStyle}`}
+            className={`w-6 h-6 rounded-sm border-2 flex items-center justify-center text-[11px] font-mono flex-shrink-0 mt-0.5 transition-colors ${indicatorStyle}`}
           >
             {feedback ? (
               correction?.isCorrect ? (
@@ -93,7 +93,7 @@ export const QuizOptionsList = ({ challenge, selectedOptionIds, feedback, timedO
           </div>
 
           {/* Option text */}
-          <div className="flex-1 min-w-0 text-sm sm:text-base leading-relaxed font-sans break-words">
+          <div className="flex-1 min-w-0 text-[13px] sm:text-base leading-relaxed font-sans break-words">
             {option.content}
           </div>
         </div>

@@ -5,6 +5,7 @@ import { Button } from './common/Button';
 import { getAssessment } from '../utils/resultAnalysis';
 import { estimateLevel } from '../utils/levelEstimation';
 import { LevelEstimate } from './LevelEstimate';
+import { GuestEvaluationCard } from './GuestEvaluationCard';
 import { trackEvent } from '../api/events';
 
 interface Props {
@@ -21,6 +22,21 @@ const formatTime = (seconds: number) => {
 };
 
 export const ResultEvaluation = ({ summary, isGuest, isPlacement, onContinuePlacement }: Props) => {
+  if (isGuest) {
+    return (
+      <GuestEvaluationCard
+        summary={summary}
+        durationLabel={
+          summary.totalTimeSpentSeconds > 0
+            ? formatTime(summary.totalTimeSpentSeconds)
+            : null
+        }
+        isPlacement={isPlacement}
+        onContinuePlacement={onContinuePlacement}
+      />
+    );
+  }
+
   const assessment = getAssessment(summary.successPercentage);
   const level = estimateLevel(
     [{ difficulty: summary.difficulty, answered: summary.totalQuestions, correct: summary.correctAnswersCount }],
@@ -58,7 +74,7 @@ export const ResultEvaluation = ({ summary, isGuest, isPlacement, onContinuePlac
         <div className="pt-1 space-y-3">
           <LevelEstimate
             level={level}
-            note={isGuest ? 'première estimation, à confirmer' : 'd’après cette simulation'}
+            note="d’après cette simulation"
           />
           {isPlacement && (
             <Button

@@ -1,6 +1,7 @@
 import type { SimulationResponse } from '../types';
 
 const STORAGE_KEY = 'guest_simulations';
+const COMPLETED_KEY = 'guest_test_completed';
 const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
 export interface StoredGuestSimulation {
@@ -68,9 +69,27 @@ export const saveGuestSimulation = (simulation: SimulationResponse): void => {
 export const readGuestSimulationTokens = (): string[] =>
   pruneGuestSimulations().map((entry) => entry.guestAccessToken);
 
+export const markGuestTestCompleted = (): void => {
+  try {
+    localStorage.setItem(COMPLETED_KEY, 'true');
+  } catch (error) {
+    console.error('Enregistrement du test invité terminé impossible', error);
+  }
+};
+
+export const hasCompletedGuestTest = (): boolean => {
+  try {
+    return localStorage.getItem(COMPLETED_KEY) === 'true';
+  } catch (error) {
+    console.error('Lecture du test invité terminé impossible', error);
+    return false;
+  }
+};
+
 export const clearGuestSimulations = (): void => {
   try {
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(COMPLETED_KEY);
   } catch (error) {
     console.error('Suppression des simulations invité impossible', error);
   }

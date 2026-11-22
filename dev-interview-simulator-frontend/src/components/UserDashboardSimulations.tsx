@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { CalendarDays, ChevronRight } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import { panelCard } from '../styles/ui';
 import { formatDate as formatIsoDate } from '../utils/format';
 import type { UserStats } from '../api/userStatsApi';
@@ -11,8 +10,6 @@ interface Props {
   page: number;
   onPageChange: (page: number) => void;
 }
-
-const VISIBLE_COUNT = 3;
 
 const MODE_LABELS: Record<string, string> = {
   SITUATIONAL_QCM: 'QCM',
@@ -36,13 +33,9 @@ const formatDate = (iso?: string) => {
   }
 };
 
-// Mes dernières simulations : 3 dernières sessions en lignes compactes
-// (mobile d'abord) avec statut réel ; « Voir toutes » déplie l'historique
-// paginé existant (même mécanisme serveur, aucun nouvel endpoint).
 export const UserDashboardSimulations = ({ stats, loading, onOpenResult, page, onPageChange }: Props) => {
-  const [expanded, setExpanded] = useState(false);
   const simulations = stats?.simulations;
-  const rows = simulations && expanded ? simulations.content : (simulations?.content.slice(0, VISIBLE_COUNT) ?? []);
+  const rows = simulations?.content ?? [];
 
   return (
     <section className={`${panelCard} p-5 sm:p-6`}>
@@ -110,66 +103,38 @@ export const UserDashboardSimulations = ({ stats, loading, onOpenResult, page, o
             })}
           </div>
 
-          {!expanded && simulations.totalElements > VISIBLE_COUNT && (
-            <button
-              type="button"
-              onClick={() => setExpanded(true)}
-              className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-navy-900 transition hover:text-crimson-700 cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas rounded-md"
-            >
-              Voir toutes les simulations ({simulations.totalElements}) →
-            </button>
-          )}
-
-          {expanded && (
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-ink-secondary">
-              <span>
-                {simulations.totalPages > 1 ? (
-                  <>
-                    {simulations.page * simulations.size + 1}–
-                    {Math.min(
-                      (simulations.page + 1) * simulations.size,
-                      simulations.totalElements
-                    )}{' '}
-                    sur {simulations.totalElements}
-                  </>
-                ) : (
-                  <>
-                    {simulations.totalElements} simulation
-                    {simulations.totalElements > 1 ? 's' : ''}
-                  </>
-                )}
-              </span>
-              <div className="flex gap-2">
-                {simulations.totalPages > 1 && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => onPageChange(Math.max(0, page - 1))}
-                      disabled={simulations.page === 0}
-                      className="px-4 py-2 min-h-[40px] rounded-lg border border-border bg-surface hover:bg-canvas-subtle disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas"
-                    >
-                      Précédent
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onPageChange(Math.min(simulations.totalPages - 1, page + 1))}
-                      disabled={simulations.page >= simulations.totalPages - 1}
-                      className="px-4 py-2 min-h-[40px] rounded-lg border border-border bg-surface hover:bg-canvas-subtle disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas"
-                    >
-                      Suivant
-                    </button>
-                  </>
-                )}
+          <div className="mt-4 flex items-center justify-between gap-3 text-xs text-ink-secondary">
+            <span>
+              {simulations.totalPages > 1
+                ? `${simulations.page * simulations.size + 1}–${Math.min(
+                    (simulations.page + 1) * simulations.size,
+                    simulations.totalElements
+                  )} sur ${simulations.totalElements}`
+                : `${simulations.totalElements} simulation${simulations.totalElements > 1 ? 's' : ''}`}
+            </span>
+            {simulations.totalPages > 1 && (
+              <div className="flex items-center gap-1.5">
                 <button
                   type="button"
-                  onClick={() => setExpanded(false)}
-                  className="px-4 py-2 min-h-[40px] rounded-lg border border-border bg-surface hover:bg-canvas-subtle cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas"
+                  onClick={() => onPageChange(Math.max(0, page - 1))}
+                  disabled={simulations.page === 0}
+                  aria-label="Simulations précédentes"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded border-2 border-border bg-surface hover:bg-canvas-subtle disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas"
                 >
-                  Réduire
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onPageChange(Math.min(simulations.totalPages - 1, page + 1))}
+                  disabled={simulations.page >= simulations.totalPages - 1}
+                  aria-label="Simulations suivantes"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded border-2 border-border bg-surface hover:bg-canvas-subtle disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-canvas"
+                >
+                  <ChevronRight className="h-4 w-4" />
                 </button>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </>
       )}
     </section>

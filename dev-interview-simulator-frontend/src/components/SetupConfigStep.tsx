@@ -2,6 +2,7 @@ import type { FormEvent } from 'react';
 import { useRef } from 'react';
 import type { Category, ChallengeType, DifficultyLevel, Skill } from '../types';
 import { Button } from './common/Button';
+import { BackButton } from './common/BackButton';
 import { PageTitle } from './common/PageTitle';
 import { SetupModeCards } from './SetupModeCards';
 import { SetupTopics } from './SetupTopics';
@@ -28,6 +29,7 @@ interface Props {
   selectedDifficulty: DifficultyLevel;
   onSelectDifficulty: (difficulty: DifficultyLevel) => void;
   topics: TopicsProps;
+  onBack: () => void;
 }
 
 const DIFFICULTIES: { id: DifficultyLevel; label: string }[] = [
@@ -54,6 +56,7 @@ export const SetupConfigStep = ({
   selectedDifficulty,
   onSelectDifficulty,
   topics,
+  onBack,
 }: Props) => {
   const selectedTechnologyNames = [
     ...topics.categories
@@ -87,12 +90,15 @@ export const SetupConfigStep = ({
   return (
     <div className="screen-transition w-full px-4 py-3 sm:px-6 sm:py-5">
       <div className="mx-auto w-full max-w-[640px]">
-        <PageTitle size="hero-compact" className="whitespace-nowrap text-center text-[20px] sm:text-4xl lg:text-5xl">
-          Configure ton entraînement
-        </PageTitle>
+        <div className="flex items-center gap-2">
+          <BackButton onClick={onBack} />
+          <PageTitle size="hero-compact" className="min-w-0 flex-1 text-center text-[20px] sm:text-4xl lg:text-5xl">
+            Configure ton entraînement
+          </PageTitle>
+        </div>
 
         <form onSubmit={onSubmit} className="mt-3 sm:mt-5">
-          <section className="rounded border-2 border-border bg-card p-4 text-left shadow-card sm:p-5">
+          <section className="rounded border-2 border-border bg-card p-4 text-left shadow-[4px_4px_0_var(--color-accent)] sm:p-5">
             <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted sm:text-xs">
               Niveau visé
             </h2>
@@ -108,7 +114,7 @@ export const SetupConfigStep = ({
                   aria-pressed={selectedDifficulty === difficulty.id}
                   className={`min-h-10 rounded border-2 px-2 text-sm font-semibold sm:min-h-11 ${
                     selectedDifficulty === difficulty.id
-                      ? 'border-border bg-brand text-cta-text shadow-[2px_2px_0_var(--color-shadow)]'
+                      ? 'border-border bg-brand text-cta-text shadow-[2px_2px_0_var(--color-accent)]'
                       : 'border-border bg-card text-text'
                   }`}
                 >

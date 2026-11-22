@@ -553,6 +553,43 @@
   text-shadow: 2px 2px 0 rgba(10, 35, 66, 0.5);
 }
 
+.level-rank--silver {
+  background: linear-gradient(135deg, #f7f9fb 0%, #c3ccd8 45%, #eef2f6 70%, #aab5c4 100%);
+}
+
+.level-rank--gold {
+  background: linear-gradient(135deg, #fff1a8 0%, #f5c518 45%, #ffe27a 70%, #e0a800 100%);
+}
+
+.level-rank--diamond {
+  background: linear-gradient(135deg, #e9fcff 0%, #8fdcf5 40%, #d9ccff 70%, #7cc7f2 100%);
+}
+
+@keyframes level-rank-shine {
+  0% { transform: translateX(-150%) skewX(-20deg); }
+  30% { transform: translateX(350%) skewX(-20deg); }
+  100% { transform: translateX(350%) skewX(-20deg); }
+}
+
+.level-rank--diamond::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 45%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+  transform: translateX(-150%) skewX(-20deg);
+  animation: level-rank-shine 4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .level-rank--diamond::after {
+    animation: none;
+    opacity: 0;
+  }
+}
+
 /* ===== Surlignage du titre de la landing =====
    Un seul pavé orange même si le texte passe sur deux lignes : inline-block
    (et non inline) garde un bloc unique. Couleurs : tokens existants. */

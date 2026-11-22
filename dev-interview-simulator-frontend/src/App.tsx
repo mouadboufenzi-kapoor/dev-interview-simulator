@@ -8,7 +8,11 @@ import type {
 } from './types';
 import { simulationApi } from './api/simulationApi';
 import { userStatsApi } from './api/userStatsApi';
-import { pruneGuestSimulations, saveGuestSimulation } from './api/guestSimulations';
+import {
+  markGuestTestCompleted,
+  pruneGuestSimulations,
+  saveGuestSimulation,
+} from './api/guestSimulations';
 import { SetupScreen } from './components/SetupScreen';
 import { QuizScreen } from './components/QuizScreen';
 import { useEffect } from 'react';
@@ -265,6 +269,7 @@ export default function App() {
         difficulty: simulation.difficulty,
       });
       setSummary(data);
+      if (!user) markGuestTestCompleted();
       setScreen('RESULT');
       if (!user) {
         setGuestSimulationCount((current) => {
@@ -335,6 +340,18 @@ export default function App() {
   // Depuis le bilan ou un abandon : toujours le choix du challenge.
   const handleRestart = () => goToSetup({ skipProfile: true });
 
+  const handleHome = () => {
+    if (user) {
+      setSimulation(null);
+      setSummary(null);
+      setError(null);
+      setScreen('DASHBOARD');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    goToSetup();
+  };
+
   const handleAuthenticated = (authenticatedUser: AuthUser) => {
     setUser(authenticatedUser);
     if (screen === 'RESULT' && simulation) {
@@ -357,7 +374,10 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleOpenSetup = () => goToSetup();
+  const handleOpenSetup = () => {
+    setSetupInitialDifficulty(undefined);
+    goToSetup();
+  };
 
   const handleContinuePlacement = () => {
     if (!summary) return;
@@ -519,6 +539,8 @@ export default function App() {
               skipProfileSelection={user !== null || skipProfileStepOnSetup}
               initialDifficulty={setupInitialDifficulty}
               accountDifficulty={accountLevel ?? undefined}
+              onBack={handleHome}
+              isGuest={user === null}
             />
           )}
 
@@ -564,6 +586,7 @@ export default function App() {
               }}
               isPlacement={isPlacementSimulation}
               onContinuePlacement={handleContinuePlacement}
+              onBack={handleHome}
             />
           )}
         </div>

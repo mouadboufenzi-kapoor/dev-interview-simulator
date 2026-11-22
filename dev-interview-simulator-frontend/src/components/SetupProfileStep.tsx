@@ -1,5 +1,6 @@
 import { StatTiles, type StatItem } from './common/StatTiles';
 import { ProgramSection } from './ProgramSection';
+import { useHasCompletedGuestTest } from '../hooks/useHasCompletedGuestTest';
 
 export const COMMERCIAL_STATS: readonly StatItem[] = [
   { value: 9000, suffix: '+', label: 'Questions' },
@@ -11,9 +12,30 @@ interface Props {
   onPlacement: () => void;
   onPersonalize: () => void;
   onLogin: () => void;
+  isGuest: boolean;
 }
 
-export const SetupProfileStep = ({ onPlacement, onPersonalize, onLogin }: Props) => (
+interface StepCopy {
+  description: string;
+  placementLabel: string;
+}
+
+const COPY: Record<'default' | 'returning', StepCopy> = {
+  default: {
+    description: 'Teste-toi et découvre ton niveau actuel.',
+    placementLabel: 'Tester mon niveau',
+  },
+  returning: {
+    description: 'Pas convaincu du résultat ? Retente ta chance.',
+    placementLabel: 'Retenter le test',
+  },
+};
+
+export const SetupProfileStep = ({ onPlacement, onPersonalize, onLogin, isGuest }: Props) => {
+  const hasCompletedTest = useHasCompletedGuestTest();
+  const copy = COPY[hasCompletedTest ? 'returning' : 'default'];
+
+  return (
   <div className="screen-transition relative w-full flex flex-col items-center pt-4 pb-4 sm:pt-10 sm:pb-6 px-4 md:px-6 md:pt-14 md:pb-0">
     <div className="w-full max-w-4xl mx-auto space-y-10 sm:space-y-12 text-center md:max-w-[1120px] md:space-y-0 md:text-left">
       <div className="md:grid md:grid-cols-2 md:items-center md:gap-14">
@@ -29,8 +51,8 @@ export const SetupProfileStep = ({ onPlacement, onPersonalize, onLogin }: Props)
         <div className="max-sm:mt-8">
         <section className="box-border w-full max-w-full rounded-[6px] border-2 border-[#0a2342] bg-white p-4 text-left shadow-[6px_6px_0_#ff5a2f] dark:border-border dark:bg-card dark:shadow-[6px_6px_0_var(--color-shadow)] md:mx-auto md:max-w-[460px] md:p-7">
           <div className="flex items-center gap-3">
-            <div className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[6px] border-2 border-[#0a2342] bg-[#eaeef5] text-[#0a2342]">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0a2342" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] border-2 border-[#0a2342] bg-[#eaeef5] text-[#0a2342] md:h-9 md:w-9">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0a2342" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <rect x="3" y="7" width="18" height="13" rx="2" />
                 <path d="M9 7V4h6v3" />
               </svg>
@@ -43,7 +65,7 @@ export const SetupProfileStep = ({ onPlacement, onPersonalize, onLogin }: Props)
             </span>
           </div>
           <p className="mt-2.5 text-[13px] font-normal leading-[1.5] text-[#52647a] dark:text-muted md:text-[15px]">
-            Teste-toi et découvre ton niveau actuel.
+            {copy.description}
           </p>
           <ul className="mt-3 flex items-center gap-5 text-[13px] font-bold text-[#0a2342] dark:text-text md:text-[14px]">
             <li className="flex items-center gap-1.5">
@@ -64,10 +86,10 @@ export const SetupProfileStep = ({ onPlacement, onPersonalize, onLogin }: Props)
             <button
               type="button"
               onClick={onPlacement}
-              className="box-border flex h-[52px] w-full max-w-full items-center justify-between rounded border-2 border-[#0a2342] bg-[#ff5a2f] px-5 text-[15px] font-bold text-[#0a2342] shadow-[3px_3px_0_#0a2342] md:h-[60px] md:text-[18px]"
+              className="box-border flex h-[52px] w-full max-w-full items-center justify-between rounded border-2 border-[#0a2342] bg-[#ff5a2f] px-5 text-[15px] font-bold text-white text-relief shadow-[3px_3px_0_#0a2342] md:h-[60px] md:text-[18px]"
             >
-              Tester mon niveau
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0a2342" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              {copy.placementLabel}
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M5 12h14M13 6l6 6-6 6" />
               </svg>
             </button>
@@ -85,19 +107,22 @@ export const SetupProfileStep = ({ onPlacement, onPersonalize, onLogin }: Props)
             </button>
           </div>
         </section>
-        <div className="mt-[18px] text-center text-sm text-[#52647a] dark:text-muted sm:text-base">
-          Déjà un compte ?{' '}
-          <button
-            type="button"
-            onClick={onLogin}
-            className="min-h-11 text-[#0a2342] underline cursor-pointer dark:text-brand"
-          >
-            Se connecter
-          </button>
-        </div>
+        {isGuest && (
+          <div className="mt-[18px] text-center text-sm text-[#52647a] dark:text-muted sm:text-base">
+            Déjà un compte ?{' '}
+            <button
+              type="button"
+              onClick={onLogin}
+              className="min-h-11 text-[#0a2342] underline cursor-pointer dark:text-brand"
+            >
+              Se connecter
+            </button>
+          </div>
+        )}
         </div>
       </div>
       <ProgramSection />
     </div>
   </div>
-);
+  );
+};

@@ -79,7 +79,7 @@ export const UserDashboard = ({ user, onStartSimulation, onRevise, onOpenResult 
     <div className="w-full max-w-5xl mx-auto space-y-5 py-1 sm:space-y-6 sm:py-2">
       {/* Accueil : profil actif + CTA principal */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <UserDashboardProfile user={user} onChangeProfile={onStartSimulation} />
+        <UserDashboardProfile user={user} level={level?.currentLevel ?? null} />
         <Button
           type="button"
           variant="primary"

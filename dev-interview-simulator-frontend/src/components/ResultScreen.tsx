@@ -7,6 +7,7 @@ import { ResultCompetencies } from './ResultCompetencies';
 import { ResultPriority } from './ResultPriority';
 import { ResultQuestions } from './ResultQuestions';
 import { analyzeResult, groupSkillTagsByCategory } from '../utils/resultAnalysis';
+import { estimateLevel } from '../utils/levelEstimation';
 import { trackEvent } from '../api/events';
 import { useEffect, useRef } from 'react';
 
@@ -21,6 +22,7 @@ interface Props {
   onCreateAccount: () => void;
   isPlacement: boolean;
   onContinuePlacement: () => void;
+  onBack: () => void;
 }
 
 export const ResultScreen = ({
@@ -32,6 +34,7 @@ export const ResultScreen = ({
   onCreateAccount,
   isPlacement,
   onContinuePlacement,
+  onBack,
 }: Props) => {
   const guestCtaRef = useRef<HTMLElement>(null);
   const guestCtaViewedRef = useRef(false);
@@ -71,10 +74,27 @@ export const ResultScreen = ({
   const showTargetedCta = summary.mode !== 'ARCHITECTURE';
   const showPriority = priorityList.length > 0;
   const showStrengths = categoryAnalysis.strengths.length > 0;
+  const guestLevel = isGuest
+    ? estimateLevel(
+        [
+          {
+            difficulty: summary.difficulty,
+            answered: summary.totalQuestions,
+            correct: summary.correctAnswersCount,
+          },
+        ],
+        1
+      )
+    : null;
 
   return (    <div className="max-w-4xl mx-auto py-1 sm:py-2 space-y-4 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-6">
-      <div className="grid sm:col-span-2">
-        <ResultHeader mode={summary.mode} difficulty={summary.difficulty} />
+      <div className="sm:col-span-2">
+        <ResultHeader
+          mode={summary.mode}
+          difficulty={summary.difficulty}
+          levelLabel={guestLevel?.label ?? null}
+          onBack={onBack}
+        />
       </div>
 
       <div className="grid sm:col-span-2">
