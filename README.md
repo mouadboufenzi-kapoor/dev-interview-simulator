@@ -166,6 +166,19 @@ Authorization is declared in `SecurityConfig`:
 
 The administrator account is created at first startup from `ADMIN_USERNAME`, `ADMIN_EMAIL` and `ADMIN_PASSWORD`. Those variables are not applied afterwards: the password is set once, at creation, so changing them does not update an existing account.
 
+## Admin dashboard
+
+The back-office opens on the statistics tab, which follows platform usage. Every figure is computed by the API with aggregate queries, never by loading a table in memory, and is served by `GET /api/admin/stats`:
+
+- **Users** - total registered accounts, with the sign-ups of the last 7 and 30 days. The `default_user` guest account is excluded because it is not a registration. The card opens the user directory.
+- **Simulations launched** - one row per session created, guest sessions included. **Completed**, **in progress** and **abandoned** map the three `SimulationStatus` values, so they add up to the total.
+- **Completion rate** - completed / launched x 100, over all sessions.
+- **Average simulations per active user** - registered simulations divided by the number of registered users who launched at least one session, so accounts that never started a simulation do not dilute it.
+
+The directory itself is the **Utilisateurs** tab, backed by `GET /api/admin/users?search=&page=&size=`, admin-only and read-only: id, username, email, role, account state and sign-up date, newest first, ten per page, searchable by username or email. It never returns the password hash, the Google subject or any token, and exposes no edition or deletion in this first version. The Scénarios tab is unchanged.
+
+The main files are `AdminStatsService`, `AdminUserService` and `AdminUserController` on the backend, `UserRepository` and `SimulationRepository` for the aggregates, and `AdminStatsPanel`, `AdminUsersPanel` and `AdminDashboard` on the frontend.
+
 ## External AI integration (Gemini, Groq, or any external LLM)
 
 The back-office can generate new questions with an external LLM. Three providers are built in (Google Gemini, Groq and OpenRouter), plus an assisted mode that uses any LLM outside the application. The integration is optional, admin-only, and the rest of the application runs normally without it.

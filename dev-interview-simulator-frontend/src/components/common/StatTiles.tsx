@@ -60,9 +60,9 @@ function useCountUp(target: number, start: boolean, reduce: boolean, duration = 
 }
 
 const TILE_COLORS = [
-  'bg-stat-1 text-stat-1-text',
-  'bg-stat-2 text-stat-2-text',
-  'bg-stat-3 text-stat-3-text',
+  'bg-stat-1 text-stat-1-text md:bg-[#123a64] md:text-white',
+  'bg-stat-2 text-white text-relief md:bg-[#ff5a2f] md:text-[#0a2342]',
+  'bg-stat-3 text-stat-3-text md:bg-[#d6e0f0] md:text-[#0a2342]',
 ];
 
 const StatTile = ({
@@ -81,17 +81,17 @@ const StatTile = ({
   const done = current >= item.value;
   return (
     <li
-      className={`min-w-0 rounded border-2 border-border shadow-panel px-2.5 py-3 sm:px-5 sm:py-5 ${TILE_COLORS[index % 3]}`}
+      className={`min-w-0 rounded border-2 border-border shadow-panel px-2.5 py-3 sm:px-5 sm:py-5 md:rounded-[6px] md:border-[#0a2342] md:px-3 md:py-4 md:shadow-[4px_4px_0_#0a2342] ${TILE_COLORS[index % 3]}`}
     >
       <span className="sr-only">{`${nf.format(item.value)}${suffix} ${item.label}`}</span>
       <span
         aria-hidden="true"
-        className="block whitespace-nowrap font-bold leading-none tracking-[-0.03em] tabular-nums text-[1.55rem] sm:text-4xl"
+        className="block whitespace-nowrap font-bold leading-none tracking-[-0.03em] tabular-nums text-[1.55rem] sm:text-4xl md:text-[34px]"
       >
         {nf.format(current)}
         {done ? suffix : ''}
       </span>
-      <span aria-hidden="true" className="mt-2 block text-[11px] leading-tight sm:text-sm">
+      <span aria-hidden="true" className="mt-2 block text-[11px] leading-tight sm:text-sm md:text-[14px]">
         {item.label}
       </span>
     </li>
@@ -104,7 +104,7 @@ export const StatTiles = ({ items, className = '' }: { items: StatItem[]; classN
   return (
     <ul
       ref={ref}
-      className={`grid w-full min-w-0 grid-cols-[1.3fr_1.1fr_1fr] gap-2.5 sm:grid-cols-3 sm:gap-4 ${className}`}
+      className={`grid w-full min-w-0 grid-cols-[1.3fr_1.1fr_1fr] gap-2.5 text-center sm:grid-cols-3 sm:gap-4 md:gap-3.5 ${className}`}
     >
       {items.slice(0, 3).map((item, i) => (
         <StatTile key={item.label} item={item} index={i} start={seen} reduce={reduce} />

@@ -20,5 +20,8 @@ public record AdminStatsResponse(
         long newUsersLast30Days,
         long abandonedSimulations,
         Double completionRate,
-        Double averageSimulationsPerActiveUser
+        Double averageSimulationsPerActiveUser,
+        long placementSimulations,
+        long placementCompleted,
+        long guestPlacementSimulations
 ) {}

@@ -29,6 +29,16 @@ app:
     # Origines du frontend autorisees (virgules) — a surcharger en prod via CORS_ORIGINS.
     allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:3000}
 
+  simulation:
+    rate-limit:
+      window: ${SIMULATION_RATE_LIMIT_WINDOW:PT1H}
+      guest-limit: ${SIMULATION_RATE_LIMIT_GUEST:30}
+      user-limit: ${SIMULATION_RATE_LIMIT_USER:120}
+
+  client-ip:
+    trust-proxy-headers: ${CLIENT_IP_TRUST_PROXY_HEADERS:false}
+    trusted-proxies: '${CLIENT_IP_TRUSTED_PROXIES:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|127\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|169\.254\.\d{1,3}\.\d{1,3}|::1}'
+
   security:
     jwt:
       # Pas de fallback : le demarrage echoue explicitement si JWT_SECRET est absent

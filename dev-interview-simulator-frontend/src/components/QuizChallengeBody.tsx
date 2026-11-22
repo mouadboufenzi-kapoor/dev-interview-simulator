@@ -30,10 +30,12 @@ export const QuizChallengeBody = ({ challenge, showMultiChoiceHint }: Props) => 
     {/* Context box if available (le titre du challenge n'est plus affiché) */}
     {challenge.context && (
       <div className="rounded-none border-l-4 border-y-0 border-r-0 border-brand bg-canvas-subtle pl-4 py-3 text-sm text-ink-secondary leading-relaxed break-words">
-        <div className="text-[11px] font-mono text-ink-muted uppercase tracking-wider mb-1 font-semibold">
+        <div className="text-xs font-mono text-ink-muted uppercase tracking-wider mb-1 font-semibold">
           Mise en situation
         </div>
-        <p className="not-italic text-ink font-sans text-base">{challenge.context}</p>
+        <p className="not-italic text-ink font-sans text-base leading-[1.6] sm:text-lg sm:leading-relaxed">
+          {challenge.context}
+        </p>
       </div>
     )}
 
@@ -73,7 +75,7 @@ export const QuizChallengeBody = ({ challenge, showMultiChoiceHint }: Props) => 
         )}
       </div>
 
-      <p className="text-lg sm:text-xl font-serif text-ink font-semibold leading-relaxed break-words">
+      <p className="text-base sm:text-lg font-serif text-ink font-semibold leading-relaxed break-words">
         {challenge.question}
       </p>
     </div>

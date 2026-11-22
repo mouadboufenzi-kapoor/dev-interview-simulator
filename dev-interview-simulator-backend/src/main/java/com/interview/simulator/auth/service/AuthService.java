@@ -65,7 +65,7 @@ public class AuthService {
             user.setActiveProfile(profile);
         });
         userRepository.save(user);
-        return toResponse(user);
+        return toResponse(user, true);
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -81,7 +81,7 @@ public class AuthService {
                         HttpStatus.UNAUTHORIZED,
                         "Utilisateur introuvable."
                 ));
-        return toResponse(user);
+        return toResponse(user, false);
     }
 
     /**
@@ -103,7 +103,7 @@ public class AuthService {
         // 1. Deja connecte par Google auparavant.
         java.util.Optional<User> bySub = userRepository.findByGoogleSub(google.sub());
         if (bySub.isPresent()) {
-            return toResponse(bySub.get());
+            return toResponse(bySub.get(), false);
         }
 
         // 2. Email deja en base -> compte classique : on lie le compte Google.
@@ -115,7 +115,7 @@ public class AuthService {
                 linked.setPictureUrl(google.picture());
             }
             userRepository.save(linked);
-            return toResponse(linked);
+            return toResponse(linked, false);
         }
 
         // 3. Nouveau compte Google-only.
@@ -130,7 +130,7 @@ public class AuthService {
             user.setActiveProfile(profile);
         });
         userRepository.save(user);
-        return toResponse(user);
+        return toResponse(user, true);
     }
 
     /**
@@ -153,14 +153,15 @@ public class AuthService {
         return candidate;
     }
 
-    private AuthResponse toResponse(User user) {
+    private AuthResponse toResponse(User user, boolean newUser) {
         return new AuthResponse(
                 jwtService.generateToken(user),
                 user.getId(),
                 user.getUsername(),
                 user.getEmail(),
                 user.getRole().name(),
-                user.getActiveProfile() != null ? user.getActiveProfile().getName() : null
+                user.getActiveProfile() != null ? user.getActiveProfile().getName() : null,
+                newUser
         );
     }
 }

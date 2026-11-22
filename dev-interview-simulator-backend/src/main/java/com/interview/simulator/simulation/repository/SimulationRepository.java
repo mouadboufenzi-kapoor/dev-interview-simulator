@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface SimulationRepository extends JpaRepository<Simulation, Long> {
@@ -17,6 +18,14 @@ public interface SimulationRepository extends JpaRepository<Simulation, Long> {
     long countByStatus(SimulationStatus status);
 
     long countByUserUsernameNot(String username);
+
+    long countByPlacementTrue();
+
+    long countByPlacementTrueAndStatus(SimulationStatus status);
+
+    long countByPlacementTrueAndUserUsername(String username);
+
+    Optional<Simulation> findByGuestAccessTokenHash(String guestAccessTokenHash);
 
     @Query("SELECT COUNT(DISTINCT s.user.id) FROM Simulation s WHERE s.user.username <> :guestUsername")
     long countDistinctRegisteredUsersWithSimulations(@Param("guestUsername") String guestUsername);
@@ -47,6 +56,27 @@ public interface SimulationRepository extends JpaRepository<Simulation, Long> {
         GROUP BY c.type
         """, nativeQuery = true)
     List<Object[]> findUserTypeStats(@Param("userId") Long userId);
+
+    /**
+     * Statut correct/incorrect des N dernières réponses d'un utilisateur à des
+     * questions d'un niveau donné (challenges.difficulty, pas simulations.difficulty),
+     * simulations terminées uniquement, de la plus récente à la plus ancienne.
+     * Les questions sans ligne de réponse sont absentes ; les expirées
+     * (is_correct = false) sont incluses.
+     */
+    @Query(value = """
+        SELECT a.is_correct
+        FROM simulation_answers a
+        JOIN simulation_challenges sc ON sc.id = a.simulation_challenge_id
+        JOIN challenges c ON c.id = sc.challenge_id
+        JOIN simulations s ON s.id = sc.simulation_id
+        WHERE s.user_id = :userId AND s.status = 'COMPLETED' AND c.difficulty = :difficulty
+        ORDER BY a.answered_at DESC
+        LIMIT :limit
+        """, nativeQuery = true)
+    List<Boolean> findRecentAnswerCorrectness(@Param("userId") Long userId,
+                                              @Param("difficulty") String difficulty,
+                                              @Param("limit") int limit);
 
     @Query(value = """
         SELECT s.difficulty, COUNT(a.id), COUNT(CASE WHEN a.is_correct THEN 1 END)

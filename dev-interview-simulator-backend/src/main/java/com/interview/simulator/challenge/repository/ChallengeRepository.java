@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -27,6 +28,23 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
     Optional<Challenge> findByExternalId(String externalId);
 
     List<Challenge> findByContentHash(String contentHash);
+
+    Optional<Challenge> findByTitleAndContentHash(String title, String contentHash);
+
+    @Query("""
+        SELECT DISTINCT c FROM Challenge c
+        JOIN c.categories cat
+        WHERE c.active = true
+          AND c.status = com.interview.simulator.challenge.entity.ContentStatus.VALIDATED
+          AND c.type = :type
+          AND c.difficulty = :difficulty
+          AND cat.name IN :categories
+    """)
+    List<Challenge> findPlacementFallbackCandidates(
+        @Param("type") ChallengeType type,
+        @Param("difficulty") DifficultyLevel difficulty,
+        @Param("categories") Collection<String> categories
+    );
 
     long countByStatus(ContentStatus status);
 

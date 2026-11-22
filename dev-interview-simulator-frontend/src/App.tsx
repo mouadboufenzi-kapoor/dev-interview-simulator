@@ -1,11 +1,18 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import type {
   StartSimulationRequest,
   SimulationResponse,
   SimulationResultDTO,
   ChallengeType,
+  DifficultyLevel,
 } from './types';
 import { simulationApi } from './api/simulationApi';
+import { userStatsApi } from './api/userStatsApi';
+import {
+  markGuestTestCompleted,
+  pruneGuestSimulations,
+  saveGuestSimulation,
+} from './api/guestSimulations';
 import { SetupScreen } from './components/SetupScreen';
 import { QuizScreen } from './components/QuizScreen';
 import { useEffect } from 'react';
@@ -19,6 +26,12 @@ import { UserAccessModal, type AuthUser } from './components/UserAccessModal';
 import { AdminDashboard } from './components/AdminDashboard';
 import { SettingsScreen } from './components/SettingsScreen';
 import { LoadingNotice } from './components/common/LoadingNotice';
+import { estimateLevel } from './utils/levelEstimation';
+import {
+  readPlacementSeenChallengeIds,
+  savePlacementSeenChallengeIds,
+} from './api/placementSeen';
+import { trackEvent } from './api/events';
 
 type ScreenState = 'SETUP' | 'QUIZ' | 'RESULT' | 'DASHBOARD' | 'ADMIN' | 'SETTINGS';
 
@@ -32,6 +45,18 @@ const LOADING_REVISE: LoadingAction = {
 const LOADING_SIMULATION: LoadingAction = {
   message: 'Préparation de votre simulation en cours…',
   detail: 'La sélection des questions peut prendre quelques instants.',
+};
+
+const DIFFICULTY_ORDER: DifficultyLevel[] = ['JUNIOR', 'INTERMEDIATE', 'ADVANCED'];
+
+// La plus élevée des deux difficultés (ignore les valeurs absentes).
+const highestDifficulty = (
+  first?: DifficultyLevel | null,
+  second?: DifficultyLevel | null
+): DifficultyLevel | undefined => {
+  if (!first) return second ?? undefined;
+  if (!second) return first;
+  return DIFFICULTY_ORDER.indexOf(first) >= DIFFICULTY_ORDER.indexOf(second) ? first : second;
 };
 
 const LOADING_RESULT: LoadingAction = {
@@ -48,15 +73,28 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [loadingAction, setLoadingAction] = useState<LoadingAction | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [authReady, setAuthReady] = useState(false);
   // Après un bilan, « Lancer une nouvelle session » doit retomber sur le choix
   // du type de challenge : le profil ne doit plus être demandé.
   const [skipProfileStepOnSetup, setSkipProfileStepOnSetup] = useState(false);
   const [reviseCategoryIds, setReviseCategoryIds] = useState<number[] | null>(null);
   const [reviseSkillIds, setReviseSkillIds] = useState<number[] | null>(null);
   const [showAccessModal, setShowAccessModal] = useState(false);
+  const [accessModalInitialMode, setAccessModalInitialMode] = useState<'login' | 'register'>('login');
+  const [accessModalGoogleFirst, setAccessModalGoogleFirst] = useState(false);
+  const [isPlacementSimulation, setIsPlacementSimulation] = useState(false);
+  const [setupInitialDifficulty, setSetupInitialDifficulty] = useState<DifficultyLevel | undefined>();
+  // Niveau stocké du compte : sert à présélectionner la difficulté et à cibler
+  // la révision. Reste nul pour un invité ou si l'appel échoue.
+  const [accountLevel, setAccountLevel] = useState<DifficultyLevel | null>(null);
   // Garde anti double-clic sur « Réviser » : évite deux démarrages simultanés.
   const reviseInFlight = useRef(false);
   const resultInFlight = useRef(false);
+  const landingTracked = useRef(false);
+  const questionIndexRef = useRef<number | null>(null);
+  const handleQuestionIndexChange = useCallback((index: number) => {
+    questionIndexRef.current = index;
+  }, []);
   // Nombre de simulations terminées par l'invité dans SA session (sessionStorage).
   // Côté backend, tous les invités partagent default_user : un compteur serveur
   // serait faussé — donc zéro architecture ajoutée, compteur local uniquement.
@@ -69,26 +107,78 @@ export default function App() {
   });
 
   useEffect(() => {
+    if (!landingTracked.current) {
+      landingTracked.current = true;
+      trackEvent('landing_viewed');
+    }
+    pruneGuestSimulations();
     const storedUser = localStorage.getItem('user');
     const token = localStorage.getItem('jwt_token');
     if (storedUser && token) {
       try {
         const parsed = JSON.parse(storedUser);
         setUser(parsed);
+        setScreen('DASHBOARD');
       } catch (e) {
         localStorage.removeItem('user');
         localStorage.removeItem('jwt_token');
       }
     }
+    setAuthReady(true);
 
+    const handlePageUnload = () => {
+      if (screen === 'QUIZ' && simulation?.status === 'IN_PROGRESS') {
+        simulationApi.abandonSimulationOnUnload(simulation.id, simulation.guestAccessToken);
+        trackEvent('simulation_abandoned', {
+          simulationId: simulation.id,
+          mode: simulation.mode,
+          difficulty: simulation.difficulty,
+          questionIndex: questionIndexRef.current,
+        });
+      }
+    };
+    const handleVisibilityChange = () => {
+      if (screen === 'QUIZ' && simulation?.status === 'IN_PROGRESS' && document.visibilityState === 'hidden') {
+        simulationApi.abandonSimulationOnUnload(simulation.id, simulation.guestAccessToken);
+        trackEvent('simulation_abandoned', {
+          simulationId: simulation.id,
+          mode: simulation.mode,
+          difficulty: simulation.difficulty,
+          questionIndex: questionIndexRef.current,
+        });
+      }
+    };
+    window.addEventListener('pagehide', handlePageUnload);
+    window.addEventListener('visibilitychange', handleVisibilityChange);
     const handleAuthLogout = () => {
       setUser(null);
       setScreen('SETUP');
     };
 
     window.addEventListener('auth:logout', handleAuthLogout);
-    return () => window.removeEventListener('auth:logout', handleAuthLogout);
+    return () => {
+      window.removeEventListener('pagehide', handlePageUnload);
+      window.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setAccountLevel(null);
+      return;
+    }
+    let isMounted = true;
+    userStatsApi.getLevel()
+      .then((level) => {
+        if (isMounted) setAccountLevel(level.currentLevel);
+      })
+      .catch(() => {
+        if (isMounted) setAccountLevel(null);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
 
   // Lancement unique de session (Setup, « Nouvelle simulation », Réviser).
   // Retourne true si le quiz a démarré : permet aux appelsants de basculer
@@ -103,13 +193,32 @@ export default function App() {
     setLoading(true);
     setError(null);
     try {
-      const data = await simulationApi.startSimulation(request);
+      const placementRequest = request.placement
+        ? {
+            ...request,
+            excludeChallengeIds: readPlacementSeenChallengeIds(),
+          }
+        : request;
+      const data = await simulationApi.startSimulation(placementRequest);
 
       if (!Array.isArray(data.challenges) || data.challenges.length === 0) {
         throw new Error('La session reçue ne contient aucune question.');
       }
 
+      saveGuestSimulation(data);
+      if (placementRequest.placement) {
+        savePlacementSeenChallengeIds(
+          data.challenges.map((challenge) => challenge.challengeId)
+        );
+      }
+      trackEvent('simulation_started', {
+        simulationId: data.id,
+        mode: data.mode,
+        difficulty: data.difficulty,
+        metadata: request.placement ? { placement: true } : null,
+      });
       setSimulation(data);
+      setIsPlacementSimulation(Boolean(request.placement));
       setScreen('QUIZ');
       // Même mécanisme que goToSetup : sur mobile, un défilement lancé avant
       // le remplacement de l'écran est parfois abandonné — on le rejoue après
@@ -146,13 +255,24 @@ export default function App() {
       // compteurs du dashboard afficheraient « 0 terminée ». Best-effort :
       // si la clôture échoue, le bilan reste affichable (/result ne dépend
       // pas du statut).
-      try {
+      // Clôture côté serveur : best-effort, l'événement est émis quand même      // car le bilan peut s'afficher même si le statut serveur n'a pas changé.      try {
         await simulationApi.completeSimulation(simulation.id, simulation.guestAccessToken ?? undefined);
       } catch (completeErr) {
         console.error('Clôture de la simulation impossible', completeErr);
       }
+      trackEvent('simulation_completed', {
+        simulationId: simulation.id,
+        mode: simulation.mode,
+        difficulty: simulation.difficulty,
+      });
       const data = await simulationApi.getSimulationResult(simulation.id, simulation.guestAccessToken ?? undefined);
+      trackEvent('result_viewed', {
+        simulationId: simulation.id,
+        mode: simulation.mode,
+        difficulty: simulation.difficulty,
+      });
       setSummary(data);
+      if (!user) markGuestTestCompleted();
       setScreen('RESULT');
       if (!user) {
         setGuestSimulationCount((current) => {
@@ -181,6 +301,12 @@ export default function App() {
     if (screen === 'QUIZ' && simulation?.status === 'IN_PROGRESS') {
       simulationApi.abandonSimulation(simulation.id, simulation.guestAccessToken).catch((err) => {
         console.error('Abandon de la simulation impossible', err);
+      });
+      trackEvent('simulation_abandoned', {
+        simulationId: simulation.id,
+        mode: simulation.mode,
+        difficulty: simulation.difficulty,
+        questionIndex: questionIndexRef.current,
       });
     }
 
@@ -217,8 +343,33 @@ export default function App() {
   // Depuis le bilan ou un abandon : toujours le choix du challenge.
   const handleRestart = () => goToSetup({ skipProfile: true });
 
+  const handleHome = () => {
+    if (user) {
+      setSimulation(null);
+      setSummary(null);
+      setError(null);
+      setScreen('DASHBOARD');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    goToSetup();
+  };
+
   const handleAuthenticated = (authenticatedUser: AuthUser) => {
     setUser(authenticatedUser);
+    if (screen === 'RESULT' && simulation) {
+      simulationApi.getSimulationResult(simulation.id)
+        .then((data) => {
+          setSummary(data);
+          setScreen('RESULT');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        })
+        .catch((err) => {
+          console.error('Rafraîchissement du bilan après authentification impossible', err);
+          setScreen('RESULT');
+        });
+      return;
+    }
     setSimulation(null);
     setSummary(null);
     setError(null);
@@ -226,7 +377,26 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleOpenSetup = () => goToSetup();
+  const handleOpenSetup = () => {
+    setSetupInitialDifficulty(undefined);
+    goToSetup();
+  };
+
+  const handleContinuePlacement = () => {
+    if (!summary) return;
+    const level = estimateLevel(
+      [{ difficulty: summary.difficulty, answered: summary.totalQuestions, correct: summary.correctAnswersCount }],
+      1
+    );
+    const difficulty: DifficultyLevel =
+      level == null || level.index <= 1
+        ? 'JUNIOR'
+        : level.index <= 3
+          ? 'INTERMEDIATE'
+          : 'ADVANCED';
+    setSetupInitialDifficulty(difficulty);
+    goToSetup({ skipProfile: true });
+  };
 
   // Page Paramètres (profil + apparence) — accessible depuis le menu utilisateur.
   const handleOpenSettings = () => {
@@ -239,13 +409,16 @@ export default function App() {
   // défaut, toutes difficultés pour maximiser le pool). Repli : écran de
   // configuration pré-pré-sélectionné si aucune question n'est disponible.
   const handleRevise = async (
-    filters: { categoryIds?: number[]; skillIds?: number[] }
+    filters: { categoryIds?: number[]; skillIds?: number[]; difficulty?: DifficultyLevel }
   ) => {
     if (reviseInFlight.current) return;
     reviseInFlight.current = true;
+    // Difficulté la plus élevée entre le niveau du compte et celle de la
+    // simulation d'où vient le point faible (si elle est connue).
+    const difficulty = highestDifficulty(accountLevel, filters.difficulty);
     try {
       const started = await handleStartSimulation(
-        { mode: 'SITUATIONAL_QCM', ...filters },
+        { mode: 'SITUATIONAL_QCM', ...filters, difficulty },
         'Aucune question ciblée disponible pour cette compétence pour le moment. Vous pouvez préparer votre session manuellement.',
         LOADING_REVISE
       );
@@ -269,6 +442,11 @@ export default function App() {
     setError(null);
     try {
       const data = await simulationApi.getSimulationResult(simulationId);
+      trackEvent('result_viewed', {
+        simulationId: data.simulationId,
+        mode: data.mode,
+        difficulty: data.difficulty,
+      });
       setSummary(data);
       setScreen('RESULT');
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -294,6 +472,10 @@ export default function App() {
       setScreen('SETUP');
     }
   };
+
+  if (!authReady) {
+    return null;
+  }
 
   return (
     <div className="relative min-h-screen flex flex-col overflow-x-clip bg-canvas watermark-pattern text-ink selection:bg-peach-500 selection:text-navy-900">
@@ -352,11 +534,20 @@ export default function App() {
           {screen === 'SETUP' && (
             <SetupScreen
               onStart={handleStartSimulation}
+              onLogin={() => {
+                setAccessModalInitialMode('login');
+                setAccessModalGoogleFirst(false);
+                setShowAccessModal(true);
+              }}
               loading={loading}
               activeMode={selectedDashboardMode}
               initialCategoryIds={reviseCategoryIds ?? undefined}
               initialSkillIds={reviseSkillIds ?? undefined}
               skipProfileSelection={user !== null || skipProfileStepOnSetup}
+              initialDifficulty={setupInitialDifficulty}
+              accountDifficulty={accountLevel ?? undefined}
+              onBack={handleHome}
+              isGuest={user === null}
             />
           )}
 
@@ -383,6 +574,7 @@ export default function App() {
               onFinish={handleFinishQuiz}
               onError={setError}
               finishing={loading}
+              onQuestionIndexChange={handleQuestionIndexChange}
             />
           )}
 
@@ -394,7 +586,14 @@ export default function App() {
               loading={loading}
               isGuest={user === null}
               guestSimulationCount={guestSimulationCount}
-              onCreateAccount={() => setShowAccessModal(true)}
+              onCreateAccount={() => {
+                setAccessModalInitialMode('register');
+                setAccessModalGoogleFirst(false);
+                setShowAccessModal(true);
+              }}
+              isPlacement={isPlacementSimulation}
+              onContinuePlacement={handleContinuePlacement}
+              onBack={handleHome}
             />
           )}
         </div>
@@ -409,6 +608,8 @@ export default function App() {
           qu'une modale est ouverte, les deux ne peuvent donc pas se chevaucher. */}
       {showAccessModal && (
         <UserAccessModal
+          initialMode={accessModalInitialMode}
+          googleFirst={accessModalGoogleFirst}
           onClose={() => setShowAccessModal(false)}
           onAuthenticated={(authenticatedUser) => {
             setShowAccessModal(false);

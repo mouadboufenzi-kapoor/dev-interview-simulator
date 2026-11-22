@@ -65,6 +65,7 @@ export interface StartSimulationRequest {
   categoryIds?: number[];
   skillIds?: number[];
   excludeChallengeIds?: number[];
+  placement?: boolean;
 }
 
 export interface SubmitAnswerRequest {
@@ -157,4 +158,13 @@ export interface SimulationResultDTO {
   /** Résultats par compétence transversale, par exemple Debugging. */
   skillResults?: CompetencyResult[];
   questions: QuestionSummary[];
+}
+
+export interface UserLevelProgress {
+  currentLevel: DifficultyLevel;
+  nextLevel: DifficultyLevel | null;
+  answeredCount: number;
+  windowSize: number;
+  successRatePercent: number;
+  requiredSuccessRate: number;
 }

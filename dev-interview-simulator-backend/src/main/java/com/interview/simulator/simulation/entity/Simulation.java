@@ -36,6 +36,9 @@ public class Simulation {
     @Enumerated(EnumType.STRING)
     private DifficultyLevel difficulty;
 
+    @Column(nullable = false)
+    private boolean placement = false;
+
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -52,6 +55,9 @@ public class Simulation {
 
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
+
+    @Column(name = "last_seen_at")
+    private LocalDateTime lastSeenAt;
 
     @OneToMany(mappedBy = "simulation", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SimulationChallenge> simulationChallenges = new ArrayList<>();
@@ -73,6 +79,8 @@ public class Simulation {
     public void setMode(ChallengeType mode) { this.mode = mode; }
     public DifficultyLevel getDifficulty() { return difficulty; }
     public void setDifficulty(DifficultyLevel difficulty) { this.difficulty = difficulty; }
+    public boolean isPlacement() { return placement; }
+    public void setPlacement(boolean placement) { this.placement = placement; }
     public SimulationStatus getStatus() { return status; }
     public void setStatus(SimulationStatus status) { this.status = status; }
     public Integer getTotalScore() { return totalScore; }
@@ -82,6 +90,8 @@ public class Simulation {
     public LocalDateTime getStartedAt() { return startedAt; }
     public LocalDateTime getCompletedAt() { return completedAt; }
     public void setCompletedAt(LocalDateTime completedAt) { this.completedAt = completedAt; }
+    public LocalDateTime getLastSeenAt() { return lastSeenAt; }
+    public void setLastSeenAt(LocalDateTime lastSeenAt) { this.lastSeenAt = lastSeenAt; }
     public List<SimulationChallenge> getSimulationChallenges() { return simulationChallenges; }
 
     @Override

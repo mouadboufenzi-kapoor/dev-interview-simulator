@@ -7,38 +7,58 @@ import type {
   StartSimulationRequest,
 } from '../types';
 import { simulationApi } from '../api/simulationApi';
+import { trackEvent } from '../api/events';
 import { SetupProfileStep } from './SetupProfileStep';
 import { SetupConfigStep } from './SetupConfigStep';
 
 interface Props {
   onStart: (request: StartSimulationRequest) => void;
+  onLogin: () => void;
   loading: boolean;
   activeMode?: ChallengeType;
   initialCategoryIds?: number[];
   initialSkillIds?: number[];
   skipProfileSelection?: boolean;
+  initialDifficulty?: DifficultyLevel;
+  accountDifficulty?: DifficultyLevel;
+  onBack: () => void;
+  isGuest: boolean;
 }
-
 export const SetupScreen = ({
   onStart,
+  onLogin,
   loading,
   activeMode,
   initialCategoryIds,
   initialSkillIds,
-  skipProfileSelection = false,
+  initialDifficulty,
+  accountDifficulty,
+  onBack,
+  isGuest,
 }: Props) => {
-  const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
-  const [showConfiguration, setShowConfiguration] = useState(skipProfileSelection);
+  const [showConfiguration, setShowConfiguration] = useState(
+    Boolean(initialDifficulty) || !isGuest
+  );
   const [selectedMode, setSelectedMode] = useState<ChallengeType>(
     activeMode || 'SITUATIONAL_QCM'
   );
-  const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyLevel>('JUNIOR');
+  const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyLevel>(
+    initialDifficulty ?? accountDifficulty ?? 'JUNIOR'
+  );
+  const [difficultyTouched, setDifficultyTouched] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [skills, setSkills] = useState<Skill[]>([]);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>(initialCategoryIds ?? []);
   const [selectedSkillIds, setSelectedSkillIds] = useState<number[]>(initialSkillIds ?? []);
   const [isLoadingTopics, setIsLoadingTopics] = useState(false);
   const [topicsError, setTopicsError] = useState<string | null>(null);
+
+  // Le niveau du compte arrive parfois après le rendu : on présélectionne
+  // alors sa difficulté, sauf si l'utilisateur a déjà choisi la sienne.
+  useEffect(() => {
+    if (initialDifficulty || difficultyTouched || !accountDifficulty) return;
+    setSelectedDifficulty(accountDifficulty);
+  }, [accountDifficulty, initialDifficulty, difficultyTouched]);
 
   useEffect(() => {
     let isMounted = true;
@@ -107,43 +127,54 @@ export const SetupScreen = ({
     setSelectedSkillIds([]);
   };
 
-  // Même mécanisme que App.tsx : sur mobile, un défilement lancé avant le
-  // remplacement de l'écran est parfois abandonné par le navigateur — on le
-  // rejoue juste après le rendu, en défilement instantané.
-  const scrollToTopAfterRender = () => {
+  // Même mécanisme que App.tsx : sur mobile, un défilement lancé avant le  // remplacement de l'écran est parfois abandonné par le navigateur — on le  // rejoue juste après le rendu, en défilement instantané.  const scrollToTopAfterRender = () => {
     window.requestAnimationFrame(() => {
       window.scrollTo({ top: 0, behavior: 'auto' });
     });
-  };
-
-  // Clic sur une carte profil (ou son bouton « Commencer ») → navigation
+  };  // Clic sur une carte profil (ou son bouton « Commencer ») → navigation
   // immédiate vers la configuration, en haut de la page.
-  const handleProfileSelect = (profileId: string) => {
-    setSelectedProfile(profileId);
-    setShowConfiguration(true);
+  const handleBackToHome = () => {
+    setShowConfiguration(false);
     scrollToTopAfterRender();
-  };
+    onBack();
+  };  
 
   if (!showConfiguration) {
     return (
       <SetupProfileStep
         key="profiles"
-        selectedProfile={selectedProfile}
-        onSelect={handleProfileSelect}
+        isGuest={isGuest}
+        onLogin={onLogin}
+        onPlacement={() => onStart({
+          mode: 'SITUATIONAL_QCM',
+          placement: true,
+        })}
+        onPersonalize={() => {
+          trackEvent('config_personalize_opened', {});
+          setShowConfiguration(true);
+          scrollToTopAfterRender();
+        }}
       />
     );
   }
 
+  // Si placement=true, on va directement en configuration sans afficher
+  // le profil si skipProfileSelection est vrai, ou on saute directement
+  // vers la config. Sinon comportement normal.  
+
   return (
     <SetupConfigStep
       key="config"
-      onBack={() => setShowConfiguration(false)}
       loading={loading}
       onSubmit={handleSubmit}
+      onBack={handleBackToHome}
       selectedMode={selectedMode}
       onSelectMode={setSelectedMode}
       selectedDifficulty={selectedDifficulty}
-      onSelectDifficulty={setSelectedDifficulty}
+      onSelectDifficulty={(difficulty) => {
+        setDifficultyTouched(true);
+        setSelectedDifficulty(difficulty);
+      }}
       topics={{
         categories,
         skills,
@@ -158,3 +189,4 @@ export const SetupScreen = ({
     />
   );
 };
+

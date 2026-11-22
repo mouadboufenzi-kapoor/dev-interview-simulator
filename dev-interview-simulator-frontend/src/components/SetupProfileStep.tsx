@@ -1,159 +1,128 @@
-import { BriefcaseBusiness, Cloud, ClipboardCheck } from 'lucide-react';
 import { StatTiles, type StatItem } from './common/StatTiles';
+import { ProgramSection } from './ProgramSection';
+import { useHasCompletedGuestTest } from '../hooks/useHasCompletedGuestTest';
 
-export interface ProfileCardConfig {
-  id: string;
-  title: string;
-  description: string;
-  icon: typeof BriefcaseBusiness;
-  available: boolean;
-}
-
-export const PROFILES: ProfileCardConfig[] = [
-  {
-    id: 'developer',
-    title: 'Développeur',
-    description: 'Code, conception et résolution de problèmes techniques.',
-    icon: BriefcaseBusiness,
-    available: true,
-  },
-  {
-    id: 'devops-cloud',
-    title: 'DevOps / Cloud',
-    description: 'Infrastructure, déploiement et fiabilité des services.',
-    icon: Cloud,
-    available: false,
-  },
-  {
-    id: 'qa-testing',
-    title: 'QA / Testing',
-    description: 'Qualité logicielle, automatisation et stratégies de test.',
-    icon: ClipboardCheck,
-    available: false,
-  },
-];
-
-const CHALLENGE_TAGS = ['QCM', 'Code review', 'Mises en situation', 'Raisonnement séquentiel'];
-
-const STATS: StatItem[] = [
-  { value: 8000, suffix: '+', label: 'Questions' },
+export const COMMERCIAL_STATS: readonly StatItem[] = [
+  { value: 9000, suffix: '+', label: 'Questions' },
   { value: 100, suffix: '+', label: 'Utilisateurs' },
   { value: 4, label: 'Challenges' },
 ];
 
 interface Props {
-  selectedProfile: string | null;
-  onSelect: (profileId: string) => void;
+  onPlacement: () => void;
+  onPersonalize: () => void;
+  onLogin: () => void;
+  isGuest: boolean;
 }
 
-export const SetupProfileStep = ({ selectedProfile, onSelect }: Props) => (
-  <div className="screen-transition relative w-full flex flex-col items-center pt-7 pb-4 sm:pt-10 sm:pb-6 px-4">
-    <div className="w-full max-w-4xl mx-auto space-y-10 sm:space-y-12 text-center">
-      <div className="space-y-6">
-        <h1 className="mx-auto font-serif font-bold text-brand text-center leading-[1.12] tracking-[-0.02em] text-[clamp(24px,8vw,58px)] [text-wrap:balance] mb-[0.5em]">
-          Réussissez vos <span className="hero-hl">entretiens techniques.</span>
-        </h1>
-        <p className="text-sm sm:text-base text-muted font-sans max-w-lg mx-auto leading-relaxed">
-          Des exercices inspirés de situations réelles : en Java, Spring Boot, Full Stack, base de données et bien plus.
-        </p>
-        <ul className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-3" aria-label="Types de challenges">
-          {CHALLENGE_TAGS.map((tag, index) => (
-            <li
-              key={tag}
-              /* Mobile : 3 pastilles suffisent pour laisser la carte
-                 Développeur visible ; la 4e n'apparaît qu'à partir de sm. */
-              className={`whitespace-nowrap rounded-full border-2 border-brand bg-white px-2 py-1 text-xs font-semibold text-text shadow-card dark:bg-card sm:px-3 sm:py-1.5 sm:text-[15px] ${
-                index === CHALLENGE_TAGS.length - 1 ? 'hidden sm:block' : ''
-              }`}
-            >
-              {tag}
-            </li>
-          ))}
-        </ul>
-        <StatTiles items={STATS} className="my-5 sm:my-6" />
-      </div>
+interface StepCopy {
+  description: string;
+  placementLabel: string;
+}
 
-      <div className="grid w-full max-w-5xl grid-cols-1 items-stretch gap-6 text-left lg:grid-cols-2">
-        {PROFILES.filter((profile) => profile.available).map((profile) => {
-          const isSelected = selectedProfile === profile.id;
-          const Icon = profile.icon;
+const COPY: Record<'default' | 'returning', StepCopy> = {
+  default: {
+    description: 'Teste-toi et découvre ton niveau actuel.',
+    placementLabel: 'Tester mon niveau',
+  },
+  returning: {
+    description: 'Pas convaincu du résultat ? Retente ta chance.',
+    placementLabel: 'Retenter le test',
+  },
+};
 
-          return (
-            <button
-              key={profile.id}
-              type="button"
-              onClick={() => onSelect(profile.id)}
-              aria-pressed={isSelected}
-              className={`group w-full min-h-36 rounded border-2 p-5 text-left transition-all duration-150 cursor-pointer focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-bg ${
-                isSelected
-                  ? 'bg-selected border-border shadow-elevated'
-                  : 'bg-card border-border hover:border-brand hover:shadow-card'
-              }`}
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div
-                  className={`w-9 h-9 rounded flex items-center justify-center border-2 transition-colors ${
-                    isSelected
-                      ? 'bg-card border-border text-text'
-                      : 'bg-bg border-border text-muted group-hover:text-text'
-                  }`}
-                >
-                  <Icon className="w-4 h-4 stroke-[2]" />
-                </div>
-                <span className="rounded border-2 border-border bg-[#D6F5E3] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.06em] text-[#14532D] shadow-card">
-                  Disponible
-                </span>
-              </div>
+export const SetupProfileStep = ({ onPlacement, onPersonalize, onLogin, isGuest }: Props) => {
+  const hasCompletedTest = useHasCompletedGuestTest();
+  const copy = COPY[hasCompletedTest ? 'returning' : 'default'];
 
-              <div className="space-y-1.5 mt-5">
-                <h2 className="font-serif text-xl font-bold text-text">
-                  {profile.title}
-                </h2>
-                <p className="text-xs text-muted leading-relaxed">
-                  {profile.description}
-                </p>
-              </div>
-
-              <span
-                aria-hidden="true"
-                className="mt-5 inline-flex min-h-11 w-full items-center justify-center rounded bg-brand px-4 text-sm font-semibold text-cta-text sm:w-auto"
-              >
-                Commencer →
-              </span>
-            </button>
-          );
-        })}
-
-        <section aria-labelledby="upcoming-profiles-title" className="space-y-3">
-          <div className="flex items-center justify-between gap-3">
-            <h2 id="upcoming-profiles-title" className="font-serif text-base font-bold text-text">
-              D’autres profils arrivent
+  return (
+  <div className="screen-transition relative w-full flex flex-col items-center pt-4 pb-4 sm:pt-10 sm:pb-6 px-4 md:px-6 md:pt-14 md:pb-0">
+    <div className="w-full max-w-4xl mx-auto space-y-10 sm:space-y-12 text-center md:max-w-[1120px] md:space-y-0 md:text-left">
+      <div className="md:grid md:grid-cols-2 md:items-center md:gap-14">
+        <div className="space-y-6">
+          <h1 className="mx-auto font-serif font-bold text-brand text-center leading-[1.12] tracking-[-0.02em] text-[clamp(24px,8vw,58px)] [text-wrap:balance] mb-[0.95em] md:mb-0 md:text-left md:text-[clamp(36px,5vw,56px)]">
+            Réussissez vos <span className="hero-hl md:text-[clamp(30px,4.4vw,50px)]">entretiens techniques.</span>
+          </h1>
+          <p className="text-sm sm:text-base text-muted font-sans max-w-lg mx-auto leading-relaxed max-sm:-mt-2 md:mx-0 md:mt-[26px] md:max-w-[520px] md:text-[19px] md:leading-[1.55]">
+            Des exercices inspirés de situations réelles : en <b>Java</b>, <b>Spring Boot</b>, <b>Full Stack</b>, <b>Base de données</b>, <b>DevOps</b> et bien plus.
+          </p>
+          <StatTiles items={[...COMMERCIAL_STATS]} className="my-6 sm:my-6 md:mt-[30px] md:max-w-[520px]" />
+        </div>
+        <div className="max-sm:mt-8">
+        <section className="box-border w-full max-w-full rounded-[6px] border-2 border-[#0a2342] bg-white p-4 text-left shadow-[6px_6px_0_#ff5a2f] dark:border-border dark:bg-card dark:shadow-[6px_6px_0_var(--color-shadow)] md:mx-auto md:max-w-[460px] md:p-7">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] border-2 border-[#0a2342] bg-[#eaeef5] text-[#0a2342] md:h-9 md:w-9">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0a2342" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="3" y="7" width="18" height="13" rx="2" />
+                <path d="M9 7V4h6v3" />
+              </svg>
+            </div>
+            <h2 className="min-w-0 flex-1 truncate font-serif text-[24px] font-bold leading-none text-[#0a2342] dark:text-text md:text-[26px]">
+              Développeur
             </h2>
-            <span className="font-mono text-[10px] uppercase tracking-[0.06em] text-muted">
-              Bientôt
+            <span className="flex-none whitespace-nowrap rounded border-2 border-[#0a2342] bg-[#d6e0f0] px-1 py-[2px] font-mono text-[9px] uppercase tracking-[0.04em] text-[#0a2342] md:px-1.5 md:py-[3px] md:text-[11px] md:tracking-[0.06em]">
+              Disponible
             </span>
           </div>
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-1">
-            {PROFILES.filter((profile) => !profile.available).map((profile) => {
-              const Icon = profile.icon;
-
-              return (
-                <div key={profile.id} className="min-h-28 rounded border-2 border-border bg-card p-3 opacity-75">
-                  <div className="flex items-center gap-2">
-                    <Icon className="w-4 h-4 shrink-0 text-muted" />
-                    <h3 className="font-serif text-sm font-bold leading-tight text-text">
-                      {profile.title}
-                    </h3>
-                  </div>
-                  <p className="mt-2 text-xs leading-relaxed text-muted">
-                    {profile.description}
-                  </p>
-                </div>
-              );
-            })}
+          <p className="mt-2.5 text-[13px] font-normal leading-[1.5] text-[#52647a] dark:text-muted md:text-[15px]">
+            {copy.description}
+          </p>
+          <ul className="mt-3 flex items-center gap-5 text-[13px] font-bold text-[#0a2342] dark:text-text md:text-[14px]">
+            <li className="flex items-center gap-1.5">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff5a2f" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" />
+              </svg>
+              <span>6 questions</span>
+            </li>
+            <li className="flex items-center gap-1.5">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff5a2f" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 7v5l3 2" />
+              </svg>
+              <span>4 minutes</span>
+            </li>
+          </ul>
+          <div className="mt-4 box-border flex flex-col">
+            <button
+              type="button"
+              onClick={onPlacement}
+              className="box-border flex h-[52px] w-full max-w-full items-center justify-between rounded border-2 border-[#0a2342] bg-[#ff5a2f] px-5 text-[15px] font-bold text-white text-relief shadow-[3px_3px_0_#0a2342] md:h-[60px] md:text-[18px]"
+            >
+              {copy.placementLabel}
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M5 12h14M13 6l6 6-6 6" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={onPersonalize}
+              className="mt-2.5 box-border flex h-[46px] w-full max-w-full items-center justify-start gap-2.5 rounded border-2 border-[#0a2342] bg-white px-5 text-[14px] font-bold text-[#0a2342] md:h-[50px] md:text-[16px]"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0a2342" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M4 7h10M18 7h2M4 17h2M10 17h10" />
+                <circle cx="16" cy="7" r="2" />
+                <circle cx="8" cy="17" r="2" />
+              </svg>
+              <span>Configurer mon entraînement</span>
+            </button>
           </div>
         </section>
+        {isGuest && (
+          <div className="mt-[18px] text-center text-sm text-[#52647a] dark:text-muted sm:text-base">
+            Déjà un compte ?{' '}
+            <button
+              type="button"
+              onClick={onLogin}
+              className="min-h-11 text-[#0a2342] underline cursor-pointer dark:text-brand"
+            >
+              Se connecter
+            </button>
+          </div>
+        )}
+        </div>
       </div>
+      <ProgramSection />
     </div>
   </div>
-);
+  );
+};

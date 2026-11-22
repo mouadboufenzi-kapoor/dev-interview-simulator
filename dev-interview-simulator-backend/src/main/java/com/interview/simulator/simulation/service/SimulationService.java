@@ -3,6 +3,7 @@ package com.interview.simulator.simulation.service;
 import com.interview.simulator.challenge.entity.Challenge;
 import com.interview.simulator.challenge.entity.ChallengeOption;
 import com.interview.simulator.challenge.entity.ChallengeType;
+import com.interview.simulator.challenge.entity.DifficultyLevel;
 import com.interview.simulator.challenge.service.ChallengeTimePolicy;
 import com.interview.simulator.challenge.entity.ContentStatus;
 import com.interview.simulator.challenge.entity.InterviewScenario;
@@ -14,6 +15,8 @@ import com.interview.simulator.category.entity.Category;
 import com.interview.simulator.skill.entity.Skill;
 import com.interview.simulator.simulation.dto.SimulationChallengeResponse;
 import com.interview.simulator.simulation.dto.ChallengeCorrectionDTO;
+import com.interview.simulator.simulation.dto.ClaimSimulationsRequest;
+import com.interview.simulator.simulation.dto.ClaimSimulationsResponse;
 import com.interview.simulator.simulation.dto.SimulationResponse;
 import com.interview.simulator.simulation.dto.SimulationResultDTO;
 import com.interview.simulator.simulation.dto.SimulationSummaryResponse;
@@ -28,6 +31,7 @@ import com.interview.simulator.simulation.repository.SimulationChallengeReposito
 import com.interview.simulator.simulation.repository.SimulationAnswerRepository;
 import com.interview.simulator.simulation.repository.SimulationRepository;
 import com.interview.simulator.user.entity.User;
+import com.interview.simulator.user.service.UserLevelService;
 import com.interview.simulator.user.service.UserResolver;
 import com.interview.simulator.profile.entity.Profile;
 import com.interview.simulator.profile.repository.ProfileRepository;
@@ -36,6 +40,8 @@ import com.interview.simulator.exception.ResourceNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -56,6 +62,7 @@ import java.util.Objects;
 @Service
 public class SimulationService {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(SimulationService.class);
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final int GUEST_TOKEN_BYTES = 32;
 
@@ -69,6 +76,7 @@ public class SimulationService {
     private final ProfileRepository profileRepository;
 
     private final SimulationAnswerRepository simulationAnswerRepository;
+    private final UserLevelService userLevelService;
 
     public SimulationService(
             SimulationRepository simulationRepository,
@@ -79,7 +87,8 @@ public class SimulationService {
             InterviewScenarioRepository interviewScenarioRepository,
             ScoringService scoringService,
             ProfileRepository profileRepository,
-            SimulationAnswerRepository simulationAnswerRepository) {
+            SimulationAnswerRepository simulationAnswerRepository,
+            UserLevelService userLevelService) {
         this.simulationRepository = simulationRepository;
         this.challengeRepository = challengeRepository;
         this.userResolver = userResolver;
@@ -89,6 +98,7 @@ public class SimulationService {
         this.scoringService = scoringService;
         this.profileRepository = profileRepository;
         this.simulationAnswerRepository = simulationAnswerRepository;
+        this.userLevelService = userLevelService;
     }
 
     @Transactional
@@ -107,7 +117,10 @@ public class SimulationService {
                     .orElseThrow(() -> new ResourceNotFoundException("Profil non trouvé."))
                 : null;
 
-        if (request.mode() == ChallengeType.ARCHITECTURE) {
+        boolean placement = Boolean.TRUE.equals(request.placement());
+        if (placement) {
+            matchingChallenges = buildPlacementChallenges(request.excludeChallengeIds());
+        } else if (request.mode() == ChallengeType.ARCHITECTURE) {
             // Tirage au hasard d'un scénario actif disposant d'au moins une étape VALIDATED compatible
             List<InterviewScenario> availableScenarios = interviewScenarioRepository
                     .findByModeAndActiveTrue(request.mode());
@@ -165,7 +178,7 @@ public class SimulationService {
 
         // 3. Architecture conserve l'ordre des étapes ; les autres modes restent aléatoires
         List<Challenge> selectedChallenges = new ArrayList<>(matchingChallenges);
-        if (request.mode() != ChallengeType.ARCHITECTURE) {
+        if (!placement && request.mode() != ChallengeType.ARCHITECTURE) {
             Collections.shuffle(selectedChallenges);
             if (selectedChallenges.size() > 10) {
                 selectedChallenges = selectedChallenges.subList(0, 10);
@@ -176,8 +189,9 @@ public class SimulationService {
         Simulation simulation = new Simulation();
         simulation.setUser(user);
         simulation.setGuestAccessTokenHash(guest ? hashGuestAccessToken(guestAccessToken) : null);
-        simulation.setMode(request.mode());
+        simulation.setMode(placement ? ChallengeType.SITUATIONAL_QCM : request.mode());
         simulation.setDifficulty(request.difficulty());
+        simulation.setPlacement(placement);
         simulation.setProfile(profile);
 
         // 5. Associer les questions avec leur ordre d'affichage
@@ -193,6 +207,81 @@ public class SimulationService {
         Simulation saved = simulationRepository.save(simulation);
 
         return mapToResponse(saved, guestAccessToken);
+    }
+
+    private List<Challenge> buildPlacementChallenges(Set<Long> excludeChallengeIds) {
+        List<Challenge> selected = new ArrayList<>();
+        Set<Long> excluded = excludeChallengeIds == null
+            ? Set.of()
+            : excludeChallengeIds;
+
+        for (PlacementPoolConfiguration.PlacementPosition position
+                : PlacementPoolConfiguration.POSITIONS) {
+            addPlacementPosition(selected, position, excluded);
+        }
+
+        if (selected.size() < PlacementPoolConfiguration.POSITIONS.size()) {
+            LOGGER.warn("Placement pool has only {} questions out of {} positions",
+                selected.size(), PlacementPoolConfiguration.POSITIONS.size());
+        }
+        return selected;
+    }
+
+    private void addPlacementPosition(
+            List<Challenge> selected,
+            PlacementPoolConfiguration.PlacementPosition position,
+            Set<Long> excluded) {
+        Set<String> otherCategories = otherCategories(position.categories());
+        Challenge challenge = drawPlacementChallenge(
+            selected, excluded, position.type(), position.difficulty(), position.categories());
+        if (challenge == null && !otherCategories.isEmpty()) {
+            challenge = drawPlacementChallenge(
+                selected, excluded, position.type(), position.difficulty(), otherCategories);
+        }
+        if (challenge == null && position.type() != ChallengeType.SITUATIONAL_QCM) {
+            challenge = drawPlacementChallenge(
+                selected, excluded, ChallengeType.SITUATIONAL_QCM,
+                position.difficulty(), position.categories());
+            if (challenge == null && !otherCategories.isEmpty()) {
+                challenge = drawPlacementChallenge(
+                    selected, excluded, ChallengeType.SITUATIONAL_QCM,
+                    position.difficulty(), otherCategories);
+            }
+        }
+        if (challenge == null) {
+            LOGGER.warn("Placement position without candidate: difficulty={}, type={}, categories={}",
+                position.difficulty(), position.type(), position.categories());
+            return;
+        }
+        selected.add(challenge);
+    }
+
+    private Challenge drawPlacementChallenge(
+            List<Challenge> selected,
+            Set<Long> excluded,
+            ChallengeType type,
+            DifficultyLevel difficulty,
+            Set<String> categories) {
+        if (categories.isEmpty()) {
+            return null;
+        }
+        List<Challenge> candidates = challengeRepository
+            .findPlacementFallbackCandidates(type, difficulty, categories)
+            .stream()
+            .filter(candidate -> !excluded.contains(candidate.getId()))
+            .filter(candidate -> selected.stream()
+                .noneMatch(item -> item.getId().equals(candidate.getId())))
+            .toList();
+        if (candidates.isEmpty()) {
+            return null;
+        }
+        return candidates.get(SECURE_RANDOM.nextInt(candidates.size()));
+    }
+
+    private Set<String> otherCategories(Set<String> categories) {
+        Set<String> others = new LinkedHashSet<>(PlacementPoolConfiguration.ALLOWED_CATEGORIES);
+        others.removeAll(categories);
+        return others;
     }
 
     // Les questions Architecture mélangent l'affichage des choix pour éviter
@@ -502,6 +591,7 @@ public class SimulationService {
         int correctAnswers = (int) simulation.getSimulationChallenges().stream()
                 .filter(sc -> sc.getAnswer() != null && sc.getAnswer().isCorrect())
                 .count();
+        String level = "JUNIOR"; // Niveau par défaut pour abandonment
 
         return new SimulationSummaryResponse(
                 simulation.getId(),
@@ -509,6 +599,7 @@ public class SimulationService {
                 simulation.getTotalScore(),
                 totalQuestions,
                 correctAnswers,
+                level,
                 simulation.getStartedAt(),
                 simulation.getCompletedAt()
         );
@@ -528,10 +619,21 @@ public class SimulationService {
         simulation.setStatus(SimulationStatus.COMPLETED);
         simulation.setCompletedAt(LocalDateTime.now());
 
-        int totalQuestions = simulation.getSimulationChallenges().size();
         int correctAnswers = (int) simulation.getSimulationChallenges().stream()
                 .filter(sc -> sc.getAnswer() != null && sc.getAnswer().isCorrect())
                 .count();
+        String level;
+        if (correctAnswers >= 5) {
+            level = "ADVANCED";
+        } else if (correctAnswers >= 3) {
+            level = "INTERMEDIATE";
+        } else {
+            level = "JUNIOR";
+        }
+
+        updateUserLevel(simulation.getUser());
+
+        int totalQuestions = simulation.getSimulationChallenges().size();
 
         return new SimulationSummaryResponse(
                 simulation.getId(),
@@ -539,6 +641,7 @@ public class SimulationService {
                 simulation.getTotalScore(),
                 totalQuestions,
                 correctAnswers,
+                level,  // Nouveau champ niveau
                 simulation.getStartedAt(),
                 simulation.getCompletedAt()
         );
@@ -705,6 +808,49 @@ public class SimulationService {
                 skillResults,
                 questionSummaries
         );
+    }
+
+    @Transactional
+    public ClaimSimulationsResponse claimSimulations(ClaimSimulationsRequest request) {
+        User user = userResolver.currentAuthenticatedOrNull()
+                .orElseThrow(() -> new ApiException(
+                        HttpStatus.UNAUTHORIZED,
+                        "Authentification requise pour rattacher des simulations."
+                ));
+
+        int claimed = 0;
+        for (String token : request.tokens()) {
+            Simulation simulation = simulationRepository
+                    .findByGuestAccessTokenHash(hashGuestAccessToken(token))
+                    .orElse(null);
+            if (simulation == null
+                    || !UserResolver.GUEST_USERNAME.equals(simulation.getUser().getUsername())) {
+                continue;
+            }
+            simulation.setUser(user);
+            simulation.setGuestAccessTokenHash(null);
+            claimed++;
+        }
+        updateUserLevel(user);
+        return new ClaimSimulationsResponse(claimed);
+    }
+
+    /** Recalcul « au mieux » du niveau : jamais d'échec de la fin de simulation ni du rattachement. */
+    private void updateUserLevel(User user) {
+        if (user == null || UserResolver.GUEST_USERNAME.equals(user.getUsername())) {
+            return;
+        }
+        try {
+            userLevelService.updateStoredLevel(user);
+        } catch (RuntimeException exception) {
+            LOGGER.warn("Mise à jour du niveau impossible pour l'utilisateur {}.", user.getId(), exception);
+        }
+    }
+
+    @Transactional
+    public void markSimulationSeen(Long simulationId, String guestAccessToken) {
+        Simulation simulation = findOwnedSimulation(simulationId, guestAccessToken);
+        simulation.setLastSeenAt(LocalDateTime.now());
     }
 
     private Simulation findOwnedSimulation(Long simulationId, String guestAccessToken) {

@@ -5,6 +5,7 @@ import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -29,6 +30,15 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ApiErrorResponse> handleApiException(ApiException exception, HttpServletRequest request) {
         return error(exception.getStatus(), exception.getMessage(), request);
+    }
+
+    @ExceptionHandler(RateLimitExceededException.class)
+    public ResponseEntity<ApiErrorResponse> handleRateLimitExceeded(
+            RateLimitExceededException exception,
+            HttpServletRequest request) {
+        return ResponseEntity.status(exception.getStatus())
+                .header(HttpHeaders.RETRY_AFTER, String.valueOf(exception.getRetryAfterSeconds()))
+                .body(errorBody(exception.getStatus(), exception.getMessage(), request, Map.of()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -114,7 +124,7 @@ public class GlobalExceptionHandler {
     // les erreurs — Axios les traitait alors comme des succès et le frontend
     // affichait des messages trompeurs (ex. « aucune question » pour un 422).
     private ResponseEntity<ApiErrorResponse> error(HttpStatus status, String message, HttpServletRequest request) {
-        return error(status, message, request, Map.of());
+        return ResponseEntity.status(status).body(errorBody(status, message, request, Map.of()));
     }
 
     private ResponseEntity<ApiErrorResponse> error(
@@ -122,13 +132,21 @@ public class GlobalExceptionHandler {
             String message,
             HttpServletRequest request,
             Map<String, String> fieldErrors) {
-        return ResponseEntity.status(status).body(new ApiErrorResponse(
+        return ResponseEntity.status(status).body(errorBody(status, message, request, fieldErrors));
+    }
+
+    private ApiErrorResponse errorBody(
+            HttpStatus status,
+            String message,
+            HttpServletRequest request,
+            Map<String, String> fieldErrors) {
+        return new ApiErrorResponse(
                 Instant.now(),
                 status.value(),
                 status.getReasonPhrase(),
                 message,
                 request.getRequestURI(),
                 fieldErrors
-        ));
+        );
     }
 }

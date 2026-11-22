@@ -8,6 +8,7 @@ import { QuizSequenceList } from './QuizSequenceList';
 import { QuizFeedbackPanel } from './QuizFeedbackPanel';
 import { QuizActionsFooter } from './QuizActionsFooter';
 import { LoadingNotice } from './common/LoadingNotice';
+import { trackEvent } from '../api/events';
 
 const FALLBACK_QUESTION_TIME_SECONDS = 90;
 const AUTO_ADVANCE_DELAY_MS = 1500;
@@ -17,9 +18,16 @@ interface Props {
   onFinish: () => void;
   onError: (message: string) => void;
   finishing: boolean;
+  onQuestionIndexChange?: (questionIndex: number) => void;
 }
 
-export const QuizScreen = ({ simulation, onFinish, onError, finishing }: Props) => {
+export const QuizScreen = ({
+  simulation,
+  onFinish,
+  onError,
+  finishing,
+  onQuestionIndexChange,
+}: Props) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOptionIds, setSelectedOptionIds] = useState<number[]>([]);
   const [feedback, setFeedback] = useState<SubmitAnswerResponse | null>(null);
@@ -163,6 +171,45 @@ export const QuizScreen = ({ simulation, onFinish, onError, finishing }: Props) 
     }
   }, []);
 
+  useEffect(() => {
+    const questionIndex = currentIndex + 1;
+    onQuestionIndexChange?.(questionIndex);
+    trackEvent('question_viewed', {
+      simulationId: simulation.id,
+      mode: simulation.mode,
+      difficulty: simulation.difficulty,
+      questionIndex,
+    });
+  }, [currentIndex, onQuestionIndexChange, simulation.difficulty, simulation.id, simulation.mode]);
+
+  useEffect(() => {
+    if (simulation.status !== 'IN_PROGRESS') return;
+    const guestAccessToken = simulation.guestAccessToken ?? undefined;
+
+    const handlePageHide = (event: PageTransitionEvent) => {
+      if (event.persisted) return;
+      trackEvent('simulation_abandoned', {
+        simulationId: simulation.id,
+        mode: simulation.mode,
+        difficulty: simulation.difficulty,
+        questionIndex: currentIndex + 1,
+      });
+      simulationApi.abandonSimulationOnUnload(simulation.id, guestAccessToken);
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        simulationApi.markSimulationSeenOnUnload(simulation.id, guestAccessToken);
+      }
+    };
+
+    window.addEventListener('pagehide', handlePageHide);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      window.removeEventListener('pagehide', handlePageHide);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [currentIndex, simulation.difficulty, simulation.guestAccessToken, simulation.id, simulation.mode, simulation.status]);
+
   if (finishing) {
     return (
       <div className="w-full max-w-4xl mx-auto py-16 text-center">
@@ -238,6 +285,13 @@ export const QuizScreen = ({ simulation, onFinish, onError, finishing }: Props) 
         selectedOptionIds: timedOut ? [] : selectedOptionIds,
         responseTimeMs,
       }, simulation.guestAccessToken ?? undefined);
+      trackEvent('question_answered', {
+        simulationId: simulation.id,
+        mode: simulation.mode,
+        difficulty: simulation.difficulty,
+        questionIndex: currentIndex + 1,
+        metadata: { correct: res.isCorrect, timedOut },
+      });
       setTimeoutError(false);
       if (timedOut) {
         timeoutSubmittedRef.current = true;

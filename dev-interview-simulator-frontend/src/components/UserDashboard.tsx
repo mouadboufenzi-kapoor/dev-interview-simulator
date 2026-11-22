@@ -4,8 +4,9 @@ import { Button } from './common/Button';
 import type { AuthUser } from './UserAccessModal';
 import { userStatsApi } from '../api/userStatsApi';
 import type { UserStats } from '../api/userStatsApi';
+import type { UserLevelProgress } from '../types';
+import { UserDashboardLevel } from './UserDashboardLevel';
 import { UserDashboardProfile } from './UserDashboardProfile';
-import { UserDashboardProgress } from './UserDashboardProgress';
 import { UserDashboardSkills } from './UserDashboardSkills';
 import { UserDashboardWeakPoints } from './UserDashboardWeakPoints';
 import { UserDashboardSimulations } from './UserDashboardSimulations';
@@ -24,6 +25,9 @@ export const UserDashboard = ({ user, onStartSimulation, onRevise, onOpenResult 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [simPage, setSimPage] = useState(0);
+  const [level, setLevel] = useState<UserLevelProgress | null>(null);
+  const [levelLoading, setLevelLoading] = useState(true);
+  const [levelError, setLevelError] = useState(false);
   const [isMobile, setIsMobile] = useState(() => window.matchMedia(MOBILE_MAX_WIDTH_QUERY).matches);
 
   useEffect(() => {
@@ -52,11 +56,30 @@ export const UserDashboard = ({ user, onStartSimulation, onRevise, onOpenResult 
     };
   }, [simPage]);
 
+  useEffect(() => {
+    let isMounted = true;
+    setLevelLoading(true);
+    setLevelError(false);
+    userStatsApi.getLevel()
+      .then(data => {
+        if (isMounted) setLevel(data);
+      })
+      .catch(() => {
+        if (isMounted) setLevelError(true);
+      })
+      .finally(() => {
+        if (isMounted) setLevelLoading(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   return (
     <div className="w-full max-w-5xl mx-auto space-y-5 py-1 sm:space-y-6 sm:py-2">
       {/* Accueil : profil actif + CTA principal */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <UserDashboardProfile user={user} onChangeProfile={onStartSimulation} />
+        <UserDashboardProfile user={user} level={level?.currentLevel ?? null} />
         <Button
           type="button"
           variant="primary"
@@ -68,7 +91,15 @@ export const UserDashboard = ({ user, onStartSimulation, onRevise, onOpenResult 
         </Button>
       </div>
 
-      <UserDashboardProgress stats={stats} loading={loading} error={error} />
+      <UserDashboardLevel
+        level={level}
+        loading={levelLoading}
+        error={levelError}
+        stats={stats}
+        statsLoading={loading}
+        statsError={error}
+      />
+
 
       {/* Desktop : Compétences + À travailler côte à côte ; mobile : empilés */}
       <div className="grid gap-5 md:grid-cols-2 md:gap-6">

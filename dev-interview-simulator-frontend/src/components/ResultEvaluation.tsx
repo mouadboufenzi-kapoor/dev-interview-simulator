@@ -1,13 +1,18 @@
 import type { SimulationResultDTO } from '../types';
 import { Badge } from './common/Badge';
 import { CheckCircle2, Clock, Gauge } from 'lucide-react';
+import { Button } from './common/Button';
 import { getAssessment } from '../utils/resultAnalysis';
 import { estimateLevel } from '../utils/levelEstimation';
 import { LevelEstimate } from './LevelEstimate';
+import { GuestEvaluationCard } from './GuestEvaluationCard';
+import { trackEvent } from '../api/events';
 
 interface Props {
   summary: SimulationResultDTO;
   isGuest: boolean;
+  isPlacement: boolean;
+  onContinuePlacement: () => void;
 }
 
 const formatTime = (seconds: number) => {
@@ -16,7 +21,22 @@ const formatTime = (seconds: number) => {
   return mins > 0 ? `${mins}m ${secs.toString().padStart(2, '0')}s` : `${secs}s`;
 };
 
-export const ResultEvaluation = ({ summary, isGuest }: Props) => {
+export const ResultEvaluation = ({ summary, isGuest, isPlacement, onContinuePlacement }: Props) => {
+  if (isGuest) {
+    return (
+      <GuestEvaluationCard
+        summary={summary}
+        durationLabel={
+          summary.totalTimeSpentSeconds > 0
+            ? formatTime(summary.totalTimeSpentSeconds)
+            : null
+        }
+        isPlacement={isPlacement}
+        onContinuePlacement={onContinuePlacement}
+      />
+    );
+  }
+
   const assessment = getAssessment(summary.successPercentage);
   const level = estimateLevel(
     [{ difficulty: summary.difficulty, answered: summary.totalQuestions, correct: summary.correctAnswersCount }],
@@ -51,11 +71,28 @@ export const ResultEvaluation = ({ summary, isGuest }: Props) => {
       <p className="text-sm text-ink-secondary leading-relaxed">{assessment.desc}</p>
 
       {level && (
-        <div className="pt-1">
+        <div className="pt-1 space-y-3">
           <LevelEstimate
             level={level}
-            note={isGuest ? 'première estimation, à confirmer' : 'd’après cette simulation'}
+            note="d’après cette simulation"
           />
+          {isPlacement && (
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              fullWidth
+              onClick={() => {
+                trackEvent('placement_continue_clicked', {
+                  simulationId: summary.simulationId,
+                  metadata: { level: level.label },
+                });
+                onContinuePlacement();
+              }}
+            >
+              Continuer en niveau {level.index <= 1 ? 'Junior' : level.index <= 3 ? 'Intermédiaire' : 'Avancé'}
+            </Button>
+          )}
         </div>
       )}
 

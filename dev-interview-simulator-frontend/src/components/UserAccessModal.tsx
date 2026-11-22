@@ -4,6 +4,7 @@ import { PageTitle } from './common/PageTitle';
 import { Mail, UserRound, X } from 'lucide-react';
 import { authApi } from '../api/authApi';
 import { clearStoredAuth } from '../api/authStorage';
+import { trackEvent } from '../api/events';
 
 export interface AuthUser {
   id?: number;
@@ -16,6 +17,8 @@ export interface AuthUser {
 interface Props {
   onClose: () => void;
   onAuthenticated: (user: AuthUser) => void;
+  initialMode?: AccessMode;
+  googleFirst?: boolean;
 }
 
 type AccessMode = 'login' | 'register';
@@ -51,8 +54,13 @@ const loadGoogleScript = (): Promise<void> => {
   return googleScriptPromise;
 };
 
-export const UserAccessModal = ({ onClose, onAuthenticated }: Props) => {
-  const [mode, setMode] = useState<AccessMode>('login');
+export const UserAccessModal = ({
+  onClose,
+  onAuthenticated,
+  initialMode = 'login',
+  googleFirst = false,
+}: Props) => {
+  const [mode, setMode] = useState<AccessMode>(initialMode);
   const [usernameOrEmail, setUsernameOrEmail] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -63,9 +71,16 @@ export const UserAccessModal = ({ onClose, onAuthenticated }: Props) => {
   const googleButtonRef = useRef<HTMLDivElement>(null);
   // Dernier callback reçu : le script GIS capture une référence, pas l'état courant.
   const authCallbackRef = useRef(onAuthenticated);
+  const openedTrackedRef = useRef(false);
   useEffect(() => {
     authCallbackRef.current = onAuthenticated;
   }, [onAuthenticated]);
+
+  useEffect(() => {
+    if (openedTrackedRef.current) return;
+    openedTrackedRef.current = true;
+    trackEvent('auth_modal_opened');
+  }, []);
 
   useEffect(() => {
     if (!GOOGLE_CLIENT_ID || !googleButtonRef.current) return;
@@ -73,11 +88,19 @@ export const UserAccessModal = ({ onClose, onAuthenticated }: Props) => {
 
     const handleCredential = async (response: { credential?: string }) => {
       if (!response.credential) return;
+      trackEvent('auth_method_chosen', { metadata: { method: 'google' } });
       setError(null);
       setLoading(true);
       try {
         // ID token Google → POST /api/auth/google → MÊME AuthResponse qu'un login.
         const auth = await authApi.google(response.credential);
+        if (auth.newUser) {
+          // Nouveau compte Google créé : émettre signup_completed
+          trackEvent('signup_completed', { metadata: { method: 'google' } });
+        } else {
+          // Compte existant : émettre login_completed
+          trackEvent('login_completed', { metadata: { method: 'google' } });
+        }
         authCallbackRef.current({
           id: auth.userId,
           username: auth.username,
@@ -126,8 +149,10 @@ export const UserAccessModal = ({ onClose, onAuthenticated }: Props) => {
     setLoading(true);
 
     try {
+      trackEvent('auth_method_chosen', { metadata: { method: 'email' } });
       if (mode === 'login') {
         const response = await authApi.login({ usernameOrEmail, password });
+        trackEvent('login_completed', { metadata: { method: 'email' } });
         onAuthenticated({
           id: response.userId,
           username: response.username,
@@ -137,6 +162,7 @@ export const UserAccessModal = ({ onClose, onAuthenticated }: Props) => {
         });
       } else {
         const response = await authApi.register({ username: usernameOrEmail, email, password });
+        trackEvent('signup_completed', { metadata: { method: 'email' } });
         onAuthenticated({
           id: response.userId,
           username: response.username,
@@ -207,6 +233,12 @@ export const UserAccessModal = ({ onClose, onAuthenticated }: Props) => {
           </div>
         )}
 
+        {googleFirst && GOOGLE_CLIENT_ID && (
+          <div className="mt-5">
+            <div ref={googleButtonRef} className="flex justify-center" />
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <label className="block space-y-1.5">
             <span className="text-xs font-semibold text-ink-secondary">
@@ -258,7 +290,7 @@ export const UserAccessModal = ({ onClose, onAuthenticated }: Props) => {
           </Button>
         </form>
 
-        {GOOGLE_CLIENT_ID && (
+        {!googleFirst && GOOGLE_CLIENT_ID && (
           <div className="mt-5 border-t border-border-subtle pt-5">
             <div className="mb-3 flex items-center gap-3 text-[11px] uppercase tracking-[0.14em] text-ink-muted">
               <span className="h-px flex-1 bg-border-subtle" />

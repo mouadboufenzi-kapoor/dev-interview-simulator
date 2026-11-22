@@ -1,13 +1,15 @@
 import type { SimulationResultDTO, StartSimulationRequest } from '../types';
 import { Button } from './common/Button';
-import { Award, RotateCcw, Target } from 'lucide-react';
+import { Award, RotateCcw } from 'lucide-react';
 import { ResultHeader } from './ResultHeader';
 import { ResultEvaluation } from './ResultEvaluation';
 import { ResultCompetencies } from './ResultCompetencies';
 import { ResultPriority } from './ResultPriority';
-import { ResultGuestCta } from './ResultGuestCta';
 import { ResultQuestions } from './ResultQuestions';
 import { analyzeResult, groupSkillTagsByCategory } from '../utils/resultAnalysis';
+import { estimateLevel } from '../utils/levelEstimation';
+import { trackEvent } from '../api/events';
+import { useEffect, useRef } from 'react';
 
 interface Props {
   summary: SimulationResultDTO;
@@ -18,6 +20,9 @@ interface Props {
   isGuest: boolean;
   guestSimulationCount: number;
   onCreateAccount: () => void;
+  isPlacement: boolean;
+  onContinuePlacement: () => void;
+  onBack: () => void;
 }
 
 export const ResultScreen = ({
@@ -26,9 +31,26 @@ export const ResultScreen = ({
   onStart,
   loading,
   isGuest,
-  guestSimulationCount,
   onCreateAccount,
+  isPlacement,
+  onContinuePlacement,
+  onBack,
 }: Props) => {
+  const guestCtaRef = useRef<HTMLElement>(null);
+  const guestCtaViewedRef = useRef(false);
+
+  useEffect(() => {
+    if (!isGuest || !guestCtaRef.current || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver((entries) => {
+      if (guestCtaViewedRef.current || !entries.some((entry) => entry.isIntersecting)) return;
+      guestCtaViewedRef.current = true;
+      trackEvent('guest_cta_viewed', { simulationId: summary.simulationId });
+      observer.disconnect();
+    }, { threshold: 0.5 });
+    observer.observe(guestCtaRef.current);
+    return () => observer.disconnect();
+  }, [isGuest, summary.simulationId]);
+
   const categoryResults = summary.categoryResults ?? (
     summary.competencySource === 'CATEGORY' ? summary.competencyResults ?? [] : []
   );
@@ -37,71 +59,96 @@ export const ResultScreen = ({
     summary.weakCategoryResults ?? categoryAnalysis.weaknesses
   ).weaknesses;
   const skillTagsByCategory = groupSkillTagsByCategory(summary.questions);
+  // Priorité : tous les domaines sous 100 %, du plus fragile au plus solide
+  // (à égalité, le plus de mauvaises réponses d'abord).
+  const priorityAxes = [
+    ...categoryAnalysis.weaknesses,
+    ...categoryAnalysis.toConsolidate,
+  ].sort(
+    (a, b) => a.pct - b.pct || (b.total - b.correct) - (a.total - a.correct)
+  );
+  const priorityList = priorityAxes.length > 0 ? priorityAxes : technicalWeaknesses;
   // En Architecture, les filtres skill/catégorie sont ignorés par la requête côté backend :
   // afficher un bouton « ciblé » serait mensonger → diagnostic affiché sans CTA
   // (décision validée).
   const showTargetedCta = summary.mode !== 'ARCHITECTURE';
+  const showPriority = priorityList.length > 0;
+  const showStrengths = categoryAnalysis.strengths.length > 0;
+  const guestLevel = isGuest
+    ? estimateLevel(
+        [
+          {
+            difficulty: summary.difficulty,
+            answered: summary.totalQuestions,
+            correct: summary.correctAnswersCount,
+          },
+        ],
+        1
+      )
+    : null;
 
-  return (
-    <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8 py-1 sm:py-2">
-      <ResultHeader mode={summary.mode} difficulty={summary.difficulty} />
+  return (    <div className="max-w-4xl mx-auto py-1 sm:py-2 space-y-4 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-6">
+      <div className="sm:col-span-2">
+        <ResultHeader
+          mode={summary.mode}
+          difficulty={summary.difficulty}
+          levelLabel={guestLevel?.label ?? null}
+          onBack={onBack}
+        />
+      </div>
 
-      <ResultEvaluation summary={summary} isGuest={isGuest} />
-
-      {technicalWeaknesses.length > 0 && (
-        <ResultPriority
-          technicalWeaknesses={technicalWeaknesses}
-          tagsByCategory={skillTagsByCategory}
+      <div className="grid sm:col-span-2">
+        <ResultEvaluation
           summary={summary}
-          loading={loading}
-          onStart={onStart}
-          showCta={showTargetedCta}
+          isGuest={isGuest}
+          isPlacement={isPlacement}
+          onContinuePlacement={onContinuePlacement}
         />
+      </div>
+
+      {showPriority && (
+        <div className={`grid ${showStrengths ? '' : 'sm:col-span-2'}`}>
+          <ResultPriority
+            technicalWeaknesses={priorityList}
+            tagsByCategory={skillTagsByCategory}
+            summary={summary}
+            loading={loading}
+            onStart={onStart}
+            showCta={showTargetedCta}
+          />
+        </div>
       )}
 
-      {categoryAnalysis.strengths.length > 0 && (
-        <ResultCompetencies
-          title="Domaines maîtrisés"
-          subtitle="Technologies et domaines évalués"
-          icon={<Award className="w-4 h-4" />}
-          iconChipClassName="bg-success-soft border-success-border text-success"
-          tone="success"
-          items={categoryAnalysis.strengths}
-          tagsByCompetency={skillTagsByCategory}
-        />
-      )}
-      {categoryAnalysis.toConsolidate.length > 0 && (
-        <ResultCompetencies
-          title="Domaines à consolider"
-          subtitle="Technologies et domaines évalués"
-          icon={<Target className="w-4 h-4" />}
-          iconChipClassName="bg-warning-soft border-warning-border text-navy-900"
-          tone="navy"
-          items={categoryAnalysis.toConsolidate}
-          tagsByCompetency={skillTagsByCategory}
-        />
+      {showStrengths && (
+        <div className={`grid ${showPriority ? '' : 'sm:col-span-2'}`}>
+          <ResultCompetencies
+            title="Domaines maîtrisés"
+            subtitle="Technologies et domaines évalués"
+            icon={<Award className="w-4 h-4" />}
+            iconChipClassName="bg-success-soft border-success-border text-success"
+            tone="success"
+            items={categoryAnalysis.strengths}
+            tagsByCompetency={skillTagsByCategory}
+          />
+        </div>
       )}
 
-      <ResultQuestions summary={summary} />
-
-      {/* CTA invité — après le détail des questions (hiérarchie : diagnostic →
-          preuve → conversion), montre la valeur du compte sans bloquer */}
-      {isGuest && (
-        <ResultGuestCta count={guestSimulationCount} onCreateAccount={onCreateAccount} />
-      )}
+      <div className="grid sm:col-span-2">
+        <ResultQuestions
+          summary={summary}
+          isGuest={isGuest}
+          onCreateAccount={onCreateAccount}
+        />
+      </div>
 
       {/* Restart CTA */}
-      <div className="pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="text-sm text-ink-secondary text-center sm:text-left">
-          Prêt à tester une nouvelle compétence ou un autre niveau ?
-        </div>
-
+      <div className="grid justify-center sm:col-span-2">
         <Button
           onClick={onRestart}
           variant="primary"
           size="lg"
           leftIcon={<RotateCcw className="w-4 h-4" />}
-          className="w-full sm:w-auto px-8"
+          className="w-full sm:w-80"
         >
           Lancer une nouvelle session
         </Button>
