@@ -67,7 +67,7 @@ export const QuizOptionsList = ({ challenge, selectedOptionIds, feedback, timedO
         <div
           key={option.id}
           onClick={() => { if (!timedOut || feedback) onSelect(option.id); }}
-          className={`relative flex items-start gap-4 p-4 sm:p-5 rounded border-2 transition-all duration-150 select-none min-h-11 ${
+          className={`relative flex items-start gap-4 p-4 sm:p-5 lg:p-3.5 rounded border-2 transition-all duration-150 select-none min-h-11 lg:min-h-[60px] ${
             feedback
               ? 'cursor-default'
               : timedOut ? 'cursor-default' : 'cursor-pointer active:scale-[0.995]'

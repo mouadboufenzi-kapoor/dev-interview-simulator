@@ -68,9 +68,9 @@ export const ResultScreen = ({
   );
   const priorityList = priorityAxes.length > 0 ? priorityAxes : technicalWeaknesses;
   // En Architecture, les filtres skill/catégorie sont ignorés par la requête côté backend :
-  // afficher un bouton « ciblé » serait mensonger → diagnostic affiché sans CTA
-  // (décision validée).
+  // un bouton « ciblé » serait mensonger → relance générique du mode en cours.
   const showTargetedCta = summary.mode !== 'ARCHITECTURE';
+  const showGenericCta = summary.mode === 'ARCHITECTURE';
   const showPriority = priorityList.length > 0;
   const showStrengths = categoryAnalysis.strengths.length > 0;
 
@@ -101,6 +101,7 @@ export const ResultScreen = ({
             loading={loading}
             onStart={onStart}
             showCta={showTargetedCta}
+            genericCta={showGenericCta}
           />
         </div>
       )}

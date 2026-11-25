@@ -61,7 +61,7 @@ function useCountUp(target: number, start: boolean, reduce: boolean, duration = 
 
 const TILE_COLORS = [
   'bg-stat-1 text-stat-1-text md:bg-[#123a64] md:text-white',
-  'bg-stat-2 text-white text-relief md:bg-[#ff5a2f] md:text-[#0a2342]',
+  'bg-stat-2 text-white text-relief md:bg-[#ff5a2f] md:text-white',
   'bg-stat-3 text-stat-3-text md:bg-[#d6e0f0] md:text-[#0a2342]',
 ];
 

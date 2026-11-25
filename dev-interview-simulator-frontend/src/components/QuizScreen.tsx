@@ -328,9 +328,19 @@ export const QuizScreen = ({
   };
 
   const isMultiChoice = currentChallenge.selectionType === 'MULTIPLE_CHOICE';
+  const isTimeWarning = secondsRemaining <= 15 && !feedback && !submitting;
+  const showTwoColumnLayout =
+    currentChallenge.type !== 'CODE_REVIEW' && Boolean(currentChallenge.context);
+  const columnCardClass = showTwoColumnLayout
+    ? `lg:border-2 lg:rounded-2xl lg:p-6 lg:shadow-elevated ${
+        isTimeWarning
+          ? 'lg:border-danger-border lg:bg-danger-soft'
+          : 'lg:border-card-border lg:bg-surface'
+      }`
+    : '';
 
   return (
-    <div className="w-full max-w-4xl min-w-0 mx-auto space-y-8 py-2 sm:py-4">
+    <div className="w-full max-w-4xl min-w-0 mx-auto space-y-8 py-2 sm:py-4 lg:max-w-none lg:space-y-12 lg:pt-8">
       {/* Editorial Progress Header */}
       <QuizProgressHeader
         challenge={currentChallenge}
@@ -347,59 +357,69 @@ export const QuizScreen = ({
       <div
         ref={challengeSurfaceRef}
         className={`scroll-mt-14 sm:scroll-mt-16 border-2 rounded-2xl p-5 sm:p-9 space-y-7 transition-colors duration-200 ${
-          secondsRemaining <= 15 && !feedback && !submitting
+          showTwoColumnLayout
+            ? 'lg:grid lg:grid-cols-12 lg:gap-6 lg:p-0 lg:space-y-0 lg:border-0 lg:bg-transparent lg:shadow-none'
+            : 'lg:max-w-[760px] lg:mx-auto'
+        } ${
+          isTimeWarning
             ? 'border-danger-border bg-danger-soft shadow-[0_2px_10px_rgba(172,59,97,0.12)] animate-pulse'
             : 'bg-surface border-card-border shadow-elevated'
         }`}
       >
-        <QuizChallengeBody
-          challenge={currentChallenge}
-          showMultiChoiceHint={isMultiChoice && !feedback}
-        />
-
-        {isSequentialChallenge ? (
-          <QuizSequenceList
+        <div className={`space-y-7 lg:col-span-5 ${columnCardClass}`}>
+          <QuizChallengeBody
             challenge={currentChallenge}
-            orderedOptionIds={selectedOptionIds}
-            onChange={setSelectedOptionIds}
-            disabled={!!feedback || isTimedOut}
-            timedOut={isTimedOut && Boolean(feedback?.expectedOrder?.length)}
-            feedback={feedback}
+            showMultiChoiceHint={isMultiChoice && !feedback}
           />
-        ) : (
-          <QuizOptionsList
-            challenge={{ ...currentChallenge, options: displayedOptions }}
-            selectedOptionIds={selectedOptionIds}
-            feedback={feedback}
-            timedOut={isTimedOut}
-            onSelect={handleSelectOption}
-          />
-        )}
+        </div>
 
-        {feedback && !isTimedOut && (
-          <div ref={feedbackPanelRef} className="scroll-mt-24">
-            <QuizFeedbackPanel feedback={feedback} />
-          </div>
-        )}
+        <div className={`space-y-7 lg:col-span-7 lg:flex lg:flex-col ${columnCardClass}`}>
+          {isSequentialChallenge ? (
+            <QuizSequenceList
+              challenge={currentChallenge}
+              orderedOptionIds={selectedOptionIds}
+              onChange={setSelectedOptionIds}
+              disabled={!!feedback || isTimedOut}
+              timedOut={isTimedOut && Boolean(feedback?.expectedOrder?.length)}
+              feedback={feedback}
+            />
+          ) : (
+            <QuizOptionsList
+              challenge={{ ...currentChallenge, options: displayedOptions }}
+              selectedOptionIds={selectedOptionIds}
+              feedback={feedback}
+              timedOut={isTimedOut}
+              onSelect={handleSelectOption}
+            />
+          )}
 
-        {(!isTimedOut || timeoutError) && (
-          <QuizActionsFooter
-            feedback={feedback}
-            selectedCount={selectedOptionIds.length}
-            submitting={submitting}
-            timedOut={isTimedOut}
-            timeoutError={timeoutError}
-            isLastQuestion={currentIndex + 1 >= simulation.challenges.length}
-            onSubmit={() => {
-              if (timeoutError) {
-                setTimeoutError(false);
-                timeoutSubmittedRef.current = false;
-              }
-              void handleSubmitAnswer(isTimedOut || timeoutError);
-            }}
-            onNext={handleNext}
-          />
-        )}
+          {feedback && !isTimedOut && (
+            <div ref={feedbackPanelRef} className="scroll-mt-24">
+              <QuizFeedbackPanel feedback={feedback} />
+            </div>
+          )}
+
+          {(!isTimedOut || timeoutError) && (
+            <div className="lg:mt-auto">
+              <QuizActionsFooter
+                feedback={feedback}
+                selectedCount={selectedOptionIds.length}
+                submitting={submitting}
+                timedOut={isTimedOut}
+                timeoutError={timeoutError}
+                isLastQuestion={currentIndex + 1 >= simulation.challenges.length}
+                onSubmit={() => {
+                  if (timeoutError) {
+                    setTimeoutError(false);
+                    timeoutSubmittedRef.current = false;
+                  }
+                  void handleSubmitAnswer(isTimedOut || timeoutError);
+                }}
+                onNext={handleNext}
+              />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

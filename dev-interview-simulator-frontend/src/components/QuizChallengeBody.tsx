@@ -33,7 +33,7 @@ export const QuizChallengeBody = ({ challenge, showMultiChoiceHint }: Props) => 
         <div className="text-xs font-mono text-ink-muted uppercase tracking-wider mb-1 font-semibold">
           Mise en situation
         </div>
-        <p className="not-italic text-ink font-sans text-base leading-[1.6] sm:text-lg sm:leading-relaxed">
+        <p className="not-italic text-ink font-sans text-base leading-[1.6] sm:text-lg sm:leading-relaxed lg:text-[17px]">
           {challenge.context}
         </p>
       </div>

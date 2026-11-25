@@ -90,7 +90,7 @@ export const SetupConfigStep = ({
   return (
     <div className="screen-transition w-full px-4 py-3 sm:px-6 sm:py-5">
       <div className="mx-auto w-full max-w-[640px]">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 lg:gap-3">
           <BackButton onClick={onBack} />
           <PageTitle size="hero-compact" className="min-w-0 flex-1 text-center text-[20px] sm:text-[24px] lg:text-[30px]">
             Configure ton entraînement

@@ -50,7 +50,7 @@ export const ResultCompetencies = ({
         </div>
       </div>
 
-      <ul className="space-y-3.5">
+      <ul className="space-y-3.5 lg:max-h-[19rem] lg:overflow-y-auto lg:overscroll-contain lg:pr-1">
         {visibleItems.map((c) => {
           const tags = tagsByCompetency[c.name] ?? [];
           const visibleTags = tags.slice(0, MAX_TAGS);
