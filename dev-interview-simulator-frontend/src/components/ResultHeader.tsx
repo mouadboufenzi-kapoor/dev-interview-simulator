@@ -11,12 +11,12 @@ interface Props {
 }
 
 export const ResultHeader = ({ mode, difficulty, onBack }: Props) => (
-  <div className="flex flex-wrap items-center justify-between gap-2">
-    <div className="flex min-w-0 items-center gap-1.5">
+  <div className="flex flex-wrap items-center justify-between gap-2 lg:flex-nowrap">
+    <div className="flex min-w-0 items-center gap-1.5 lg:flex-1 lg:gap-3">
       {onBack && <BackButton onClick={onBack} />}
       <PageTitle
         size="hero-compact"
-        className="min-w-0 [font-size:26px] sm:[font-size:2.25rem] lg:[font-size:3rem]"
+        className="min-w-0 [font-size:26px] sm:[font-size:2.25rem] lg:flex-1 lg:text-center lg:[font-size:1.875rem]"
       >
         Votre bilan
       </PageTitle>

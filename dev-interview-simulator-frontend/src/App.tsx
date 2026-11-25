@@ -503,7 +503,7 @@ export default function App() {
       />
 
       {/* Main Content Area */}
-      <main className="relative z-10 flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex flex-col">
+      <main className={`relative z-10 flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex flex-col ${screen === 'QUIZ' ? 'lg:max-w-6xl' : ''}`}>
         {/* Soft Error Banner */}
         {error && (
           <div className="mb-6 p-4 rounded-2xl bg-danger-soft border border-danger-border text-danger text-sm flex items-start justify-between gap-3 shadow-[0_2px_10px_rgba(172,59,97,0.08)] animate-in fade-in duration-200">

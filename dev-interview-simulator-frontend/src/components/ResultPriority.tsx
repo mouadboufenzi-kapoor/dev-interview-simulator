@@ -14,6 +14,8 @@ interface Props {
   onStart: (request: ReturnType<typeof buildTargetedRequest>) => void;
   /** Faux en Architecture : les filtres sont ignorés par le backend. */
   showCta: boolean;
+  /** Relance le mode en cours sans ciblage (Architecture). */
+  genericCta?: boolean;
 }
 
 const MAX_VISIBLE = 3;
@@ -28,6 +30,7 @@ export const ResultPriority = ({
   loading,
   onStart,
   showCta,
+  genericCta = false,
 }: Props) => {
   const [expanded, setExpanded] = useState(false);
   const priority = technicalWeaknesses[0];
@@ -40,7 +43,7 @@ export const ResultPriority = ({
 
   const renderAxes = () => (
     <section aria-label="Axes techniques" className="border-t border-border-subtle pt-3">
-      <ul className="space-y-2">
+      <ul className="space-y-2 lg:max-h-[12rem] lg:overflow-y-auto lg:overscroll-contain lg:pr-1">
         {visibleWeaknesses.map((item, index) => {
           const tags = tagsByCategory[item.name] ?? [];
           const visibleTags = tags.slice(0, MAX_TAGS);
@@ -81,7 +84,7 @@ export const ResultPriority = ({
   );
 
   return (
-    <section className="bg-surface border-[0.5px] border-card-border rounded-2xl p-5 shadow-elevated space-y-4 sm:p-6">
+    <section className="bg-surface border-[0.5px] border-card-border rounded-2xl p-5 shadow-elevated space-y-4 sm:p-6 lg:flex lg:flex-col">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <div className="p-2 rounded-lg bg-navy-100 border border-navy-200 text-navy-900 flex-shrink-0">
@@ -108,23 +111,31 @@ export const ResultPriority = ({
         </button>
       )}
 
-      {showCta && (
-        <Button
-          type="button"
-          variant="primary"
-          size="lg"
-          loading={loading}
-          rightIcon={<Target className="h-4 w-4" />}
-          onClick={() => onStart(buildTargetedRequest(
-            summary,
-            priority,
-            summary.questions.map((question) => question.challengeId),
-            'CATEGORY'
-          ))}
-          className="w-full sm:w-auto"
-        >
-          Travailler {priority.name}
-        </Button>
+      {(showCta || genericCta) && (
+        <div className="lg:mt-auto lg:px-2">
+          <Button
+            type="button"
+            variant="primary"
+            size="lg"
+            loading={loading}
+            rightIcon={<Target className="h-4 w-4" />}
+            onClick={() => onStart(genericCta
+              ? {
+                  mode: summary.mode,
+                  difficulty: summary.difficulty ?? undefined,
+                  profileId: summary.profileId ?? undefined,
+                }
+              : buildTargetedRequest(
+                  summary,
+                  priority,
+                  summary.questions.map((question) => question.challengeId),
+                  'CATEGORY'
+                ))}
+            className="w-full sm:w-auto lg:w-full"
+          >
+            {genericCta ? 'Refaire une mise en situation' : `Travailler ${priority.name}`}
+          </Button>
+        </div>
       )}
     </section>
   );

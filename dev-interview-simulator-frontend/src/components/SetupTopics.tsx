@@ -50,7 +50,7 @@ export const SetupTopics = ({
   );
 
   const chipClass = (selected: boolean) =>
-    `min-h-0 rounded-full border px-2 py-1 text-xs leading-4 transition cursor-pointer sm:min-h-11 sm:border-2 sm:px-3 sm:py-2 ${
+    `min-h-0 rounded-full border px-2 py-1 text-xs leading-4 transition cursor-pointer sm:min-h-11 sm:border-2 sm:px-3 sm:py-2 lg:min-h-8 lg:border lg:px-2.5 lg:py-1 lg:text-[11px] ${
       selected
         ? 'border-navy-900 bg-navy-100 font-semibold text-navy-900'
         : 'border-border bg-surface text-ink-secondary'
@@ -105,7 +105,7 @@ export const SetupTopics = ({
               }}
               aria-expanded={expanded}
               aria-controls="setup-technologies"
-              className="mt-1.5 min-h-0 rounded-full border border-brand bg-brand px-2 py-1 text-xs leading-4 text-cta-text sm:mt-2 sm:min-h-11 sm:border-2 sm:px-3 sm:py-2"
+              className="mt-1.5 min-h-0 rounded-full border border-brand bg-brand px-2 py-1 text-xs leading-4 text-cta-text sm:mt-2 sm:min-h-11 sm:border-2 sm:px-3 sm:py-2 lg:mt-2 lg:min-h-8 lg:border lg:px-2.5 lg:py-1 lg:text-[11px]"
             >
               {expanded ? 'Voir moins' : `+ ${remainingCount} autres`}
             </button>
